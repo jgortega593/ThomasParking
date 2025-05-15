@@ -16,17 +16,31 @@ export default function RegistroParqueo() {
   const [submitting, setSubmitting] = useState(false);
   const isOnline = useOnlineStatus();
 
+  // Estado para múltiples archivos
+  const [archivos, setArchivos] = useState([]);
+  const [previews, setPreviews] = useState([]);
+
   // Estado del formulario
   const [formData, setFormData] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
-    fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'), // Solo fecha
+    fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
     dependencia_id: '',
     observaciones: '',
-    foto: null,
-    audio: null,
-    gratis: false
+    gratis: false,
+    audio: null
   });
+
+  // Generar miniaturas
+  useEffect(() => {
+    if (!archivos || archivos.length === 0) {
+      setPreviews([]);
+      return;
+    }
+    const urls = archivos.map(file => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [archivos]);
 
   // Cargar copropietarios al montar
   useEffect(() => {
@@ -53,37 +67,49 @@ export default function RegistroParqueo() {
     }));
   };
 
+  // Manejar selección de múltiples archivos
+  const handleFileSelected = (file) => {
+    setArchivos(prev => [...prev, file]);
+  };
+
+  // Eliminar imagen antes de enviar
+  const handleRemove = (idx) => {
+    setArchivos(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
     try {
-      // 1. Obtener usuario_app_id correspondiente
+      // 1. Obtener usuario_app_id
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: usuarioApp, error: userError } = await supabase
+      const { data: usuarioApp } = await supabase
         .from('usuarios_app')
         .select('id')
         .eq('email', user.email)
         .single();
 
-      if (userError || !usuarioApp) throw new Error('Usuario no encontrado en registro principal');
+      if (!usuarioApp) throw new Error('Usuario no encontrado');
 
-      // 2. Subir archivos multimedia
-      let fotoUrl = '';
-      if (formData.foto) {
-        const fotoName = `foto_${Date.now()}_${formData.placa_vehiculo}.jpg`;
+      // 2. Subir archivos
+      const fotosUrls = [];
+      for (const file of archivos) {
+        const nombre = `foto_${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from('evidencias-parqueadero')
-          .upload(fotoName, formData.foto);
+          .upload(nombre, file);
         
         if (uploadError) throw uploadError;
+        
         const { data: urlData } = supabase.storage
           .from('evidencias-parqueadero')
-          .getPublicUrl(fotoName);
-        fotoUrl = urlData.publicUrl;
+          .getPublicUrl(nombre);
+        fotosUrls.push(urlData.publicUrl);
       }
 
+      // 3. Subir audio si existe
       let audioUrl = '';
       if (formData.audio) {
         const audioName = `audio_${Date.now()}_${formData.placa_vehiculo}.webm`;
@@ -92,13 +118,14 @@ export default function RegistroParqueo() {
           .upload(audioName, formData.audio);
         
         if (audioError) throw audioError;
+        
         const { data: audioUrlData } = supabase.storage
           .from('evidencias-parqueadero')
           .getPublicUrl(audioName);
         audioUrl = audioUrlData.publicUrl;
       }
 
-      // 3. Insertar registro
+      // 4. Insertar registro
       const { error: insertError } = await supabase
         .from('registros_parqueadero')
         .insert([{
@@ -108,7 +135,7 @@ export default function RegistroParqueo() {
           dependencia_id: formData.dependencia_id,
           usuario_id: usuarioApp.id,
           observaciones: formData.observaciones,
-          foto_url: fotoUrl,
+          foto_url: fotosUrls,  // Array de URLs
           observacion_audio_url: audioUrl,
           monto: formData.gratis ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
           gratis: formData.gratis
@@ -131,7 +158,7 @@ export default function RegistroParqueo() {
       <h2><Emoji symbol="📝" /> Registro de Parqueo</h2>
 
       <form onSubmit={handleSubmit} className="form-registro">
-        {/* Campo de fecha (solo fecha) */}
+        {/* Campo de fecha */}
         <label>
           <Emoji symbol="📅" /> Fecha de Ingreso:
           <input
@@ -189,13 +216,58 @@ export default function RegistroParqueo() {
           </select>
         </label>
 
-        {/* Selector de foto */}
+        {/* Selector de fotos múltiples */}
         <label>
           <Emoji symbol="📷" /> Evidencia Fotográfica:
-          <SelectorDeFoto
-            onFileSelected={(file) => setFormData(prev => ({ ...prev, foto: file }))}
+          <SelectorDeFoto 
+            onFileSelected={handleFileSelected}
+            multiple  // Nueva prop para permitir múltiples selecciones
           />
         </label>
+
+        {/* Previsualización de imágenes */}
+        {previews.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+            {previews.map((url, idx) => (
+              <div key={idx} style={{ position: 'relative', width: 70, height: 70 }}>
+                <img
+                  src={url}
+                  alt={`preview-${idx}`}
+                  style={{
+                    width: 70,
+                    height: 70,
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    border: '1.5px solid #eee'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemove(idx)}
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    background: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 20,
+                    height: 20,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                  }}
+                  title="Eliminar imagen"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Grabación de audio */}
         <label>

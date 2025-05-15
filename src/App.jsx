@@ -12,11 +12,13 @@ import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
-import CapturaFoto from './pages/CapturaFoto'; // <--- Nueva importación
 
 // Componentes de layout
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
+// Hook para estado online/offline
+import useOnlineStatus from './hooks/useOnlineStatus';
 
 // Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
@@ -30,6 +32,7 @@ function ProtectedRoute({ user, allowedRoles, children }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const isOnline = useOnlineStatus();
 
   // Mantener el usuario autenticado
   useEffect(() => {
@@ -54,15 +57,33 @@ export default function App() {
   return (
     <BrowserRouter>
       <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      {/* Indicador claro de estado offline */}
+      {!isOnline && (
+        <div className="offline-banner" role="status" aria-live="polite"
+          style={{
+            background: '#fff3cd',
+            color: '#856404',
+            padding: '10px 0',
+            textAlign: 'center',
+            fontWeight: 600,
+            fontSize: '1rem',
+            letterSpacing: '0.02em',
+            borderBottom: '1.5px solid #ffe58f',
+            zIndex: 100,
+            width: '100vw',
+            position: 'relative'
+          }}
+        >
+          <span role="img" aria-label="offline">⚡</span>
+          &nbsp;Modo offline: solo lectura. Edición y borrado están deshabilitados.
+        </div>
+      )}
       {/* Oculta el contenido principal cuando el menú móvil está abierto */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             {/* Ruta de login pública */}
             <Route path="/login" element={<Login />} />
-
-            {/* Nueva ruta para captura de fotos */}
-            <Route path="/captura-foto" element={<CapturaFoto />} />
 
             {/* Rutas protegidas para cualquier usuario autenticado */}
             <Route
@@ -108,7 +129,7 @@ export default function App() {
             <Route
               path="/usuarios"
               element={
-                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <ProtectedRoute user={user}>
                   <GestionUsuarios />
                 </ProtectedRoute>
               }
@@ -116,7 +137,7 @@ export default function App() {
             <Route
               path="/copropietarios"
               element={
-                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <ProtectedRoute user={user}>
                   <GestionCopropietarios />
                 </ProtectedRoute>
               }
