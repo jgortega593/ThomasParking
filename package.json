@@ -30,6 +30,7 @@
     "react-router-dom": "^7.6.0",
     "rollup-plugin-visualizer": "^5.14.0",
     "scoop": "^0.0.2",
+    "uuid": "^11.1.0",
     "vite-plugin-imagemin": "^0.1.0"
   },
   "devDependencies": {

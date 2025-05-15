@@ -1,11 +1,12 @@
-// src/components/Consultas.jsx (versión final mejorada con feedback de carga en botones y UX refinado)
+// src/pages/Consultas.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import Loader from "../components/Loader"
+import Loader from "../components/Loader";
 import Emoji from '../components/Emoji';
 import ResumenRegistros from '../components/ResumenRegistros';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import dayjs from 'dayjs';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Consultas() {
   const [filtros, setFiltros] = useState({
@@ -103,7 +104,7 @@ export default function Consultas() {
       filtrados = filtrados.filter(r => r.dependencia_id === copropietarioSeleccionado.id);
     }
     setResultados(filtrados);
-    setTimeout(() => setSearching(false), 500); // Simula feedback visual de búsqueda
+    setTimeout(() => setSearching(false), 500);
   };
 
   const handleChange = (e) => {
@@ -161,7 +162,6 @@ export default function Consultas() {
         .update({ ...editData, monto })
         .eq('id', id);
       if (error) throw error;
-      // Actualizar localmente
       const updated = todos.map(r => r.id === id ? { ...r, ...editData, monto } : r);
       setTodos(updated);
       setResultados(updated);
@@ -361,26 +361,12 @@ export default function Consultas() {
                       : <Emoji symbol="⏳" label="Pendiente" />}
                   </td>
                   <td>
-  {reg.foto_url && (
-    <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
-      <img
-        src={reg.foto_url}
-        alt="Evidencia"
-        width={56}
-        height={56}
-        style={{
-          objectFit: 'cover',
-          borderRadius: 8,
-          boxShadow: '0 1px 4px #0002',
-          display: 'block',
-          margin: '0 auto',
-          background: '#f3f3f3'
-        }}
-        loading="lazy"
-      />
-    </a>
-  )}
-</td>
+                    {reg.foto_url && (
+                      <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
+                        <img src={reg.foto_url} alt="Evidencia" className="thumbnail" />
+                      </a>
+                    )}
+                  </td>
                   <td>{reg.usuario?.nombre || '-'}</td>
                   <td>
                     <button
@@ -396,7 +382,7 @@ export default function Consultas() {
                       className="delete-btn"
                       onClick={() => handleDelete(reg)}
                       title="Eliminar"
-                      disabled={deleting}
+                      disabled={!isOnline || deleting}
                     >
                       {deleting ? <Loader text="" /> : <Emoji symbol="🗑️" label="Eliminar" />}
                     </button>

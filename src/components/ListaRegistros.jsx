@@ -17,6 +17,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
   const [editModal, setEditModal] = useState({ open: false, registro: null })
   const [editData, setEditData] = useState({})
   const [eliminandoAudio, setEliminandoAudio] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const isOnline = useOnlineStatus()
 
   // Cargar copropietarios
@@ -139,6 +141,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
 
   const handleEditSave = async (e) => {
     e.preventDefault()
+    setSavingEdit(true)
     const id = editModal.registro.id
     const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50)
     let audioUrlFinal = editData.observacion_audio_url
@@ -152,6 +155,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
         .upload(fileName, editData.nuevoAudio, { contentType: 'audio/webm' })
       if (uploadError) {
         setError('Error al subir el audio: ' + uploadError.message)
+        setSavingEdit(false)
         return
       }
       const { data: publicUrlData } = supabase
@@ -190,6 +194,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
       setEditData({})
     } catch (error) {
       setError(error.message)
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -225,6 +231,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
 
   const handleDelete = async (registro) => {
     if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return
+    setDeleting(true)
     try {
       if (isOnline) {
         const { error } = await supabase
@@ -243,6 +250,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
       }
     } catch (err) {
       setError('Error eliminando registro: ' + err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -388,7 +397,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                         title="Editar"
                         onClick={() => handleEdit(reg)}
                         style={{ marginRight: 6 }}
-                        disabled={!isOnline}
+                        disabled={!isOnline || savingEdit}
                       >
                         <Emoji symbol="✏️" label="Editar" />
                       </button>
@@ -396,6 +405,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                         className="delete-btn"
                         title="Eliminar"
                         onClick={() => handleDelete(reg)}
+                        disabled={!isOnline || deleting}
                       >
                         <Emoji symbol="🗑️" label="Eliminar" />
                       </button>
@@ -561,7 +571,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                 <button
                   type="submit"
                   className="save-btn"
-                  disabled={!isOnline}
+                  disabled={!isOnline || savingEdit}
                 >
                   Guardar
                 </button>
@@ -569,6 +579,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                   type="button"
                   className="cancel-btn"
                   onClick={() => setEditModal({ open: false, registro: null })}
+                  disabled={savingEdit}
                 >
                   Cancelar
                 </button>
