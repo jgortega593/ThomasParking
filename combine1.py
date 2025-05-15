@@ -2,7 +2,7 @@ import os
 from tqdm import tqdm  # Asegúrate de tener instalada la librería tqdm
 
 extensions = {'.css', '.jsx'}
-root_dir = r'C:\parking-app'
+root_dir = r'C:\ThomasParking\ThomasParking'
 output_file = 'combined.txt'
 
 # Paso 1: Recolectar todos los archivos a procesar (excluyendo node_modules y package-lock.json)

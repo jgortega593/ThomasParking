@@ -1,55 +1,56 @@
 LISTA DE ARCHIVOS PROCESADOS:
-C:\parking-app\dist\assets\index-C5U9KVgd.css
-C:\parking-app\src\App.jsx
-C:\parking-app\src\main.jsx
-C:\parking-app\src\components\AuthGuard.jsx
-C:\parking-app\src\components\CapturaCamara.jsx
-C:\parking-app\src\components\DetalleConsulta.jsx
-C:\parking-app\src\components\Emoji.jsx
-C:\parking-app\src\components\ErrorBoundary.jsx
-C:\parking-app\src\components\ErrorMessage.jsx
-C:\parking-app\src\components\Filtros.jsx
-C:\parking-app\src\components\Footer.jsx
-C:\parking-app\src\components\ListaRegistros.jsx
-C:\parking-app\src\components\Loader.jsx
-C:\parking-app\src\components\LoadingOverlay.jsx
-C:\parking-app\src\components\LoadingScreen.jsx
-C:\parking-app\src\components\Modal.jsx
-C:\parking-app\src\components\Navbar.jsx
-C:\parking-app\src\components\ResumenRegistros.jsx
-C:\parking-app\src\components\SelectorDeFoto.jsx
-C:\parking-app\src\components\SyncIndicator.jsx
-C:\parking-app\src\components\TablaResultados.jsx
-C:\parking-app\src\components\ThemeToggle.jsx
-C:\parking-app\src\context\ThemeContext.jsx
-C:\parking-app\src\context\ViewContext.jsx
-C:\parking-app\src\hooks\useHover.jsx
-C:\parking-app\src\hooks\useOnlineStatus.jsx
-C:\parking-app\src\pages\AcercaDe.jsx
-C:\parking-app\src\pages\Consultas.jsx
-C:\parking-app\src\pages\DescargoGestion.jsx
-C:\parking-app\src\pages\GestionCopropietarios.jsx
-C:\parking-app\src\pages\GestionUsuarios.jsx
-C:\parking-app\src\pages\Login.jsx
-C:\parking-app\src\pages\RegistroParqueo.jsx
-C:\parking-app\src\pages\ResumenRecaudo.jsx
-C:\parking-app\src\providers\QueryClientProvider.jsx
-C:\parking-app\src\styles\global.css
+C:\ThomasParking\ThomasParking\dist\assets\index-C5U9KVgd.css
+C:\ThomasParking\ThomasParking\src\App.jsx
+C:\ThomasParking\ThomasParking\src\main.jsx
+C:\ThomasParking\ThomasParking\src\components\AuthGuard.jsx
+C:\ThomasParking\ThomasParking\src\components\CapturaCamara.jsx
+C:\ThomasParking\ThomasParking\src\components\DetalleConsulta.jsx
+C:\ThomasParking\ThomasParking\src\components\Emoji.jsx
+C:\ThomasParking\ThomasParking\src\components\ErrorBoundary.jsx
+C:\ThomasParking\ThomasParking\src\components\ErrorMessage.jsx
+C:\ThomasParking\ThomasParking\src\components\Filtros.jsx
+C:\ThomasParking\ThomasParking\src\components\Footer.jsx
+C:\ThomasParking\ThomasParking\src\components\ListaRegistros.jsx
+C:\ThomasParking\ThomasParking\src\components\Loader.jsx
+C:\ThomasParking\ThomasParking\src\components\LoadingOverlay.jsx
+C:\ThomasParking\ThomasParking\src\components\LoadingScreen.jsx
+C:\ThomasParking\ThomasParking\src\components\Modal.jsx
+C:\ThomasParking\ThomasParking\src\components\Navbar.jsx
+C:\ThomasParking\ThomasParking\src\components\ResumenRegistros.jsx
+C:\ThomasParking\ThomasParking\src\components\SelectorDeFoto.jsx
+C:\ThomasParking\ThomasParking\src\components\SignUp.jsx
+C:\ThomasParking\ThomasParking\src\components\SyncIndicator.jsx
+C:\ThomasParking\ThomasParking\src\components\TablaResultados.jsx
+C:\ThomasParking\ThomasParking\src\components\ThemeToggle.jsx
+C:\ThomasParking\ThomasParking\src\context\ThemeContext.jsx
+C:\ThomasParking\ThomasParking\src\context\ViewContext.jsx
+C:\ThomasParking\ThomasParking\src\hooks\useHover.jsx
+C:\ThomasParking\ThomasParking\src\hooks\useOnlineStatus.jsx
+C:\ThomasParking\ThomasParking\src\pages\AcercaDe.jsx
+C:\ThomasParking\ThomasParking\src\pages\CapturaFoto.jsx
+C:\ThomasParking\ThomasParking\src\pages\Consultas.jsx
+C:\ThomasParking\ThomasParking\src\pages\DescargoGestion.jsx
+C:\ThomasParking\ThomasParking\src\pages\GestionCopropietarios.jsx
+C:\ThomasParking\ThomasParking\src\pages\GestionUsuarios.jsx
+C:\ThomasParking\ThomasParking\src\pages\Login.jsx
+C:\ThomasParking\ThomasParking\src\pages\RegistroParqueo.jsx
+C:\ThomasParking\ThomasParking\src\pages\ResumenRecaudo.jsx
+C:\ThomasParking\ThomasParking\src\providers\QueryClientProvider.jsx
+C:\ThomasParking\ThomasParking\src\styles\global.css
 
 ============================================================
 
 
 
------ C:\parking-app\dist\assets\index-C5U9KVgd.css -----
+----- C:\ThomasParking\ThomasParking\dist\assets\index-C5U9KVgd.css -----
 
 @charset "UTF-8";.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow,.react-datepicker__navigation-icon:before{border-color:#ccc;border-style:solid;border-width:3px 3px 0 0;content:"";display:block;height:9px;position:absolute;top:6px;width:9px}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle,.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{margin-left:-4px;position:absolute;width:0}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before,.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after,.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{box-sizing:content-box;position:absolute;border:8px solid transparent;height:0;width:1px;content:"";z-index:-1;border-width:8px;left:-8px}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before{border-bottom-color:#aeaeae}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{top:0;margin-top:-8px}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before,.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{border-top:none;border-bottom-color:#f0f0f0}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:after{top:0}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle:before{top:-1px;border-bottom-color:#aeaeae}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle{bottom:0;margin-bottom:-8px}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before,.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after{border-bottom:none;border-top-color:#fff}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:after{bottom:0}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle:before{bottom:-1px;border-top-color:#aeaeae}.react-datepicker-wrapper{display:inline-block;padding:0;border:0}.react-datepicker{font-family:Helvetica Neue,helvetica,arial,sans-serif;font-size:.8rem;background-color:#fff;color:#000;border:1px solid #aeaeae;border-radius:.3rem;display:inline-block;position:relative}.react-datepicker--time-only .react-datepicker__triangle{left:35px}.react-datepicker--time-only .react-datepicker__time-container{border-left:0}.react-datepicker--time-only .react-datepicker__time,.react-datepicker--time-only .react-datepicker__time-box{border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker__triangle{position:absolute;left:50px}.react-datepicker-popper{z-index:1}.react-datepicker-popper[data-placement^=bottom]{padding-top:10px}.react-datepicker-popper[data-placement=bottom-end] .react-datepicker__triangle,.react-datepicker-popper[data-placement=top-end] .react-datepicker__triangle{left:auto;right:50px}.react-datepicker-popper[data-placement^=top]{padding-bottom:10px}.react-datepicker-popper[data-placement^=right]{padding-left:8px}.react-datepicker-popper[data-placement^=right] .react-datepicker__triangle{left:auto;right:42px}.react-datepicker-popper[data-placement^=left]{padding-right:8px}.react-datepicker-popper[data-placement^=left] .react-datepicker__triangle{left:42px;right:auto}.react-datepicker__header{text-align:center;background-color:#f0f0f0;border-bottom:1px solid #aeaeae;border-top-left-radius:.3rem;padding:8px 0;position:relative}.react-datepicker__header--time{padding-bottom:8px;padding-left:5px;padding-right:5px}.react-datepicker__header--time:not(.react-datepicker__header--time--only){border-top-left-radius:0}.react-datepicker__header:not(.react-datepicker__header--has-time-select){border-top-right-radius:.3rem}.react-datepicker__year-dropdown-container--select,.react-datepicker__month-dropdown-container--select,.react-datepicker__month-year-dropdown-container--select,.react-datepicker__year-dropdown-container--scroll,.react-datepicker__month-dropdown-container--scroll,.react-datepicker__month-year-dropdown-container--scroll{display:inline-block;margin:0 15px}.react-datepicker__current-month,.react-datepicker-time__header,.react-datepicker-year-header{margin-top:0;color:#000;font-weight:700;font-size:.944rem}.react-datepicker-time__header{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.react-datepicker__navigation{align-items:center;background:none;display:flex;justify-content:center;text-align:center;cursor:pointer;position:absolute;top:2px;padding:0;border:none;z-index:1;height:32px;width:32px;text-indent:-999em;overflow:hidden}.react-datepicker__navigation--previous{left:2px}.react-datepicker__navigation--next{right:2px}.react-datepicker__navigation--next--with-time:not(.react-datepicker__navigation--next--with-today-button){right:85px}.react-datepicker__navigation--years{position:relative;top:0;display:block;margin-left:auto;margin-right:auto}.react-datepicker__navigation--years-previous{top:4px}.react-datepicker__navigation--years-upcoming{top:-4px}.react-datepicker__navigation:hover *:before{border-color:#a6a6a6}.react-datepicker__navigation-icon{position:relative;top:-1px;font-size:20px;width:0}.react-datepicker__navigation-icon--next{left:-2px}.react-datepicker__navigation-icon--next:before{transform:rotate(45deg);left:-7px}.react-datepicker__navigation-icon--previous{right:-2px}.react-datepicker__navigation-icon--previous:before{transform:rotate(225deg);right:-7px}.react-datepicker__month-container{float:left}.react-datepicker__year{margin:.4rem;text-align:center}.react-datepicker__year-wrapper{display:flex;flex-wrap:wrap;max-width:180px}.react-datepicker__year .react-datepicker__year-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__month{margin:.4rem;text-align:center}.react-datepicker__month .react-datepicker__month-text,.react-datepicker__month .react-datepicker__quarter-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__input-time-container{clear:both;width:100%;float:left;margin:5px 0 10px 15px;text-align:left}.react-datepicker__input-time-container .react-datepicker-time__caption,.react-datepicker__input-time-container .react-datepicker-time__input-container{display:inline-block}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input{display:inline-block;margin-left:10px}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input{width:auto}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-inner-spin-button,.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]{-moz-appearance:textfield}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__delimiter{margin-left:5px;display:inline-block}.react-datepicker__time-container{float:right;border-left:1px solid #aeaeae;width:85px}.react-datepicker__time-container--with-today-button{display:inline;border:1px solid #aeaeae;border-radius:.3rem;position:absolute;right:-87px;top:0}.react-datepicker__time-container .react-datepicker__time{position:relative;background:#fff;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box{width:85px;overflow-x:hidden;margin:0 auto;text-align:center;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list{list-style:none;margin:0;height:calc(195px + .85rem);overflow-y:scroll;padding-right:0;padding-left:0;width:100%;box-sizing:content-box}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item{height:30px;padding:5px 10px;white-space:nowrap}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover{cursor:pointer;background-color:#f0f0f0}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected{background-color:#216ba5;color:#fff;font-weight:700}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover{background-color:#216ba5}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled{color:#ccc}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled:hover{cursor:default;background-color:transparent}.react-datepicker__week-number{color:#ccc;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__week-number.react-datepicker__week-number--clickable{cursor:pointer}.react-datepicker__week-number.react-datepicker__week-number--clickable:not(.react-datepicker__week-number--selected,.react-datepicker__week-number--keyboard-selected):hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__week-number--selected{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__week-number--selected:hover{background-color:#1d5d90}.react-datepicker__week-number--keyboard-selected{border-radius:.3rem;background-color:#2a87d0;color:#fff}.react-datepicker__week-number--keyboard-selected:hover{background-color:#1d5d90}.react-datepicker__day-names{white-space:nowrap;margin-bottom:-8px}.react-datepicker__week{white-space:nowrap}.react-datepicker__day-name,.react-datepicker__day,.react-datepicker__time-name{color:#000;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__day,.react-datepicker__month-text,.react-datepicker__quarter-text,.react-datepicker__year-text{cursor:pointer}.react-datepicker__day:hover,.react-datepicker__month-text:hover,.react-datepicker__quarter-text:hover,.react-datepicker__year-text:hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__day--today,.react-datepicker__month-text--today,.react-datepicker__quarter-text--today,.react-datepicker__year-text--today{font-weight:700}.react-datepicker__day--highlighted,.react-datepicker__month-text--highlighted,.react-datepicker__quarter-text--highlighted,.react-datepicker__year-text--highlighted{border-radius:.3rem;background-color:#3dcc4a;color:#fff}.react-datepicker__day--highlighted:hover,.react-datepicker__month-text--highlighted:hover,.react-datepicker__quarter-text--highlighted:hover,.react-datepicker__year-text--highlighted:hover{background-color:#32be3f}.react-datepicker__day--highlighted-custom-1,.react-datepicker__month-text--highlighted-custom-1,.react-datepicker__quarter-text--highlighted-custom-1,.react-datepicker__year-text--highlighted-custom-1{color:#f0f}.react-datepicker__day--highlighted-custom-2,.react-datepicker__month-text--highlighted-custom-2,.react-datepicker__quarter-text--highlighted-custom-2,.react-datepicker__year-text--highlighted-custom-2{color:green}.react-datepicker__day--holidays,.react-datepicker__month-text--holidays,.react-datepicker__quarter-text--holidays,.react-datepicker__year-text--holidays{position:relative;border-radius:.3rem;background-color:#ff6803;color:#fff}.react-datepicker__day--holidays .holiday-overlay,.react-datepicker__month-text--holidays .holiday-overlay,.react-datepicker__quarter-text--holidays .holiday-overlay,.react-datepicker__year-text--holidays .holiday-overlay{position:absolute;bottom:100%;left:50%;transform:translate(-50%);background-color:#333;color:#fff;padding:4px;border-radius:4px;white-space:nowrap;visibility:hidden;opacity:0;transition:visibility 0s,opacity .3s ease-in-out}.react-datepicker__day--holidays:hover,.react-datepicker__month-text--holidays:hover,.react-datepicker__quarter-text--holidays:hover,.react-datepicker__year-text--holidays:hover{background-color:#cf5300}.react-datepicker__day--holidays:hover .holiday-overlay,.react-datepicker__month-text--holidays:hover .holiday-overlay,.react-datepicker__quarter-text--holidays:hover .holiday-overlay,.react-datepicker__year-text--holidays:hover .holiday-overlay{visibility:visible;opacity:1}.react-datepicker__day--selected,.react-datepicker__day--in-selecting-range,.react-datepicker__day--in-range,.react-datepicker__month-text--selected,.react-datepicker__month-text--in-selecting-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--selected,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--selected,.react-datepicker__year-text--in-selecting-range,.react-datepicker__year-text--in-range{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__day--selected:hover,.react-datepicker__day--in-selecting-range:hover,.react-datepicker__day--in-range:hover,.react-datepicker__month-text--selected:hover,.react-datepicker__month-text--in-selecting-range:hover,.react-datepicker__month-text--in-range:hover,.react-datepicker__quarter-text--selected:hover,.react-datepicker__quarter-text--in-selecting-range:hover,.react-datepicker__quarter-text--in-range:hover,.react-datepicker__year-text--selected:hover,.react-datepicker__year-text--in-selecting-range:hover,.react-datepicker__year-text--in-range:hover{background-color:#1d5d90}.react-datepicker__day--keyboard-selected,.react-datepicker__month-text--keyboard-selected,.react-datepicker__quarter-text--keyboard-selected,.react-datepicker__year-text--keyboard-selected{border-radius:.3rem;background-color:#bad9f1;color:#000}.react-datepicker__day--keyboard-selected:hover,.react-datepicker__month-text--keyboard-selected:hover,.react-datepicker__quarter-text--keyboard-selected:hover,.react-datepicker__year-text--keyboard-selected:hover{background-color:#1d5d90}.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__month-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__quarter-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__year-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range){background-color:#216ba580}.react-datepicker__month--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range){background-color:#f0f0f0;color:#000}.react-datepicker__day--disabled,.react-datepicker__month-text--disabled,.react-datepicker__quarter-text--disabled,.react-datepicker__year-text--disabled{cursor:default;color:#ccc}.react-datepicker__day--disabled:hover,.react-datepicker__month-text--disabled:hover,.react-datepicker__quarter-text--disabled:hover,.react-datepicker__year-text--disabled:hover{background-color:transparent}.react-datepicker__input-container{position:relative;display:inline-block;width:100%}.react-datepicker__input-container .react-datepicker__calendar-icon{position:absolute;padding:.5rem;box-sizing:content-box}.react-datepicker__view-calendar-icon input{padding:6px 10px 5px 25px}.react-datepicker__year-read-view,.react-datepicker__month-read-view,.react-datepicker__month-year-read-view{border:1px solid transparent;border-radius:.3rem;position:relative}.react-datepicker__year-read-view:hover,.react-datepicker__month-read-view:hover,.react-datepicker__month-year-read-view:hover{cursor:pointer}.react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__year-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__month-read-view--down-arrow{border-top-color:#b3b3b3}.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow{transform:rotate(135deg);right:-16px;top:0}.react-datepicker__year-dropdown,.react-datepicker__month-dropdown,.react-datepicker__month-year-dropdown{background-color:#f0f0f0;position:absolute;width:50%;left:25%;top:30px;z-index:1;text-align:center;border-radius:.3rem;border:1px solid #aeaeae}.react-datepicker__year-dropdown:hover,.react-datepicker__month-dropdown:hover,.react-datepicker__month-year-dropdown:hover{cursor:pointer}.react-datepicker__year-dropdown--scrollable,.react-datepicker__month-dropdown--scrollable,.react-datepicker__month-year-dropdown--scrollable{height:150px;overflow-y:scroll}.react-datepicker__year-option,.react-datepicker__month-option,.react-datepicker__month-year-option{line-height:20px;width:100%;display:block;margin-left:auto;margin-right:auto}.react-datepicker__year-option:first-of-type,.react-datepicker__month-option:first-of-type,.react-datepicker__month-year-option:first-of-type{border-top-left-radius:.3rem;border-top-right-radius:.3rem}.react-datepicker__year-option:last-of-type,.react-datepicker__month-option:last-of-type,.react-datepicker__month-year-option:last-of-type{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker__year-option:hover,.react-datepicker__month-option:hover,.react-datepicker__month-year-option:hover{background-color:#ccc}.react-datepicker__year-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-upcoming{border-bottom-color:#b3b3b3}.react-datepicker__year-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-previous{border-top-color:#b3b3b3}.react-datepicker__year-option--selected,.react-datepicker__month-option--selected,.react-datepicker__month-year-option--selected{position:absolute;left:15px}.react-datepicker__close-icon{cursor:pointer;background-color:transparent;border:0;outline:0;padding:0 6px 0 0;position:absolute;top:0;right:0;height:100%;display:table-cell;vertical-align:middle}.react-datepicker__close-icon:after{cursor:pointer;background-color:#216ba5;color:#fff;border-radius:50%;height:16px;width:16px;padding:2px;font-size:12px;line-height:1;text-align:center;display:table-cell;vertical-align:middle;content:"×"}.react-datepicker__close-icon--disabled{cursor:default}.react-datepicker__close-icon--disabled:after{cursor:default;background-color:#ccc}.react-datepicker__today-button{background:#f0f0f0;border-top:1px solid #aeaeae;cursor:pointer;text-align:center;font-weight:700;padding:5px 0;clear:left}.react-datepicker__portal{position:fixed;width:100vw;height:100vh;background-color:#000c;left:0;top:0;justify-content:center;align-items:center;display:flex;z-index:2147483647}.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:3rem;line-height:3rem}@media (max-width: 400px),(max-height: 550px){.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:2rem;line-height:2rem}}.react-datepicker__portal .react-datepicker__current-month,.react-datepicker__portal .react-datepicker-time__header{font-size:1.44rem}.react-datepicker__children-container{width:13.8rem;margin:.4rem;padding-right:.2rem;padding-left:.2rem;height:auto}.react-datepicker__aria-live{position:absolute;clip-path:circle(0);border:0;height:1px;margin:-1px;overflow:hidden;padding:0;width:1px;white-space:nowrap}.react-datepicker__calendar-icon{width:1em;height:1em;vertical-align:-.125em}:root{--background: #f8fafc;--surface: #fff;--text: #18181b;--text-muted: #6b7280;--primary: #6366f1;--primary-light: #e0e7ff;--secondary: #38bdf8;--accent: #ff6f91;--success: #10b981;--warning: #f59e42;--danger: #ef4444;--radius-lg: 20px;--radius-md: 12px;--radius-sm: 6px;--shadow-lg: 0 8px 32px #6366f133;--shadow-md: 0 2px 12px #6366f144;--transition: .22s cubic-bezier(.4,0,.2,1);--font-main: "Inter", "Segoe UI", Arial, sans-serif;--focus: #ff6f91}[data-theme=dark]{--background: #18181b;--surface: #23272f;--text: #f3f4f6;--text-muted: #a1a1aa;--primary: #818cf8;--primary-light: #23272f;--secondary: #38bdf8;--accent: #f472b6;--shadow-lg: 0 8px 32px #818cf833;--shadow-md: 0 2px 12px #818cf844}html,body{margin:0;padding:0;font-family:var(--font-main);background:var(--background);color:var(--text);min-height:100vh;scroll-behavior:smooth;text-align:center;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}#root,.app-root{min-height:100vh;display:flex;flex-direction:column;align-items:center;background:var(--background)}a{color:var(--primary);text-decoration:none;transition:color var(--transition)}a:hover,a:focus{color:var(--accent);text-decoration:underline;outline-offset:2px;outline:2px solid var(--accent)}h1,h2,h3,h4{font-weight:800;letter-spacing:-1px;margin-top:0;text-align:center;line-height:1.2}button,input,select,textarea{font-family:inherit;font-size:1rem;border-radius:var(--radius-md);border:1.5px solid #e5e7eb;padding:10px 14px;outline-offset:2px;transition:border-color var(--transition),background var(--transition),box-shadow var(--transition);margin:.25rem 0;box-sizing:border-box}button{cursor:pointer;background:var(--primary);color:var(--text-muted);color:var(--text-light);border:none;font-weight:600;box-shadow:var(--shadow-md);min-width:120px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;-webkit-user-select:none;user-select:none}button:hover,button:focus,.btn-disruptivo:hover,.menu-button:hover{background:linear-gradient(90deg,var(--secondary) 60%,var(--accent) 100%);outline:none;box-shadow:0 0 0 3px var(--focus)}button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.btn-disruptivo{background:linear-gradient(90deg,var(--primary) 60%,var(--secondary) 100%);color:#fff;font-weight:700;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:14px 0;font-size:1.1rem;width:100%;max-width:340px;margin:1rem auto}input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#f0f9ff;box-shadow:0 0 0 3px var(--focus)}input[type=checkbox],input[type=radio]{width:1.1em;height:1.1em;accent-color:var(--primary);margin-right:7px;cursor:pointer}::-webkit-scrollbar{width:10px;background:#e0e7ef}::-webkit-scrollbar-thumb{background:var(--primary);border-radius:8px}.header-gradient{background:linear-gradient(90deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;padding:2.5rem 0 1.2rem;border-bottom-left-radius:var(--radius-lg);border-bottom-right-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100vw;text-align:center}.topbar-center{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:1.2rem;flex-wrap:wrap}.header-content{display:flex;flex-direction:column;align-items:center;gap:1.2rem;width:100%;max-width:900px;margin:0 auto}.conjunto-title{font-size:2.1rem;font-weight:900;color:#fff;text-shadow:0 2px 8px #0003;justify-content:center}.subtitle{font-size:1.15rem;color:#e0e7ef;font-weight:600}.footer{margin-top:3rem;text-align:center;background:linear-gradient(90deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg);box-shadow:var(--shadow-lg);font-size:1.08rem;padding:1.2rem 0;width:100vw}.main-content{width:100vw;max-width:700px;margin:0 auto;padding:2.2rem 1rem 1.2rem;display:flex;flex-direction:column;align-items:center}.menu-container{margin:1.5rem 0;display:flex;justify-content:center;width:100vw}.filtros-form{width:100%;display:flex;flex-direction:column;align-items:center;margin-bottom:1.2rem}.filtros-grid{display:flex;flex-wrap:wrap;gap:1.2rem;justify-content:center;margin-bottom:1rem;width:100%}.filtro-item{display:flex;flex-direction:column;align-items:flex-start;min-width:140px;font-size:1em}.acciones-filtros{display:flex;gap:1rem;justify-content:center;margin-top:1rem}.resultados-table-container{width:100%;margin:0 auto;overflow-x:auto;max-height:500px;overflow-y:auto;border:1px solid #ccc;border-radius:var(--radius-md);box-shadow:var(--shadow-md)}.resultados-table,.registros-table{width:max-content;min-width:100%;border-collapse:collapse;margin-top:1.2rem;background:var(--surface);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin-left:auto;margin-right:auto}.resultados-table th,.registros-table th{background:var(--primary);color:#fff;font-weight:800;padding:10px 6px;text-align:center;position:sticky;top:0;z-index:10}.resultados-table td,.registros-table td{padding:10px 6px;text-align:center;border-bottom:1px solid #e5e7eb;font-size:1.02em}.resultados-table tr:last-child td,.registros-table tr:last-child td{border-bottom:none}.resultados-table tr:hover,.registros-table tr:hover{background:#f1f5f9}.thumbnail{width:38px;height:38px;object-fit:cover;border-radius:var(--radius-sm);box-shadow:0 2px 6px #6366f133}.sin-resultados{color:var(--text-muted);font-size:1.1em;text-align:center;padding:1.2em 0}.info-message,.error-message{margin-top:1rem;padding:12px 18px;border-radius:var(--radius-md);font-size:1.06em;font-weight:600;text-align:center;max-width:700px;word-wrap:break-word}.info-message{background:#e0ffe8;color:var(--success);border:1.5px solid #22c55e}.error-message{background:#fffbe6;color:var(--danger);border:1.5px solid #ffe58f}.modal-backdrop{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#18181bbf;display:flex;justify-content:center;align-items:center;z-index:9999}.modal-content{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;max-width:480px;width:90vw;max-height:90vh;overflow-y:auto;text-align:left}.modal-content h3{margin-top:0;margin-bottom:1rem;font-weight:800;font-size:1.5rem}.modal-form label{display:flex;flex-direction:column;margin-bottom:1rem;font-weight:600}.modal-form input[type=text],.modal-form input[type=email],.modal-form input[type=date],.modal-form select,.modal-form textarea{font-size:1rem;padding:8px 12px;border-radius:var(--radius-md);border:1.5px solid #d1d5db;margin-top:6px;resize:vertical}.modal-form input[type=checkbox]{width:1.2em;height:1.2em;margin-right:8px;accent-color:var(--primary);cursor:pointer}.modal-form .checkbox-label{display:flex;align-items:center;font-weight:600;margin-bottom:1rem}.acciones-modal{display:flex;justify-content:flex-end;gap:1rem}.save-btn,.cancel-btn{padding:10px 18px;border-radius:var(--radius-md);font-weight:700;font-size:1rem;cursor:pointer;border:none;min-width:100px;transition:background var(--transition)}.save-btn{background:var(--primary);color:var(--text-light)}.save-btn:hover,.save-btn:focus-visible{background:var(--secondary);outline:none;box-shadow:0 0 0 3px var(--focus)}.cancel-btn{background:#ccc;color:#333}.cancel-btn:hover,.cancel-btn:focus-visible{background:#999;outline:none;box-shadow:0 0 0 3px var(--focus)}:focus-visible{outline:3px solid var(--focus);outline-offset:3px}@media (max-width: 768px){.filtros-grid{flex-direction:column;align-items:center}.filtro-item{min-width:100%}.resultados-table-container{max-height:300px}}.emoji-selector{font-size:1.8rem;border:2px solid transparent;border-radius:var(--radius-md);padding:6px 12px;cursor:pointer;background:transparent;transition:border-color var(--transition)}.emoji-selector.selected,.emoji-selector:hover,.emoji-selector:focus-visible{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--focus)}.input-modern{font-size:1rem;padding:10px 12px;border-radius:var(--radius-md);border:1.5px solid #d1c4e9;transition:border-color var(--transition)}.input-modern:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--focus)}.input-error{border-color:var(--danger)}.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:120px;width:100%}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}.loader-spinner{width:48px;height:48px;border:6px solid #e0e0e0;border-top:6px solid var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-size:2rem}@media (prefers-reduced-motion: reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 
 
------ C:\parking-app\src\App.jsx -----
+----- C:\ThomasParking\ThomasParking\src\App.jsx -----
 
-// src/App.jsx
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
 // Páginas
@@ -61,10 +62,14 @@ import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
+import SignUp from './components/SignUp'; // Nuevo import
 
 // Componentes de layout
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
+// Hook para estado online/offline
+import useOnlineStatus from './hooks/useOnlineStatus';
 
 // Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
@@ -75,41 +80,45 @@ function ProtectedRoute({ user, allowedRoles, children }) {
   return children;
 }
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Mantener el usuario autenticado
-  useEffect(() => {
-    let mounted = true;
-    async function getSession() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (mounted) setUser(user || null);
-    }
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
-    };
-  }, []);
+function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
+  const location = useLocation();
+  // Rutas donde NO quieres mostrar el Navbar
+  const hideNavbarRoutes = ['/login', '/', '/registro']; // Agregada ruta de registro
 
   return (
-    <BrowserRouter>
-      <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+    <>
+      {!hideNavbarRoutes.includes(location.pathname) && (
+        <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      )}
+
+      {/* Indicador claro de estado offline */}
+      {!isOnline && (
+        <div className="offline-banner" role="status" aria-live="polite"
+          style={{
+            background: '#fff3cd',
+            color: '#856404',
+            padding: '10px 0',
+            textAlign: 'center',
+            fontWeight: 600,
+            fontSize: '1rem',
+            letterSpacing: '0.02em',
+            borderBottom: '1.5px solid #ffe58f',
+            zIndex: 100,
+            width: '100vw',
+            position: 'relative'
+          }}
+        >
+          <span role="img" aria-label="offline">⚡</span>
+          &nbsp;Modo offline: solo lectura. Edición y borrado están deshabilitados.
+        </div>
+      )}
+
       {/* Oculta el contenido principal cuando el menú móvil está abierto */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
-            {/* Ruta de login pública */}
             <Route path="/login" element={<Login />} />
-
-            {/* Rutas protegidas para cualquier usuario autenticado */}
+            <Route path="/registro" element={<SignUp />} /> {/* Nueva ruta */}
             <Route
               path="/registros"
               element={
@@ -153,7 +162,7 @@ export default function App() {
             <Route
               path="/usuarios"
               element={
-                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <ProtectedRoute user={user}>
                   <GestionUsuarios />
                 </ProtectedRoute>
               }
@@ -161,30 +170,65 @@ export default function App() {
             <Route
               path="/copropietarios"
               element={
-                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <ProtectedRoute user={user}>
                   <GestionCopropietarios />
                 </ProtectedRoute>
               }
             />
-            {/* Redirección por defecto */}
             <Route
               path="/"
               element={
                 user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
               }
             />
-            {/* Ruta catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
         </div>
       )}
+    </>
+  );
+}
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isOnline = useOnlineStatus();
+
+  // Mantener el usuario autenticado
+  useEffect(() => {
+    let mounted = true;
+    async function getSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (mounted) setUser(user || null);
+    }
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <AppRoutes
+        user={user}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        isOnline={isOnline}
+      />
     </BrowserRouter>
   );
 }
 
 
------ C:\parking-app\src\main.jsx -----
+----- C:\ThomasParking\ThomasParking\src\main.jsx -----
 
 // src/main.jsx
 import React from 'react'
@@ -221,7 +265,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 )
 
 
------ C:\parking-app\src\components\AuthGuard.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\AuthGuard.jsx -----
 
 // src/components/AuthGuard.jsx
 import React, { useState, useEffect } from 'react';
@@ -412,7 +456,7 @@ export default function AuthGuard({ requiredRole = null }) {
 }
 
 
------ C:\parking-app\src\components\CapturaCamara.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\CapturaCamara.jsx -----
 
 // src/components/CapturaCamara.jsx
 import React, { useState, useEffect, useRef } from 'react'
@@ -426,39 +470,57 @@ export default function CapturaCamara({ onCaptura }) {
   const [modoCamara, setModoCamara] = useState('environment')
   const [stream, setStream] = useState(null)
 
-  // Iniciar cámara
-  const iniciarCamara = async () => {
-    try {
-      const constraints = {
-        video: {
-          facingMode: modoCamara,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
-      setStream(mediaStream)
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-      }
-    } catch (err) {
-      setError(`Error de cámara: ${err.message}`)
+  // Evita scroll en body mientras la cámara está activa
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = originalOverflow
     }
-  }
+  }, [])
+
+  // Iniciar cámara
+  useEffect(() => {
+    let activo = true
+    const iniciarCamara = async () => {
+      try {
+        const constraints = {
+          video: {
+            facingMode: modoCamara,
+            width: { ideal: 220 },
+            height: { ideal: 165 }
+          },
+          audio: false
+        }
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+        if (activo) {
+          setStream(mediaStream)
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream
+          }
+        }
+      } catch (err) {
+        setError(`Error de cámara: ${err.message}`)
+      }
+    }
+    iniciarCamara()
+    return () => {
+      activo = false
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+    }
+    // eslint-disable-next-line
+  }, [modoCamara])
 
   // Capturar foto
   const capturarFoto = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
     canvas.toBlob(blob => {
       const file = new File([blob], 'foto-capturada.jpg', { type: 'image/jpeg' })
       setFoto(URL.createObjectURL(file))
@@ -471,16 +533,6 @@ export default function CapturaCamara({ onCaptura }) {
     setModoCamara(prev => prev === 'user' ? 'environment' : 'user')
   }
 
-  useEffect(() => {
-    iniciarCamara()
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
-    }
-    // eslint-disable-next-line
-  }, [modoCamara])
-
   if (error) return (
     <div className="error-camara">
       <Emoji symbol="📷" /> {error}
@@ -491,7 +543,23 @@ export default function CapturaCamara({ onCaptura }) {
   )
 
   return (
-    <div className="contenedor-camara">
+    <div
+      className="contenedor-camara"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: '#18181b',
+        zIndex: 9999,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       {!foto ? (
         <>
           <video
@@ -500,25 +568,28 @@ export default function CapturaCamara({ onCaptura }) {
             playsInline
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '220px',
+              aspectRatio: '4/3',
               borderRadius: '12px',
-              transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none'
+              background: '#222',
+              transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none',
+              boxShadow: '0 2px 16px #0006'
             }}
           />
-
-          <div className="controles-camara">
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button
               type="button"
               onClick={capturarFoto}
               className="btn-capturar"
+              style={{ minWidth: 90, fontSize: 18 }}
             >
               <Emoji symbol="📸" /> Capturar
             </button>
-
             <button
               type="button"
               onClick={cambiarCamara}
               className="btn-cambiar-camara"
+              style={{ minWidth: 90, fontSize: 18 }}
             >
               <Emoji symbol="🔄" /> Cambiar
             </button>
@@ -531,31 +602,32 @@ export default function CapturaCamara({ onCaptura }) {
             alt="Previsualización"
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '220px',
+              aspectRatio: '4/3',
               borderRadius: '12px',
-              border: '2px solid #e0e0e0'
+              border: '2px solid #e0e0e0',
+              boxShadow: '0 2px 16px #0006'
             }}
           />
-
-          <div className="acciones-foto">
+          <div style={{ marginTop: 16 }}>
             <button
               type="button"
               onClick={() => setFoto(null)}
               className="btn-reintentar"
+              style={{ minWidth: 120, fontSize: 18 }}
             >
               <Emoji symbol="🔄" /> Volver a tomar
             </button>
           </div>
         </>
       )}
-
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   )
 }
 
 
------ C:\parking-app\src\components\DetalleConsulta.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\DetalleConsulta.jsx -----
 
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -583,7 +655,7 @@ DetalleConsulta.propTypes = {
 export default DetalleConsulta;
 
 
------ C:\parking-app\src\components\Emoji.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Emoji.jsx -----
 
 // src/components/Emoji.jsx
 import React from 'react';
@@ -596,7 +668,7 @@ export default function Emoji({ symbol, label }) {
 }
 
 
------ C:\parking-app\src\components\ErrorBoundary.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\ErrorBoundary.jsx -----
 
 // src/components/ErrorBoundary.jsx
 import React from 'react'
@@ -665,7 +737,7 @@ ErrorBoundary.propTypes = {
 }
 
 
------ C:\parking-app\src\components\ErrorMessage.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\ErrorMessage.jsx -----
 
 // src/components/ErrorMessage.jsx
 import React from 'react'
@@ -726,7 +798,7 @@ export default function ErrorMessage({
 }
 
 
------ C:\parking-app\src\components\Filtros.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Filtros.jsx -----
 
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -751,7 +823,7 @@ Filtros.propTypes = {
 export default Filtros;
 
 
------ C:\parking-app\src\components\Footer.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Footer.jsx -----
 
 // src/components/Footer.jsx
 import React from 'react'
@@ -790,7 +862,7 @@ export default function Footer() {
 }
 
 
------ C:\parking-app\src\components\ListaRegistros.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\ListaRegistros.jsx -----
 
 // src/components/ListaRegistros.jsx
 import React, { useEffect, useState } from 'react'
@@ -811,6 +883,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
   const [editModal, setEditModal] = useState({ open: false, registro: null })
   const [editData, setEditData] = useState({})
   const [eliminandoAudio, setEliminandoAudio] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const isOnline = useOnlineStatus()
 
   // Cargar copropietarios
@@ -933,6 +1007,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
 
   const handleEditSave = async (e) => {
     e.preventDefault()
+    setSavingEdit(true)
     const id = editModal.registro.id
     const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50)
     let audioUrlFinal = editData.observacion_audio_url
@@ -946,6 +1021,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
         .upload(fileName, editData.nuevoAudio, { contentType: 'audio/webm' })
       if (uploadError) {
         setError('Error al subir el audio: ' + uploadError.message)
+        setSavingEdit(false)
         return
       }
       const { data: publicUrlData } = supabase
@@ -984,6 +1060,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
       setEditData({})
     } catch (error) {
       setError(error.message)
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -1019,6 +1097,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
 
   const handleDelete = async (registro) => {
     if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return
+    setDeleting(true)
     try {
       if (isOnline) {
         const { error } = await supabase
@@ -1037,6 +1116,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
       }
     } catch (err) {
       setError('Error eliminando registro: ' + err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -1182,7 +1263,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                         title="Editar"
                         onClick={() => handleEdit(reg)}
                         style={{ marginRight: 6 }}
-                        disabled={!isOnline}
+                        disabled={!isOnline || savingEdit}
                       >
                         <Emoji symbol="✏️" label="Editar" />
                       </button>
@@ -1190,6 +1271,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                         className="delete-btn"
                         title="Eliminar"
                         onClick={() => handleDelete(reg)}
+                        disabled={!isOnline || deleting}
                       >
                         <Emoji symbol="🗑️" label="Eliminar" />
                       </button>
@@ -1355,7 +1437,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                 <button
                   type="submit"
                   className="save-btn"
-                  disabled={!isOnline}
+                  disabled={!isOnline || savingEdit}
                 >
                   Guardar
                 </button>
@@ -1363,6 +1445,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
                   type="button"
                   className="cancel-btn"
                   onClick={() => setEditModal({ open: false, registro: null })}
+                  disabled={savingEdit}
                 >
                   Cancelar
                 </button>
@@ -1376,7 +1459,7 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
 }
 
 
------ C:\parking-app\src\components\Loader.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Loader.jsx -----
 
 // src/components/Loader.jsx
 import React from 'react'
@@ -1431,7 +1514,7 @@ export default function Loader({ fullScreen = false, text = "⏳ Cargando..." })
 }
 
 
------ C:\parking-app\src\components\LoadingOverlay.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\LoadingOverlay.jsx -----
 
 // src/components/LoadingOverlay.jsx
 import React from 'react'
@@ -1484,7 +1567,7 @@ export default function LoadingOverlay({ message = 'Cargando...', fullScreen = t
 }
 
 
------ C:\parking-app\src\components\LoadingScreen.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\LoadingScreen.jsx -----
 
 // src/components/LoadingScreen.jsx
 
@@ -1532,28 +1615,60 @@ export default function LoadingScreen({ message = 'Cargando...', fullScreen = fa
 }
 
 
------ C:\parking-app\src\components\Modal.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Modal.jsx -----
 
-import React from "react";
+// src/components/Modal.jsx
+import React, { useEffect } from "react";
 
+/**
+ * Modal reutilizable para toda la app.
+ * Props:
+ * - isOpen: boolean, controla si el modal está abierto
+ * - onClose: función, llamada al cerrar (clic fondo o botón cerrar)
+ * - children: contenido del modal
+ */
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   // Evita el scroll del fondo cuando el modal está abierto
-  React.useEffect(() => {
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => { document.body.style.overflow = originalOverflow; };
   }, []);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="modal-backdrop"
+      style={{
+        position: "fixed",
+        top: 0, left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "rgba(24,24,27,0.7)",
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-lg w-full relative"
+        className="modal-content"
+        style={{
+          background: "var(--surface, #fff)",
+          borderRadius: 20,
+          boxShadow: "0 8px 32px #6366f133",
+          padding: "2rem",
+          maxWidth: 480,
+          width: "90vw",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          textAlign: "left",
+          position: "relative"
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Botón de cerrar en la esquina superior derecha */}
@@ -1562,6 +1677,16 @@ const Modal = ({ isOpen, onClose, children }) => {
           className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
           aria-label="Cerrar modal"
           type="button"
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            background: "transparent",
+            border: "none",
+            fontSize: 28,
+            color: "#888",
+            cursor: "pointer"
+          }}
         >
           ×
         </button>
@@ -1574,13 +1699,52 @@ const Modal = ({ isOpen, onClose, children }) => {
 export default Modal;
 
 
------ C:\parking-app\src\components\Navbar.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\Navbar.jsx -----
 
 // src/components/Navbar.jsx
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Emoji from './Emoji';
+
+function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
+  return (
+    <nav
+      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4"
+      role="navigation"
+      aria-label="Menú principal móvil"
+    >
+      {navItems.map(item => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          onClick={handleNavClick}
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-6 py-4 rounded-lg font-medium text-2xl transition-colors focus:outline-none ${
+              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+            }`
+          }
+          aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+        >
+          <Emoji symbol={item.emoji} /> {item.label}
+        </NavLink>
+      ))}
+      {user && (
+        <div className="flex flex-col items-center mt-6">
+          <span className="text-white font-semibold text-base">{user.email}</span>
+          <span className="text-blue-200 text-sm">{user.user_metadata?.role || 'usuario'}</span>
+        </div>
+      )}
+      <button
+        onClick={handleLogout}
+        className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
+        aria-label="Cerrar sesión"
+      >
+        <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
+      </button>
+    </nav>
+  );
+}
 
 export default function Navbar({ user, menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
@@ -1606,97 +1770,48 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 h-16">
-        {/* Logo y título */}
-        <NavLink to="/" className="flex items-center space-x-2 text-white font-bold text-lg" onClick={handleNavClick}>
-          <Emoji symbol="🅿️" /> <span>ParkingApp</span>
-        </NavLink>
-
-        {/* Botón hamburguesa móvil */}
+      <div className="max-w-7xl mx-auto flex items-center px-4 h-16">
+        {/* IZQUIERDA: Logo y título */}
+        <div className="flex-shrink-0 flex items-center">
+          <NavLink
+            to="/"
+            className="flex items-center space-x-2 text-white font-bold text-lg"
+            onClick={handleNavClick}
+            aria-label="Inicio"
+          >
+            <Emoji symbol="🅿️" /> <span>ParkingApp</span>
+          </NavLink>
+        </div>
+        {/* Botón hamburguesa SIEMPRE visible */}
         <button
-          className="md:hidden flex items-center text-white focus:outline-none"
+          className="flex items-center justify-center text-white focus:outline-none ml-2 p-1"
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
+          type="button"
+          style={{ minWidth: 0, minHeight: 0, width: '32px', height: '32px', padding: '4px' }}
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round"
               d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
           </svg>
         </button>
-
-        {/* Menú horizontal (desktop) */}
-        <nav className="hidden md:flex items-center space-x-2">
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none ${
-                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-                }`
-              }
-              onClick={handleNavClick}
-            >
-              <Emoji symbol={item.emoji} /> {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Usuario y logout (desktop) */}
-        <div className="hidden md:flex items-center space-x-4">
-          {user && (
-            <div className="flex flex-col items-end mr-2">
-              <span className="text-white font-semibold text-sm leading-tight">{user.email}</span>
-              <span className="text-blue-200 text-xs">{user.user_metadata?.role || 'usuario'}</span>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
-          </button>
-        </div>
       </div>
-
       {/* Menú móvil overlay */}
       {menuOpen && (
-        <nav className="md:hidden fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4">
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                `flex items-center gap-2 px-6 py-4 rounded-lg font-medium text-2xl transition-colors focus:outline-none ${
-                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-                }`
-              }
-            >
-              <Emoji symbol={item.emoji} /> {item.label}
-            </NavLink>
-          ))}
-          {user && (
-            <div className="flex flex-col items-center mt-6">
-              <span className="text-white font-semibold text-base">{user.email}</span>
-              <span className="text-blue-200 text-sm">{user.user_metadata?.role || 'usuario'}</span>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
-          >
-            <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
-          </button>
-        </nav>
+        <NavMenuMobile
+          navItems={navItems}
+          user={user}
+          handleNavClick={handleNavClick}
+          handleLogout={handleLogout}
+        />
       )}
     </header>
   );
 }
 
 
------ C:\parking-app\src\components\ResumenRegistros.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\ResumenRegistros.jsx -----
 
 // src/components/ResumenRegistros.jsx
 import React from 'react'
@@ -1761,14 +1876,16 @@ export default function ResumenRegistros({ registros = [] }) {
 }
 
 
------ C:\parking-app\src\components\SelectorDeFoto.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\SelectorDeFoto.jsx -----
 
-// src/components/SelectorDeFoto.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import CapturaCamara from './CapturaCamara'
 
 export default function SelectorDeFoto({ onFileSelected }) {
-  const [modo, setModo] = useState('camara') // 'camara' o 'galeria'
+  // El modo por defecto es 'camara'
+  const [modo, setModo] = useState('camara')
+
+  // Opcional: si usas modal, abre el modal automáticamente aquí
 
   const handleFile = file => {
     onFileSelected(file)
@@ -1776,7 +1893,8 @@ export default function SelectorDeFoto({ onFileSelected }) {
 
   return (
     <div className="selector-foto">
-      <div className="modos-seleccion">
+      <div className="modos-seleccion" style={{ display: 'none' }}>
+        {/* Si no quieres mostrar botones, ocultar con display: 'none' */}
         <button
           type="button"
           onClick={() => setModo('camara')}
@@ -1792,7 +1910,7 @@ export default function SelectorDeFoto({ onFileSelected }) {
           🖼️ Subir Archivo
         </button>
       </div>
-
+      {/* Renderiza la cámara automáticamente */}
       {modo === 'camara' ? (
         <CapturaCamara onCaptura={handleFile} />
       ) : (
@@ -1811,7 +1929,93 @@ export default function SelectorDeFoto({ onFileSelected }) {
 }
 
 
------ C:\parking-app\src\components\SyncIndicator.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\SignUp.jsx -----
+
+import { useState } from 'react';
+import { supabase } from '../supabaseClient';
+
+export default function SignUp() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [rol, setRol] = useState('registrador');
+  const [loading, setLoading] = useState(false);
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // 1. Registrar usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nombre,
+            rol,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      // 2. El trigger automáticamente creará el registro en usuarios_app
+      alert('Registro exitoso! Verifica tu correo.');
+      
+    } catch (error) {
+      alert('Error: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSignUp} className="signup-form">
+      <div>
+        <label>Nombre completo:</label>
+        <input
+          type="text"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label>Correo electrónico:</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label>Contraseña:</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label>Rol:</label>
+        <select value={rol} onChange={(e) => setRol(e.target.value)}>
+          <option value="registrador">Registrador</option>
+          <option value="admin">Administrador</option>
+          <option value="copropietario">Copropietario</option>
+        </select>
+      </div>
+      <button type="submit" disabled={loading}>
+        {loading ? 'Registrando...' : 'Registrarse'}
+      </button>
+    </form>
+  );
+}
+
+
+----- C:\ThomasParking\ThomasParking\src\components\SyncIndicator.jsx -----
 
 import React from 'react';
 
@@ -1849,7 +2053,7 @@ export default function SyncIndicator({ syncStatus }) {
 }
 
 
------ C:\parking-app\src\components\TablaResultados.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\TablaResultados.jsx -----
 
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -1894,7 +2098,7 @@ TablaResultados.propTypes = {
 export default TablaResultados;
 
 
------ C:\parking-app\src\components\ThemeToggle.jsx -----
+----- C:\ThomasParking\ThomasParking\src\components\ThemeToggle.jsx -----
 
 // src/components/ThemeToggle.jsx
 import React from 'react';
@@ -1918,7 +2122,7 @@ export default function ThemeToggle() {
 }
 
 
------ C:\parking-app\src\context\ThemeContext.jsx -----
+----- C:\ThomasParking\ThomasParking\src\context\ThemeContext.jsx -----
 
 // src/context/ThemeContext.jsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
@@ -1981,7 +2185,7 @@ export function useTheme() {
 }
 
 
------ C:\parking-app\src\context\ViewContext.jsx -----
+----- C:\ThomasParking\ThomasParking\src\context\ViewContext.jsx -----
 
 // src/context/ViewContext.jsx
 import React, { createContext, useContext, useState } from 'react'
@@ -2007,7 +2211,7 @@ export const useView = () => {
 }
 
 
------ C:\parking-app\src\hooks\useHover.jsx -----
+----- C:\ThomasParking\ThomasParking\src\hooks\useHover.jsx -----
 
 import { useRef, useState, useEffect } from 'react';
 import React from 'react'
@@ -2036,7 +2240,7 @@ export default function useHover() {
 }
 
 
------ C:\parking-app\src\hooks\useOnlineStatus.jsx -----
+----- C:\ThomasParking\ThomasParking\src\hooks\useOnlineStatus.jsx -----
 
 // src/hooks/useOnlineStatus.jsx
 import { useState, useEffect } from 'react'
@@ -2056,7 +2260,7 @@ export default function useOnlineStatus() {
 }
 
 
------ C:\parking-app\src\pages\AcercaDe.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\AcercaDe.jsx -----
 
 // src/components/AcercaDe.jsx
 import Emoji from '../components/Emoji'
@@ -2096,7 +2300,71 @@ export default function AcercaDe() {
 }
 
 
------ C:\parking-app\src\pages\Consultas.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\CapturaFoto.jsx -----
+
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import CapturaCamara from '../components/CapturaCamara';
+
+export default function CapturaFoto() {
+  const [foto, setFoto] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Recibe la función para manejar el archivo desde la página anterior, si se usa navigate con state
+  const onEnviar = () => {
+    if (location.state && location.state.onFileSelected && foto) {
+      location.state.onFileSelected(foto);
+    }
+    navigate(-1); // Regresa a la página anterior
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#000',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{ width: '100%', maxWidth: 320 }}>
+        <CapturaCamara onCaptura={setFoto} />
+      </div>
+      {foto && (
+        <button
+          style={{
+            marginTop: 20,
+            padding: '12px 28px',
+            fontSize: '1.1rem',
+            background: '#38bdf8',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8
+          }}
+          onClick={onEnviar}
+        >
+          Enviar foto
+        </button>
+      )}
+      <button
+        style={{
+          marginTop: 16,
+          background: 'transparent',
+          color: '#fff',
+          border: 'none',
+          fontSize: 18
+        }}
+        onClick={() => navigate(-1)}
+      >
+        Cancelar
+      </button>
+    </div>
+  );
+}
+
+
+----- C:\ThomasParking\ThomasParking\src\pages\Consultas.jsx -----
 
 // src/pages/Consultas.jsx
 import React, { useState, useEffect } from 'react';
@@ -2106,7 +2374,7 @@ import Emoji from '../components/Emoji';
 import ResumenRegistros from '../components/ResumenRegistros';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import dayjs from 'dayjs';
-import { v4 as uuidv4 } from 'uuid'; // <--- Importa uuid
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Consultas() {
   const [filtros, setFiltros] = useState({
@@ -2204,7 +2472,7 @@ export default function Consultas() {
       filtrados = filtrados.filter(r => r.dependencia_id === copropietarioSeleccionado.id);
     }
     setResultados(filtrados);
-    setTimeout(() => setSearching(false), 500); // Feedback visual
+    setTimeout(() => setSearching(false), 500);
   };
 
   const handleChange = (e) => {
@@ -2262,7 +2530,6 @@ export default function Consultas() {
         .update({ ...editData, monto })
         .eq('id', id);
       if (error) throw error;
-      // Actualizar localmente
       const updated = todos.map(r => r.id === id ? { ...r, ...editData, monto } : r);
       setTodos(updated);
       setResultados(updated);
@@ -2349,7 +2616,7 @@ export default function Consultas() {
           >
             <option value="">Todas</option>
             {propiedades.map(prop => (
-              <option key={uuidv4()} value={prop}>{prop}</option>
+              <option key={prop} value={prop}>{prop}</option>
             ))}
           </select>
         </label>
@@ -2364,7 +2631,7 @@ export default function Consultas() {
           >
             <option value="">Todas</option>
             {unidadesFiltradas.map(unidad => (
-              <option key={uuidv4()} value={unidad}>{unidad}</option>
+              <option key={unidad} value={unidad}>{unidad}</option>
             ))}
           </select>
         </label>
@@ -2483,7 +2750,7 @@ export default function Consultas() {
                       className="delete-btn"
                       onClick={() => handleDelete(reg)}
                       title="Eliminar"
-                      disabled={deleting}
+                      disabled={!isOnline || deleting}
                     >
                       {deleting ? <Loader text="" /> : <Emoji symbol="🗑️" label="Eliminar" />}
                     </button>
@@ -2618,7 +2885,7 @@ export default function Consultas() {
 }
 
 
------ C:\parking-app\src\pages\DescargoGestion.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\DescargoGestion.jsx -----
 
 import React, { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -3300,7 +3567,7 @@ export default function DescargoGestion() {
 }
 
 
------ C:\parking-app\src\pages\GestionCopropietarios.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\GestionCopropietarios.jsx -----
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
@@ -3465,7 +3732,7 @@ export default function GestionCopropietarios() {
 }
 
 
------ C:\parking-app\src\pages\GestionUsuarios.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\GestionUsuarios.jsx -----
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -3762,7 +4029,7 @@ export default function GestionUsuarios() {
 }
 
 
------ C:\parking-app\src\pages\Login.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\Login.jsx -----
 
 // src/pages/Login.jsx
 import React, { useState } from "react";
@@ -3909,7 +4176,7 @@ export default function Login() {
 }
 
 
------ C:\parking-app\src\pages\RegistroParqueo.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\RegistroParqueo.jsx -----
 
 // src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
@@ -3929,19 +4196,33 @@ export default function RegistroParqueo() {
   const [submitting, setSubmitting] = useState(false);
   const isOnline = useOnlineStatus();
 
-  // Estado del formulario
+  // Estado para manejar la foto y su previsualización
+  const [foto, setFoto] = useState(null);
+  const [preview, setPreview] = useState(null);
+
+  // Estado principal del formulario
   const [formData, setFormData] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
-    fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'), // Solo fecha
+    fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
     dependencia_id: '',
     observaciones: '',
-    foto: null,
-    audio: null,
-    gratis: false
+    gratis: false,
+    audio: null
   });
 
-  // Cargar copropietarios al montar
+  // Generar previsualización de la foto
+  useEffect(() => {
+    if (!foto) {
+      setPreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(foto);
+    setPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [foto]);
+
+  // Cargar lista de copropietarios
   useEffect(() => {
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
@@ -3958,6 +4239,7 @@ export default function RegistroParqueo() {
     fetchCopropietarios();
   }, []);
 
+  // Manejar cambios en los inputs del formulario
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -3966,70 +4248,87 @@ export default function RegistroParqueo() {
     }));
   };
 
+  // Manejar la selección de foto (desde cámara o archivo)
+  const handleFileSelected = (file) => {
+    setFoto(file);
+  };
+
+  // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
     try {
-      // 1. Obtener usuario_app_id correspondiente
+      // 1. Subir foto si existe
+      let fotoUrl = '';
+      if (foto) {
+        const nombreFoto = `foto_${Date.now()}_${formData.placa_vehiculo}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('evidencias-parqueadero')
+          .upload(nombreFoto, foto);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('evidencias-parqueadero')
+          .getPublicUrl(nombreFoto);
+        fotoUrl = urlData.publicUrl;
+      }
+
+      // 2. Subir audio si existe
+      let audioUrl = '';
+      if (formData.audio) {
+        const nombreAudio = `audio_${Date.now()}_${formData.placa_vehiculo}.webm`;
+        const { error: audioError } = await supabase.storage
+          .from('evidencias-parqueadero')
+          .upload(nombreAudio, formData.audio);
+        
+        if (audioError) throw audioError;
+        
+        const { data: audioUrlData } = supabase.storage
+          .from('evidencias-parqueadero')
+          .getPublicUrl(nombreAudio);
+        audioUrl = audioUrlData.publicUrl;
+      }
+
+      // 3. Obtener ID del usuario
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: usuarioApp, error: userError } = await supabase
+      const { data: usuarioApp } = await supabase
         .from('usuarios_app')
         .select('id')
         .eq('email', user.email)
         .single();
 
-      if (userError || !usuarioApp) throw new Error('Usuario no encontrado en registro principal');
+      if (!usuarioApp) throw new Error('Usuario no encontrado');
 
-      // 2. Subir archivos multimedia
-      let fotoUrl = '';
-      if (formData.foto) {
-        const fotoName = `foto_${Date.now()}_${formData.placa_vehiculo}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from('evidencias-parqueadero')
-          .upload(fotoName, formData.foto);
-        
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(fotoName);
-        fotoUrl = urlData.publicUrl;
-      }
-
-      let audioUrl = '';
-      if (formData.audio) {
-        const audioName = `audio_${Date.now()}_${formData.placa_vehiculo}.webm`;
-        const { error: audioError } = await supabase.storage
-          .from('evidencias-parqueadero')
-          .upload(audioName, formData.audio);
-        
-        if (audioError) throw audioError;
-        const { data: audioUrlData } = supabase.storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(audioName);
-        audioUrl = audioUrlData.publicUrl;
-      }
-
-      // 3. Insertar registro
+      // 4. Insertar registro en la base de datos
       const { error: insertError } = await supabase
         .from('registros_parqueadero')
         .insert([{
-          placa_vehiculo: formData.placa_vehiculo,
-          tipo_vehiculo: formData.tipo_vehiculo,
-          fecha_hora_ingreso: formData.fecha_hora_ingreso,
-          dependencia_id: formData.dependencia_id,
-          usuario_id: usuarioApp.id,
-          observaciones: formData.observaciones,
+          ...formData,
           foto_url: fotoUrl,
           observacion_audio_url: audioUrl,
           monto: formData.gratis ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          gratis: formData.gratis
+          usuario_id: usuarioApp.id,
+          fecha_hora_ingreso: formData.fecha_hora_ingreso
         }]);
 
       if (insertError) throw insertError;
 
+      // 5. Redirigir y limpiar formulario
       navigate('/consultas', { state: { success: true } });
+      setFormData({
+        placa_vehiculo: '',
+        tipo_vehiculo: 'carro',
+        fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
+        dependencia_id: '',
+        observaciones: '',
+        gratis: false,
+        audio: null
+      });
+      setFoto(null);
+      
     } catch (err) {
       setError(`Error registrando parqueo: ${err.message}`);
     } finally {
@@ -4044,73 +4343,89 @@ export default function RegistroParqueo() {
       <h2><Emoji symbol="📝" /> Registro de Parqueo</h2>
 
       <form onSubmit={handleSubmit} className="form-registro">
-        {/* Campo de fecha (solo fecha) */}
-        <label>
-          <Emoji symbol="📅" /> Fecha de Ingreso:
-          <input
-            type="date"
-            name="fecha_hora_ingreso"
-            value={formData.fecha_hora_ingreso}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        {/* Campos del formulario */}
+        <div className="grid-form">
+          <label>
+            <Emoji symbol="📅" /> Fecha de Ingreso:
+            <input
+              type="date"
+              name="fecha_hora_ingreso"
+              value={formData.fecha_hora_ingreso}
+              onChange={handleChange}
+              required
+            />
+          </label>
 
-        {/* Placa del vehículo */}
-        <label>
-          <Emoji symbol="🚗" /> Placa del Vehículo:
-          <input
-            type="text"
-            name="placa_vehiculo"
-            value={formData.placa_vehiculo}
-            onChange={handleChange}
-            pattern="[A-Za-z0-9]{6,8}"
-            title="Formato de placa válido (6-8 caracteres alfanuméricos)"
-            required
-          />
-        </label>
+          <label>
+            <Emoji symbol="🚗" /> Placa del Vehículo:
+            <input
+              type="text"
+              name="placa_vehiculo"
+              value={formData.placa_vehiculo}
+              onChange={handleChange}
+              pattern="[A-Za-z0-9]{6,8}"
+              title="Formato de placa válido (6-8 caracteres alfanuméricos)"
+              required
+            />
+          </label>
 
-        {/* Tipo de vehículo */}
-        <label>
-          <Emoji symbol="🚦" /> Tipo de Vehículo:
-          <select
-            name="tipo_vehiculo"
-            value={formData.tipo_vehiculo}
-            onChange={handleChange}
-            required
-          >
-            <option value="carro">Carro 🚗</option>
-            <option value="moto">Moto 🏍️</option>
-          </select>
-        </label>
+          <label>
+            <Emoji symbol="🚦" /> Tipo de Vehículo:
+            <select
+              name="tipo_vehiculo"
+              value={formData.tipo_vehiculo}
+              onChange={handleChange}
+              required
+            >
+              <option value="carro">Carro 🚗</option>
+              <option value="moto">Moto 🏍️</option>
+            </select>
+          </label>
 
-        {/* Selección de copropietario */}
-        <label>
-          <Emoji symbol="🏠" /> Copropietario:
-          <select
-            name="dependencia_id"
-            value={formData.dependencia_id}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Seleccione un copropietario...</option>
-            {copropietarios.map(cop => (
-              <option key={cop.id} value={cop.id}>
-                {cop.nombre} ({cop.propiedad} - {cop.unidad_asignada})
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            <Emoji symbol="🏠" /> Copropietario:
+            <select
+              name="dependencia_id"
+              value={formData.dependencia_id}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Seleccione un copropietario...</option>
+              {copropietarios.map(cop => (
+                <option key={cop.id} value={cop.id}>
+                  {cop.nombre} ({cop.propiedad} - {cop.unidad_asignada})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        {/* Selector de foto */}
-        <label>
-          <Emoji symbol="📷" /> Evidencia Fotográfica:
-          <SelectorDeFoto
-            onFileSelected={(file) => setFormData(prev => ({ ...prev, foto: file }))}
-          />
-        </label>
+        {/* Selector de foto con previsualización */}
+        <div className="seccion-foto">
+          <label>
+            <Emoji symbol="📷" /> Evidencia Fotográfica:
+            <SelectorDeFoto onFileSelected={handleFileSelected} />
+          </label>
+          
+          {preview && (
+            <div className="preview-container">
+              <img
+                src={preview}
+                alt="Previsualización"
+                className="thumbnail"
+              />
+              <button
+                type="button"
+                onClick={() => setFoto(null)}
+                className="btn-eliminar-foto"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* Grabación de audio */}
+        {/* Campo de audio */}
         <label>
           <Emoji symbol="🎙️" /> Observación de Audio:
           <input
@@ -4123,7 +4438,7 @@ export default function RegistroParqueo() {
           />
         </label>
 
-        {/* Campo de observaciones */}
+        {/* Observaciones */}
         <label>
           <Emoji symbol="📝" /> Observaciones:
           <textarea
@@ -4135,7 +4450,7 @@ export default function RegistroParqueo() {
           />
         </label>
 
-        {/* Checkbox de gratis */}
+        {/* Checkbox de parqueo gratis */}
         <label className="checkbox-label">
           <input
             type="checkbox"
@@ -4168,7 +4483,7 @@ export default function RegistroParqueo() {
 }
 
 
------ C:\parking-app\src\pages\ResumenRecaudo.jsx -----
+----- C:\ThomasParking\ThomasParking\src\pages\ResumenRecaudo.jsx -----
 
 // src/components/ResumenRecaudo.jsx
 import React, { useState, useEffect } from 'react'
@@ -4526,7 +4841,7 @@ export default function ResumenRecaudo({ refreshKey }) {
 }
 
 
------ C:\parking-app\src\providers\QueryClientProvider.jsx -----
+----- C:\ThomasParking\ThomasParking\src\providers\QueryClientProvider.jsx -----
 
 // src/providers/QueryClientProvider.jsx
 import React from 'react'
@@ -4566,96 +4881,52 @@ export default function MyQueryClientProvider({ children }) {
 }
 
 
------ C:\parking-app\src\styles\global.css -----
+----- C:\ThomasParking\ThomasParking\src\styles\global.css -----
 
-/* src/styles/global.css */
-/* Fuentes modernas y disruptivas */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-/* Variables base: diseño, colores, tipografía */
 :root {
-  --max-width: 1400px;
-  --radius-lg: 20px;
-  --radius-base: 12px;
-  --radius-sm: 6px;
-  --transition: cubic-bezier(0.4, 0, 0.2, 1) 0.18s;
-
-  /* Espaciado */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-
-  /* Colores principales */
+  --background: #f8fafc;
+  --surface: #fff;
+  --text: #18181b;
+  --text-muted: #6b7280;
   --primary: #6366f1;
-  --primary-dark: #4f46e5;
   --primary-light: #e0e7ff;
   --secondary: #38bdf8;
   --accent: #ff6f91;
-  --surface: #fff;
-  --background: #f8fafc;
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-700: #334155;
-  --neutral-900: #0f172a;
-  --text: #18181b;
-  --text-muted: #6b7280;
-  --text-light: #fff;
-
-  /* Feedback */
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #3b82f6;
-
-  /* Sombra */
+  --success: #10b981;
+  --warning: #f59e42;
+  --danger: #ef4444;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 6px;
   --shadow-lg: 0 8px 32px #6366f133;
   --shadow-md: 0 2px 12px #6366f144;
-
-  /* Tipografía */
-  --font-main: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-
-  /* Focus */
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
 }
 
-/* Modo oscuro disruptivo */
-[data-theme='dark'], .dark {
+[data-theme=dark] {
+  --background: #18181b;
+  --surface: #23272f;
+  --text: #f3f4f6;
+  --text-muted: #a1a1aa;
   --primary: #818cf8;
-  --primary-dark: #6366f1;
   --primary-light: #23272f;
   --secondary: #38bdf8;
   --accent: #f472b6;
-  --surface: #23272f;
-  --background: #18181b;
-  --neutral-50: #23272f;
-  --neutral-100: #334155;
-  --neutral-900: #f3f4f6;
-  --text: #f3f4f6;
-  --text-muted: #a1a1aa;
-  --text-light: #fff;
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
 }
 
-/* Reset y base */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-}
-
 html, body {
+  margin: 0;
+  padding: 0;
   font-family: var(--font-main);
   background: var(--background);
   color: var(--text);
   min-height: 100vh;
   scroll-behavior: smooth;
+  text-align: center;
   transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -4669,7 +4940,7 @@ html, body {
   background: var(--background);
 }
 
-/* Links */
+/* Enlaces */
 a {
   color: var(--primary);
   text-decoration: none;
@@ -4682,84 +4953,63 @@ a:hover, a:focus {
   outline: 2px solid var(--accent);
 }
 
-/* Tipografía avanzada */
+/* Títulos */
 h1, h2, h3, h4 {
   font-weight: 800;
   letter-spacing: -1px;
   margin-top: 0;
-  line-height: 1.2;
   text-align: center;
-}
-h1 { font-size: 2.5rem; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.2rem; }
-
-/* Botones modernos y disruptivos */
-button, .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-base);
-  font-weight: 700;
-  font-size: 1rem;
-  background: var(--primary);
-  color: var(--text-light);
-  border: none;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  min-width: 120px;
-  min-height: 44px;
-  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
-  user-select: none;
-}
-button:hover, .button:hover, button:focus, .button:focus {
-  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
-  transform: translateY(-2px) scale(1.03);
-}
-button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-}
-button:disabled, .button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  background: #ccc;
-  color: #888;
+  line-height: 1.2;
 }
 
-/* Botón disruptivo especial */
-.btn-disruptivo {
-  background: linear-gradient(90deg, var(--primary) 60%, var(--secondary) 100%);
-  color: #fff;
-  font-weight: 700;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 14px 0;
-  font-size: 1.1rem;
-  width: 100%;
-  max-width: 340px;
-  margin: 1rem auto;
-}
-
-/* Inputs y formularios */
-input, select, textarea {
+/* Formularios y botones */
+button, input, select, textarea {
   font-family: inherit;
   font-size: 1rem;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-md);
   border: 1.5px solid #e5e7eb;
   padding: 10px 14px;
   outline-offset: 2px;
   transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
   margin: .25rem 0;
   box-sizing: border-box;
-  background: var(--surface);
-  color: var(--text);
 }
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  min-width: 120px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+button:hover, button:focus {
+  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+/* Botón hamburguesa pequeño */
+button[aria-label="Abrir menú"], button[aria-label="Cerrar menú"], .btn-hamburguesa {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 4px !important;
+  box-shadow: none !important;
+}
+
+/* Inputs */
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary);
   background: #f0f9ff;
@@ -4773,7 +5023,7 @@ input[type=checkbox], input[type=radio] {
   cursor: pointer;
 }
 
-/* Scrollbar moderno */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
   background: #e0e7ef;
@@ -4783,133 +5033,39 @@ input[type=checkbox], input[type=radio] {
   border-radius: 8px;
 }
 
-/* Header y Footer disruptivos */
-.header-gradient {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-  color: #fff;
-  padding: 2.5rem 0 1.2rem;
-  border-bottom-left-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  width: 100vw;
-  text-align: center;
-}
-.footer {
-  margin-top: 3rem;
-  text-align: center;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-  color: #fff;
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  font-size: 1.08rem;
-  padding: 1.2rem 0;
-  width: 100vw;
-}
-
-/* Tarjetas y contenedores */
-.card {
-  background: var(--surface);
-  border-radius: var(--radius-base);
-  padding: var(--space-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--neutral-100);
-  margin-bottom: var(--space-lg);
-}
-
-/* Tablas responsivas y disruptivas */
-.table-container, .resultados-table-container, .registros-table-wrapper {
-  overflow-x: auto;
-  border-radius: var(--radius-base);
-  border: 1px solid var(--neutral-100);
-  box-shadow: var(--shadow-md);
-}
-.table, .resultados-table, .registros-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-  background: var(--surface);
-  border-radius: var(--radius-base);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-}
-.table th, .resultados-table th, .registros-table th {
-  background: var(--primary);
-  color: #fff;
-  padding: 12px 8px;
-  text-align: center;
-  font-weight: 800;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.table td, .resultados-table td, .registros-table td {
-  padding: 10px 6px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: center;
-  font-size: 1.02em;
-}
-.table tr:last-child td, .resultados-table tr:last-child td, .registros-table tr:last-child td {
-  border-bottom: none;
-}
-.table tr:hover, .resultados-table tr:hover, .registros-table tr:hover {
-  background: #f1f5f9;
-}
-.sin-resultados {
-  color: var(--text-muted);
-  font-size: 1.1em;
-  text-align: center;
-  padding: 1.2em 0;
-}
-
-/* Miniaturas y thumbnails */
+/* Thumbnails */
 .thumbnail {
   width: 38px;
   height: 38px;
   object-fit: cover;
   border-radius: var(--radius-sm);
   box-shadow: 0 2px 6px #6366f133;
-  border: 2px solid var(--primary-light);
-  transition: transform 0.3s;
-}
-.thumbnail:hover {
-  transform: scale(1.1);
 }
 
-/* Modales y overlays */
-.modal-backdrop, .modal-overlay {
+/* Modal */
+.modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(24, 24, 27, 0.7);
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: #18181bbf;
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 1000;
+  align-items: center;
+  z-index: 9999;
 }
 .modal-content {
   background: var(--surface);
-  padding: var(--space-lg);
   border-radius: var(--radius-lg);
-  max-width: 90vw;
-  width: 500px;
   box-shadow: var(--shadow-lg);
+  padding: 2rem;
+  max-width: 480px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
   text-align: left;
-  position: relative;
-}
-.modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-weight: 800;
-  font-size: 1.5rem;
 }
 
-/* Loader y feedback */
-.loader, .loader-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+/* Loader */
 .loader-spinner {
   width: 48px;
   height: 48px;
@@ -4918,6 +5074,9 @@ input[type=checkbox], input[type=radio] {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 2rem;
 }
 @keyframes spin {
@@ -4925,128 +5084,33 @@ input[type=checkbox], input[type=radio] {
   100% { transform: rotate(360deg);}
 }
 
-/* Animaciones clave */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px);}
-  to { opacity: 1; transform: translateY(0);}
-}
-.fade-in {
-  animation: fadeIn 0.3s var(--transition);
+/* Responsive helpers */
+@media (max-width: 768px) {
+  .filtros-grid { flex-direction: column; align-items: center; }
+  .filtro-item { min-width: 100%; }
+  .resultados-table-container { max-height: 300px; }
 }
 
-/* Responsive y pragmático */
-@media (max-width: 900px) {
-  .table, .resultados-table, .registros-table {
-    min-width: 600px;
-  }
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
+/* Otros estilos útiles */
+.sin-resultados {
+  color: var(--text-muted);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 1.2em 0;
 }
-@media (max-width: 600px) {
-  .table, .resultados-table, .registros-table {
-    min-width: 400px;
-  }
-  .modal-content {
-    width: 98vw;
-    padding: var(--space-md);
-  }
-}
-
-/* Selector de tema disruptivo */
-.theme-toggle-select {
-  border-radius: var(--radius-base);
-  padding: 6px 12px;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text);
-  border: 1.5px solid #d1c4e9;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-  margin-left: 10px;
-}
-.theme-toggle-select:focus {
-  border-color: var(--primary);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-
-/* Emoji accesible */
-.emoji-selector {
-  font-size: 1.8rem;
-  border: 2px solid transparent;
-  border-radius: var(--radius-base);
-  padding: 6px 12px;
-  cursor: pointer;
-  background: transparent;
-  transition: border-color var(--transition);
-}
-.emoji-selector.selected, .emoji-selector:hover, .emoji-selector:focus-visible {
-  border-color: var(--primary);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-
-/* Utilidades */
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-muted { color: var(--text-muted); }
-.font-mono { font-family: var(--font-mono); }
-.rounded { border-radius: var(--radius-base); }
-.shadow { box-shadow: var(--shadow-md); }
-.bg-surface { background: var(--surface); }
-.bg-primary { background: var(--primary); color: #fff; }
-.bg-accent { background: var(--accent); color: #fff; }
-.p-2 { padding: var(--space-sm); }
-.p-4 { padding: var(--space-md); }
-.mt-2 { margin-top: var(--space-sm); }
-.mt-4 { margin-top: var(--space-md); }
-.mb-2 { margin-bottom: var(--space-sm); }
-.mb-4 { margin-bottom: var(--space-md); }
-.mx-auto { margin-left: auto; margin-right: auto; }
-
-/* Disruptivo: feedback de error/info */
-.info-message, .error-message {
+.error-message {
+  background: #fffbe6;
+  color: var(--danger);
+  border: 1.5px solid #ffe58f;
   margin-top: 1rem;
   padding: 12px 18px;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-md);
   font-size: 1.06em;
   font-weight: 600;
   text-align: center;
   max-width: 700px;
   word-wrap: break-word;
 }
-.info-message {
-  background: #e0ffe8;
-  color: var(--success);
-  border: 1.5px solid #22c55e;
-}
-.error-message {
-  background: #fffbe6;
-  color: var(--error);
-  border: 1.5px solid #ffe58f;
-}
 
-/* Selector de tema para ThemeToggle.jsx */
-.theme-toggle-select {
-  min-width: 120px;
-  margin-left: 10px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1.5px solid #d1c4e9;
-  border-radius: var(--radius-base);
-  font-weight: 600;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.theme-toggle-select:focus {
-  border-color: var(--primary);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-
-ul.navbar-inline > li {
-  display: inline-block;
-  padding: 0 16px;
-}
-ul.navbar-inline > li + li {
-  border-left: 2px solid #fff;
-}
-
+/* Opcional: para que el navbar no tape el contenido al hacer scroll */
+.pt-16 { padding-top: 4rem !important; }
