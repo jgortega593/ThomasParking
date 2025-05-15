@@ -1,4 +1,3 @@
-// src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
@@ -15,10 +14,7 @@ export default function RegistroParqueo() {
   const [copropietarios, setCopropietarios] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const isOnline = useOnlineStatus();
-
-  // Estado para múltiples archivos
-  const [archivos, setArchivos] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  const [previewFoto, setPreviewFoto] = useState(null);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -27,20 +23,21 @@ export default function RegistroParqueo() {
     fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
     dependencia_id: '',
     observaciones: '',
-    gratis: false,
-    audio: null
+    foto: null,
+    audio: null,
+    gratis: false
   });
 
-  // Generar miniaturas
+  // Generar miniatura de la foto
   useEffect(() => {
-    if (!archivos || archivos.length === 0) {
-      setPreviews([]);
+    if (!formData.foto) {
+      setPreviewFoto(null);
       return;
     }
-    const urls = archivos.map(file => URL.createObjectURL(file));
-    setPreviews(urls);
-    return () => urls.forEach(url => URL.revokeObjectURL(url));
-  }, [archivos]);
+    const url = URL.createObjectURL(formData.foto);
+    setPreviewFoto(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.foto]);
 
   // Cargar copropietarios al montar
   useEffect(() => {
@@ -67,14 +64,11 @@ export default function RegistroParqueo() {
     }));
   };
 
-  // Manejar selección de múltiples archivos
   const handleFileSelected = (file) => {
-    setArchivos(prev => [...prev, file]);
-  };
-
-  // Eliminar imagen antes de enviar
-  const handleRemove = (idx) => {
-    setArchivos(prev => prev.filter((_, i) => i !== idx));
+    setFormData(prev => ({
+      ...prev,
+      foto: file
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -94,51 +88,28 @@ export default function RegistroParqueo() {
       if (!usuarioApp) throw new Error('Usuario no encontrado');
 
       // 2. Subir archivos
-      const fotosUrls = [];
-      for (const file of archivos) {
-        const nombre = `foto_${Date.now()}_${file.name}`;
+      let fotoUrl = '';
+      if (formData.foto) {
+        const fotoName = `foto_${Date.now()}_${formData.placa_vehiculo}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('evidencias-parqueadero')
-          .upload(nombre, file);
+          .upload(fotoName, formData.foto);
         
         if (uploadError) throw uploadError;
-        
         const { data: urlData } = supabase.storage
           .from('evidencias-parqueadero')
-          .getPublicUrl(nombre);
-        fotosUrls.push(urlData.publicUrl);
+          .getPublicUrl(fotoName);
+        fotoUrl = urlData.publicUrl;
       }
 
-      // 3. Subir audio si existe
-      let audioUrl = '';
-      if (formData.audio) {
-        const audioName = `audio_${Date.now()}_${formData.placa_vehiculo}.webm`;
-        const { error: audioError } = await supabase.storage
-          .from('evidencias-parqueadero')
-          .upload(audioName, formData.audio);
-        
-        if (audioError) throw audioError;
-        
-        const { data: audioUrlData } = supabase.storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(audioName);
-        audioUrl = audioUrlData.publicUrl;
-      }
-
-      // 4. Insertar registro
+      // 3. Insertar registro
       const { error: insertError } = await supabase
         .from('registros_parqueadero')
         .insert([{
-          placa_vehiculo: formData.placa_vehiculo,
-          tipo_vehiculo: formData.tipo_vehiculo,
-          fecha_hora_ingreso: formData.fecha_hora_ingreso,
-          dependencia_id: formData.dependencia_id,
-          usuario_id: usuarioApp.id,
-          observaciones: formData.observaciones,
-          foto_url: fotosUrls,  // Array de URLs
-          observacion_audio_url: audioUrl,
+          ...formData,
+          foto_url: fotoUrl,
           monto: formData.gratis ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          gratis: formData.gratis
+          usuario_id: usuarioApp.id
         }]);
 
       if (insertError) throw insertError;
@@ -216,58 +187,29 @@ export default function RegistroParqueo() {
           </select>
         </label>
 
-        {/* Selector de fotos múltiples */}
+        {/* Selector de foto con miniatura */}
         <label>
           <Emoji symbol="📷" /> Evidencia Fotográfica:
           <SelectorDeFoto 
             onFileSelected={handleFileSelected}
-            multiple  // Nueva prop para permitir múltiples selecciones
+            autoOpen={true}
           />
+          {previewFoto && (
+            <div style={{ marginTop: 10 }}>
+              <img
+                src={previewFoto}
+                alt="Previsualización"
+                style={{
+                  width: 70,
+                  height: 70,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  border: '1.5px solid #eee'
+                }}
+              />
+            </div>
+          )}
         </label>
-
-        {/* Previsualización de imágenes */}
-        {previews.length > 0 && (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-            {previews.map((url, idx) => (
-              <div key={idx} style={{ position: 'relative', width: 70, height: 70 }}>
-                <img
-                  src={url}
-                  alt={`preview-${idx}`}
-                  style={{
-                    width: 70,
-                    height: 70,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    border: '1.5px solid #eee'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemove(idx)}
-                  style={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    background: '#dc2626',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: 20,
-                    height: 20,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                  }}
-                  title="Eliminar imagen"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Grabación de audio */}
         <label>
