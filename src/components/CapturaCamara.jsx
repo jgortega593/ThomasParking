@@ -10,39 +10,57 @@ export default function CapturaCamara({ onCaptura }) {
   const [modoCamara, setModoCamara] = useState('environment')
   const [stream, setStream] = useState(null)
 
-  // Iniciar cámara
-  const iniciarCamara = async () => {
-    try {
-      const constraints = {
-        video: {
-          facingMode: modoCamara,
-          width: { ideal: 220 }, // Más pequeño para móvil
-          height: { ideal: 165 }
-        },
-        audio: false
-      }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
-      setStream(mediaStream)
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-      }
-    } catch (err) {
-      setError(`Error de cámara: ${err.message}`)
+  // Evita scroll en body mientras la cámara está activa
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = originalOverflow
     }
-  }
+  }, [])
+
+  // Iniciar cámara
+  useEffect(() => {
+    let activo = true
+    const iniciarCamara = async () => {
+      try {
+        const constraints = {
+          video: {
+            facingMode: modoCamara,
+            width: { ideal: 220 },
+            height: { ideal: 165 }
+          },
+          audio: false
+        }
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+        if (activo) {
+          setStream(mediaStream)
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream
+          }
+        }
+      } catch (err) {
+        setError(`Error de cámara: ${err.message}`)
+      }
+    }
+    iniciarCamara()
+    return () => {
+      activo = false
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+    }
+    // eslint-disable-next-line
+  }, [modoCamara])
 
   // Capturar foto
   const capturarFoto = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
     canvas.toBlob(blob => {
       const file = new File([blob], 'foto-capturada.jpg', { type: 'image/jpeg' })
       setFoto(URL.createObjectURL(file))
@@ -54,16 +72,6 @@ export default function CapturaCamara({ onCaptura }) {
   const cambiarCamara = () => {
     setModoCamara(prev => prev === 'user' ? 'environment' : 'user')
   }
-
-  useEffect(() => {
-    iniciarCamara()
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
-    }
-    // eslint-disable-next-line
-  }, [modoCamara])
 
   if (error) return (
     <div className="error-camara">
@@ -78,13 +86,18 @@ export default function CapturaCamara({ onCaptura }) {
     <div
       className="contenedor-camara"
       style={{
-        width: '100%',
-        maxWidth: 240,
-        margin: '0 auto',
-        padding: 0,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: '#18181b',
+        zIndex: 9999,
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}
     >
       {!foto ? (
@@ -98,15 +111,17 @@ export default function CapturaCamara({ onCaptura }) {
               maxWidth: '220px',
               aspectRatio: '4/3',
               borderRadius: '12px',
-              transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none'
+              background: '#222',
+              transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none',
+              boxShadow: '0 2px 16px #0006'
             }}
           />
-
-          <div className="controles-camara" style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button
               type="button"
               onClick={capturarFoto}
               className="btn-capturar"
+              style={{ minWidth: 90, fontSize: 18 }}
             >
               <Emoji symbol="📸" /> Capturar
             </button>
@@ -114,6 +129,7 @@ export default function CapturaCamara({ onCaptura }) {
               type="button"
               onClick={cambiarCamara}
               className="btn-cambiar-camara"
+              style={{ minWidth: 90, fontSize: 18 }}
             >
               <Emoji symbol="🔄" /> Cambiar
             </button>
@@ -129,22 +145,22 @@ export default function CapturaCamara({ onCaptura }) {
               maxWidth: '220px',
               aspectRatio: '4/3',
               borderRadius: '12px',
-              border: '2px solid #e0e0e0'
+              border: '2px solid #e0e0e0',
+              boxShadow: '0 2px 16px #0006'
             }}
           />
-
-          <div className="acciones-foto" style={{ marginTop: 10 }}>
+          <div style={{ marginTop: 16 }}>
             <button
               type="button"
               onClick={() => setFoto(null)}
               className="btn-reintentar"
+              style={{ minWidth: 120, fontSize: 18 }}
             >
               <Emoji symbol="🔄" /> Volver a tomar
             </button>
           </div>
         </>
       )}
-
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   )
