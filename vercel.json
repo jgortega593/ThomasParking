@@ -9,40 +9,18 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
+    { "source": "/api/cors-proxy/(.*)", "destination": "/api/cors-proxy" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "src": "/api/cors-proxy/(.*)",
-      "dest": "/api/cors-proxy",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://thomas-parking.vercel.app, http://localhost:5173",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "apikey, authorization, content-type",
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Max-Age": "86400"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "headers": {
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "X-XSS-Protection": "1; mode=block",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Permissions-Policy": "geolocation=(), microphone=()"
-      }
-    },
-    {
-      "src": "/assets/(.*)",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/service-worker.js",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate",
-        "Service-Worker-Allowed": "/"
-      }
+      "source": "/api/cors-proxy/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://thomas-parking.vercel.app, http://localhost:5173" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "apikey, authorization, content-type" }
+      ]
     }
   ],
   "redirects": [
@@ -57,13 +35,5 @@
       "permanent": true
     }
   ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "regions": ["gru1"]
+  "trailingSlash": false
 }
