@@ -480,3 +480,15 @@ ul.navbar-inline > li + li {
   border-left: 2px solid #fff;
 }
 
+.contenedor-camara video,
+.contenedor-camara img {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+}
+@media (max-width: 400px) {
+  .contenedor-camara {
+    max-width: 98vw;
+  }
+}
