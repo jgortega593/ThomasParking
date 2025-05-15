@@ -1,5 +1,7 @@
 // src/components/AcercaDe.jsx
-import Emoji from './Emoji'
+import Emoji from '../components/Emoji'
+import React from 'react'
+
 
 export default function AcercaDe() {
   return (

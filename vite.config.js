@@ -1,24 +1,88 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
+import viteImagemin from 'vite-plugin-imagemin'
+import path from 'path'
 
 export default ({ mode }) => {
-  // Carga las variables de entorno según el modo (development, production, etc.)
   const env = loadEnv(mode, process.cwd(), '')
 
   return defineConfig({
-    plugins: [react()],
+    base: './',
+    plugins: [
+      react({
+        jsxRuntime: 'automatic',
+        babel: {
+          plugins: ['@babel/plugin-transform-react-jsx']
+        }
+      }),
+      visualizer({
+        gzipSize: true,
+        brotliSize: true,
+        open: mode === 'analyze'
+      }),
+      viteImagemin({
+        gifsicle: { optimizationLevel: 3 },
+        optipng: { optimizationLevel: 5 },
+        mozjpeg: { quality: 75 },
+        webp: { quality: 75 }
+      })
+    ],
     server: {
-      open: false, // evita que Vite intente abrir el navegador automáticamente
+      open: false,
+      port: 5173,
+      host: true
     },
     define: {
-      // Expone las variables de entorno para que puedan usarse en el código cliente
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+      'process.env': {
+        VITE_SUPABASE_URL: JSON.stringify(env.VITE_SUPABASE_URL),
+        VITE_SUPABASE_ANON_KEY: JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+        VITE_ALLOWED_HOSTS: JSON.stringify(env.VITE_ALLOWED_HOSTS),
+        BASE_URL: JSON.stringify(
+          mode === 'development' 
+            ? 'http://localhost:5173' 
+            : 'https://parking1-mu.vercel.app'
+        )
+      }
     },
     resolve: {
       alias: {
         '@': '/src',
-      },
+        '@components': '/src/components',
+		react: path.resolve('./node_modules/react'),
+      'react-dom': path.resolve('./node_modules/react-dom')
+      }
     },
+    build: {
+      target: 'esnext',
+      sourcemap: mode === 'development',
+      minify: mode === 'production' ? 'esbuild' : false,
+      emptyOutDir: true,
+      rollupOptions: {
+        external: ['react-router-dom'],
+        output: {
+          globals: {
+            'react-router-dom': 'ReactRouterDOM'
+          },
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor'
+            }
+          }
+        }
+      },
+      terserOptions: {
+        compress: {
+          drop_console: mode === 'production',
+          drop_debugger: mode === 'production'
+        }
+      }
+    },
+    css: {
+      devSourcemap: mode === 'development',
+      modules: {
+        localsConvention: 'camelCaseOnly'
+      }
+    }
   })
 }

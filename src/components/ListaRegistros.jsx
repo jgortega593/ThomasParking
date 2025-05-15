@@ -1,13 +1,14 @@
 // src/components/ListaRegistros.jsx
 import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import Loader from './Loader'
 import Emoji from './Emoji'
-import './ListaRegistros.css'
 import dayjs from 'dayjs'
 import useOnlineStatus from '../hooks/useOnlineStatus'
 
-export default function ListaRegistros({ refreshKey, usuarioApp, onRegistrosFiltradosChange }) {
+export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange }) {
+  const location = useLocation()
   const [registros, setRegistros] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,61 +19,72 @@ export default function ListaRegistros({ refreshKey, usuarioApp, onRegistrosFilt
   const [eliminandoAudio, setEliminandoAudio] = useState(false)
   const isOnline = useOnlineStatus()
 
+  // Cargar copropietarios
   useEffect(() => {
+    let isMounted = true
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
         .from('copropietarios')
         .select('id, nombre, propiedad, unidad_asignada')
-      if (!error) setCopropietarios(data)
+      if (!error && isMounted) setCopropietarios(data)
     }
     fetchCopropietarios()
+    return () => { isMounted = false }
   }, [])
 
+  // Cargar registros (se recarga con refreshKey, estado online, y cambio de ruta)
+  useEffect(() => {
+    let isMounted = true
+    setLoading(true)
+    setError(null)
+    const fetchRegistros = async () => {
+      try {
+        if (isOnline) {
+          const { data, error } = await supabase
+            .from('registros_parqueadero')
+            .select(`
+              id,
+              placa_vehiculo,
+              tipo_vehiculo,
+              fecha_hora_ingreso,
+              observaciones,
+              foto_url,
+              monto,
+              gratis,
+              recaudado,
+              fecha_recaudo,
+              dependencia_id,
+              observacion_audio_url,
+              copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
+              usuario:usuario_id!inner(id, nombre)
+            `)
+            .order('fecha_hora_ingreso', { ascending: false })
+          if (error) throw error
+          if (isMounted) {
+            setRegistros(data)
+            localStorage.setItem('registros_offline', JSON.stringify(data || []))
+          }
+        } else {
+          const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
+          if (isMounted) setRegistros(localData)
+        }
+      } catch (error) {
+        if (isMounted) setError(error.message)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    fetchRegistros()
+    return () => { isMounted = false; setLoading(true) }
+  }, [refreshKey, isOnline, location.pathname])
+
+  // Opciones para selects
   const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort()
   const unidadesFiltradas = filtros.propiedad
     ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
     : []
 
-  const fetchRegistros = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      if (isOnline) {
-        const { data, error } = await supabase
-          .from('registros_parqueadero')
-          .select(`
-            id,
-            placa_vehiculo,
-            tipo_vehiculo,
-            fecha_hora_ingreso,
-            observaciones,
-            foto_url,
-            monto,
-            gratis,
-            recaudado,
-            fecha_recaudo,
-            dependencia_id,
-            observacion_audio_url,
-            copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
-            usuario:usuario_id!inner(id, nombre)
-          `)
-          .order('fecha_hora_ingreso', { ascending: false })
-        if (error) throw error
-        setRegistros(data)
-        localStorage.setItem('registros_offline', JSON.stringify(data || []))
-      } else {
-        const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
-        setRegistros(localData)
-      }
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { fetchRegistros() }, [refreshKey, isOnline])
-
+  // Filtros
   const handleFiltroChange = (e) => {
     const { name, value } = e.target
     setFiltros(prev => ({
@@ -224,7 +236,6 @@ export default function ListaRegistros({ refreshKey, usuarioApp, onRegistrosFilt
 
       const updatedRegistros = registros.filter(r => r.id !== registro.id)
       setRegistros(updatedRegistros)
-
       if (!isOnline) {
         const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
         const filteredData = localData.filter(item => item.id !== registro.id)
@@ -306,7 +317,6 @@ export default function ListaRegistros({ refreshKey, usuarioApp, onRegistrosFilt
               <th style={{ textAlign: 'center' }}><Emoji symbol="⚙️" /> Acciones</th>
             </tr>
           </thead>
-
           <tbody>
             {registrosFiltrados.length > 0 ? (
               <>

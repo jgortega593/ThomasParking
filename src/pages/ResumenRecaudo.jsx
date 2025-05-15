@@ -1,8 +1,8 @@
 // src/components/ResumenRecaudo.jsx
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
-import Loader from './Loader'
-import Emoji from './Emoji'
+import Loader from '../components/Loader'
+import Emoji from '../components/Emoji'
 
 export default function ResumenRecaudo({ refreshKey }) {
   const [registros, setRegistros] = useState([])

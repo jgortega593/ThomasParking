@@ -1,11 +1,11 @@
-// src/components/Consultas.jsx
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
-import Loader from './Loader'
-import Emoji from './Emoji'
-import ResumenRegistros from './ResumenRegistros'
-import useOnlineStatus from '../hooks/useOnlineStatus'
-import dayjs from 'dayjs'
+// src/components/Consultas.jsx (versión final mejorada con feedback de carga en botones y UX refinado)
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import Loader from './Loader';
+import Emoji from './Emoji';
+import ResumenRegistros from './ResumenRegistros';
+import useOnlineStatus from '../hooks/useOnlineStatus';
+import dayjs from 'dayjs';
 
 export default function Consultas() {
   const [filtros, setFiltros] = useState({
@@ -15,30 +15,33 @@ export default function Consultas() {
     propiedad: '',
     unidadAsignada: '',
     tipoVehiculo: ''
-  })
-  const [todos, setTodos] = useState([])
-  const [resultados, setResultados] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [copropietarios, setCopropietarios] = useState([])
-  const [editModal, setEditModal] = useState({ open: false, registro: null })
-  const [editData, setEditData] = useState({})
-  const isOnline = useOnlineStatus()
+  });
+  const [todos, setTodos] = useState([]);
+  const [resultados, setResultados] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [copropietarios, setCopropietarios] = useState([]);
+  const [editModal, setEditModal] = useState({ open: false, registro: null });
+  const [editData, setEditData] = useState({});
+  const [searching, setSearching] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
         .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada')
-      if (!error) setCopropietarios(data)
-    }
-    fetchCopropietarios()
-  }, [])
+        .select('id, nombre, propiedad, unidad_asignada');
+      if (!error) setCopropietarios(data);
+    };
+    fetchCopropietarios();
+  }, []);
 
   useEffect(() => {
     const fetchTodos = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       try {
         const { data, error } = await supabase
           .from('registros_parqueadero')
@@ -58,58 +61,59 @@ export default function Consultas() {
             copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
             usuario:usuario_id!inner(id, nombre)
           `)
-          .order('fecha_hora_ingreso', { ascending: false })
-        if (error) throw error
-        setTodos(data || [])
-        setResultados(data || [])
+          .order('fecha_hora_ingreso', { ascending: false });
+        if (error) throw error;
+        setTodos(data || []);
+        setResultados(data || []);
       } catch (error) {
-        setError(error.message)
-        setTodos([])
-        setResultados([])
+        setError(error.message);
+        setTodos([]);
+        setResultados([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchTodos()
-  }, [])
+    };
+    fetchTodos();
+  }, []);
 
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort()
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
   const unidadesFiltradas = filtros.propiedad
     ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : []
-
+    : [];
   const copropietarioSeleccionado = copropietarios.find(
     c => c.propiedad === filtros.propiedad && c.unidad_asignada === filtros.unidadAsignada
-  )
+  );
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    let filtrados = [...todos]
+    e.preventDefault();
+    setSearching(true);
+    let filtrados = [...todos];
     if (filtros.fechaInicio)
-      filtrados = filtrados.filter(r => r.fecha_hora_ingreso >= `${filtros.fechaInicio}T00:00:00`)
+      filtrados = filtrados.filter(r => r.fecha_hora_ingreso >= `${filtros.fechaInicio}T00:00:00`);
     if (filtros.fechaFin)
-      filtrados = filtrados.filter(r => r.fecha_hora_ingreso <= `${filtros.fechaFin}T23:59:59`)
+      filtrados = filtrados.filter(r => r.fecha_hora_ingreso <= `${filtros.fechaFin}T23:59:59`);
     if (filtros.placa)
-      filtrados = filtrados.filter(r => r.placa_vehiculo?.toLowerCase().includes(filtros.placa.toLowerCase()))
+      filtrados = filtrados.filter(r => r.placa_vehiculo?.toLowerCase().includes(filtros.placa.toLowerCase()));
     if (filtros.tipoVehiculo)
-      filtrados = filtrados.filter(r => r.tipo_vehiculo === filtros.tipoVehiculo)
+      filtrados = filtrados.filter(r => r.tipo_vehiculo === filtros.tipoVehiculo);
     if (filtros.propiedad && !filtros.unidadAsignada) {
-      filtrados = filtrados.filter(r => r.copropietarios?.propiedad === filtros.propiedad)
+      filtrados = filtrados.filter(r => r.copropietarios?.propiedad === filtros.propiedad);
     }
     if (filtros.propiedad && filtros.unidadAsignada && copropietarioSeleccionado) {
-      filtrados = filtrados.filter(r => r.dependencia_id === copropietarioSeleccionado.id)
+      filtrados = filtrados.filter(r => r.dependencia_id === copropietarioSeleccionado.id);
     }
-    setResultados(filtrados)
-  }
+    setResultados(filtrados);
+    setTimeout(() => setSearching(false), 500); // Simula feedback visual de búsqueda
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFiltros(prev => ({
       ...prev,
       [name]: value,
       ...(name === 'propiedad' && { unidadAsignada: '' })
-    }))
-  }
+    }));
+  };
 
   const limpiarFiltros = () => {
     setFiltros({
@@ -119,12 +123,12 @@ export default function Consultas() {
       propiedad: '',
       unidadAsignada: '',
       tipoVehiculo: ''
-    })
-    setResultados(todos)
-  }
+    });
+    setResultados(todos);
+  };
 
   const handleEdit = (registro) => {
-    setEditModal({ open: true, registro })
+    setEditModal({ open: true, registro });
     setEditData({
       placa_vehiculo: registro.placa_vehiculo,
       tipo_vehiculo: registro.tipo_vehiculo,
@@ -134,145 +138,166 @@ export default function Consultas() {
       dependencia_id: registro.dependencia_id,
       recaudado: !!registro.recaudado,
       fecha_recaudo: registro.fecha_recaudo || ''
-    })
-  }
+    });
+  };
 
   const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setEditData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
       ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
-    }))
-  }
+    }));
+  };
 
   const handleEditSave = async (e) => {
-    e.preventDefault()
-    const id = editModal.registro.id
-    const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50)
+    e.preventDefault();
+    setSavingEdit(true);
+    const id = editModal.registro.id;
+    const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
     try {
       const { error } = await supabase
         .from('registros_parqueadero')
         .update({ ...editData, monto })
-        .eq('id', id)
-      if (error) throw error
+        .eq('id', id);
+      if (error) throw error;
       // Actualizar localmente
-      const updated = todos.map(r => r.id === id ? { ...r, ...editData, monto } : r)
-      setTodos(updated)
-      setResultados(updated)
-      setEditModal({ open: false, registro: null })
+      const updated = todos.map(r => r.id === id ? { ...r, ...editData, monto } : r);
+      setTodos(updated);
+      setResultados(updated);
+      setEditModal({ open: false, registro: null });
     } catch (error) {
-      setError(error.message)
+      setError(error.message);
+    } finally {
+      setSavingEdit(false);
     }
-  }
+  };
 
   const handleDelete = async (registro) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return
+    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return;
+    setDeleting(true);
     try {
       const { error } = await supabase
         .from('registros_parqueadero')
         .delete()
-        .eq('id', registro.id)
-      if (error) throw error
-      const updated = todos.filter(r => r.id !== registro.id)
-      setTodos(updated)
-      setResultados(updated)
+        .eq('id', registro.id);
+      if (error) throw error;
+      const updated = todos.filter(r => r.id !== registro.id);
+      setTodos(updated);
+      setResultados(updated);
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
+    } finally {
+      setDeleting(false);
     }
-  }
+  };
 
   return (
     <div className="consultas-container">
       <h2><Emoji symbol="🔎" label="Consultas" /> Consultas y Reportes</h2>
-      <form onSubmit={handleSubmit} className="filtros-form">
-        <div className="filtros-grid">
-          <div className="filtro-item">
-            <label>Fecha inicio:</label>
-            <input
-              type="date"
-              name="fechaInicio"
-              value={filtros.fechaInicio}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="filtro-item">
-            <label>Fecha fin:</label>
-            <input
-              type="date"
-              name="fechaFin"
-              value={filtros.fechaFin}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="filtro-item">
-            <label>Placa:</label>
-            <input
-              type="text"
-              name="placa"
-              placeholder="Buscar por placa"
-              value={filtros.placa}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="filtro-item">
-            <label>Propiedad:</label>
-            <select
-              name="propiedad"
-              value={filtros.propiedad}
-              onChange={handleChange}
-            >
-              <option value="">Todas</option>
-              {propiedades.map(prop => (
-                <option key={prop} value={prop}>{prop}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filtro-item">
-            <label>Unidad asignada:</label>
-            <select
-              name="unidadAsignada"
-              value={filtros.unidadAsignada}
-              onChange={handleChange}
-              disabled={!filtros.propiedad}
-            >
-              <option value="">Todas</option>
-              {unidadesFiltradas.map(unidad => (
-                <option key={unidad} value={unidad}>{unidad}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filtro-item">
-            <label>Tipo vehículo:</label>
-            <select
-              name="tipoVehiculo"
-              value={filtros.tipoVehiculo}
-              onChange={handleChange}
-            >
-              <option value="">Todos</option>
-              <option value="carro">Carro 🚗</option>
-              <option value="moto">Moto 🏍️</option>
-            </select>
-          </div>
-        </div>
-        <div className="acciones-filtros">
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-buscar"
+      <form
+        onSubmit={handleSubmit}
+        className="form-inline"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 18,
+          justifyContent: 'center'
+        }}
+      >
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="📅" /> Inicio:
+          <input
+            type="date"
+            name="fechaInicio"
+            value={filtros.fechaInicio}
+            onChange={handleChange}
+            style={{ marginLeft: 6, width: 120 }}
+          />
+        </label>
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="📅" /> Fin:
+          <input
+            type="date"
+            name="fechaFin"
+            value={filtros.fechaFin}
+            onChange={handleChange}
+            style={{ marginLeft: 6, width: 120 }}
+          />
+        </label>
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="🔍" /> Placa:
+          <input
+            type="text"
+            name="placa"
+            placeholder="Buscar por placa"
+            value={filtros.placa}
+            onChange={handleChange}
+            style={{ marginLeft: 6, width: 120 }}
+          />
+        </label>
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="🏠" /> Propiedad:
+          <select
+            name="propiedad"
+            value={filtros.propiedad}
+            onChange={handleChange}
+            style={{ marginLeft: 6, width: 90 }}
           >
-            {loading ? 'Buscando...' : 'Buscar'}
-          </button>
-          <button
-            type="button"
-            onClick={limpiarFiltros}
-            className="btn-limpiar"
+            <option value="">Todas</option>
+            {propiedades.map(prop => (
+              <option key={prop} value={prop}>{prop}</option>
+            ))}
+          </select>
+        </label>
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="🔢" /> Unidad:
+          <select
+            name="unidadAsignada"
+            value={filtros.unidadAsignada}
+            onChange={handleChange}
+            disabled={!filtros.propiedad}
+            style={{ marginLeft: 6, width: 70 }}
           >
-            Limpiar
-          </button>
-        </div>
+            <option value="">Todas</option>
+            {unidadesFiltradas.map(unidad => (
+              <option key={unidad} value={unidad}>{unidad}</option>
+            ))}
+          </select>
+        </label>
+        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
+          <Emoji symbol="🚗" /> Tipo:
+          <select
+            name="tipoVehiculo"
+            value={filtros.tipoVehiculo}
+            onChange={handleChange}
+            style={{ marginLeft: 6, width: 90 }}
+          >
+            <option value="">Todos</option>
+            <option value="carro">Carro 🚗</option>
+            <option value="moto">Moto 🏍️</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={loading || searching}
+          className="btn-buscar"
+          style={{ padding: '8px 20px', marginLeft: 8, minWidth: 110, display: 'flex', alignItems: 'center', gap: 7 }}
+        >
+          {searching ? <Loader text="" /> : <Emoji symbol="🔎" />}
+          {searching ? 'Buscando...' : 'Buscar'}
+        </button>
+        <button
+          type="button"
+          onClick={limpiarFiltros}
+          className="btn-limpiar"
+          style={{ padding: '8px 16px', marginLeft: 6 }}
+        >
+          <Emoji symbol="🧹" /> Limpiar
+        </button>
       </form>
-
       {error && <div className="error-message">{error}</div>}
       {loading && <Loader text="Buscando registros..." />}
 
@@ -348,7 +373,8 @@ export default function Consultas() {
                       className="edit-btn"
                       onClick={() => handleEdit(reg)}
                       title="Editar"
-                      disabled={!isOnline}
+                      disabled={!isOnline || savingEdit}
+                      style={{ marginRight: 4 }}
                     >
                       <Emoji symbol="✏️" label="Editar" />
                     </button>
@@ -356,8 +382,9 @@ export default function Consultas() {
                       className="delete-btn"
                       onClick={() => handleDelete(reg)}
                       title="Eliminar"
+                      disabled={deleting}
                     >
-                      <Emoji symbol="🗑️" label="Eliminar" />
+                      {deleting ? <Loader text="" /> : <Emoji symbol="🗑️" label="Eliminar" />}
                     </button>
                   </td>
                 </tr>
@@ -369,6 +396,7 @@ export default function Consultas() {
         !loading && <div className="sin-resultados">No se encontraron resultados</div>
       )}
 
+      {/* MODAL DE EDICIÓN */}
       {editModal.open && (
         <div className="modal-backdrop">
           <div className="modal-content">
@@ -468,13 +496,14 @@ export default function Consultas() {
                 </label>
               )}
               <div className="acciones-modal">
-                <button type="submit" className="save-btn" disabled={!isOnline}>
-                  Guardar
+                <button type="submit" className="save-btn" disabled={!isOnline || savingEdit}>
+                  {savingEdit ? <Loader text="" /> : 'Guardar'}
                 </button>
                 <button
                   type="button"
                   className="cancel-btn"
                   onClick={() => setEditModal({ open: false, registro: null })}
+                  disabled={savingEdit}
                 >
                   Cancelar
                 </button>
@@ -484,5 +513,5 @@ export default function Consultas() {
         </div>
       )}
     </div>
-  )
+  );
 }
