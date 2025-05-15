@@ -1,46 +1,58 @@
-// src/components/SelectorDeFoto.jsx
 import React, { useState } from 'react'
+import Modal from './Modal'
 import CapturaCamara from './CapturaCamara'
 
 export default function SelectorDeFoto({ onFileSelected }) {
-  const [modo, setModo] = useState('camara') // 'camara' o 'galeria'
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [foto, setFoto] = useState(null)
 
   const handleFile = file => {
+    setFoto(null)
+    setModalAbierto(false)
     onFileSelected(file)
   }
 
   return (
-    <div className="selector-foto">
-      <div className="modos-seleccion">
-        <button
-          type="button"
-          onClick={() => setModo('camara')}
-          className={modo === 'camara' ? 'active' : ''}
-        >
-          📸 Usar Cámara
+    <div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button type="button" onClick={() => setModalAbierto(true)}>
+          📸 Usar cámara
         </button>
-        <button
-          type="button"
-          onClick={() => setModo('galeria')}
-          className={modo === 'galeria' ? 'active' : ''}
-        >
-          🖼️ Subir Archivo
-        </button>
+        <label>
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              if (e.target.files && e.target.files[0]) {
+                onFileSelected(e.target.files[0])
+              }
+            }}
+          />
+          <span style={{ cursor: 'pointer' }}>🖼️ Seleccionar archivo</span>
+        </label>
       </div>
 
-      {modo === 'camara' ? (
-        <CapturaCamara onCaptura={handleFile} />
-      ) : (
-        <input
-          type="file"
-          accept="image/*"
-          onChange={e => {
-            if (e.target.files && e.target.files[0]) {
-              handleFile(e.target.files[0])
-            }
+      <Modal isOpen={modalAbierto} onClose={() => setModalAbierto(false)}>
+        <CapturaCamara
+          onCaptura={file => {
+            setFoto(file)
           }}
         />
-      )}
+        {foto && (
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                handleFile(foto)
+              }}
+              style={{ padding: '10px 24px', fontSize: '1.1rem' }}
+            >
+              📤 Enviar foto
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
