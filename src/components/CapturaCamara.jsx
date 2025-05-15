@@ -16,8 +16,8 @@ export default function CapturaCamara({ onCaptura }) {
       const constraints = {
         video: {
           facingMode: modoCamara,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 640 }, // más pequeño para móvil
+          height: { ideal: 480 }
         },
         audio: false
       }
@@ -75,7 +75,18 @@ export default function CapturaCamara({ onCaptura }) {
   )
 
   return (
-    <div className="contenedor-camara">
+    <div
+      className="contenedor-camara"
+      style={{
+        width: '100%',
+        maxWidth: 260,
+        margin: '0 auto',
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}
+    >
       {!foto ? (
         <>
           <video
@@ -84,13 +95,15 @@ export default function CapturaCamara({ onCaptura }) {
             playsInline
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '260px',
+              height: 'auto',
+              aspectRatio: '4/3',
               borderRadius: '12px',
               transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none'
             }}
           />
 
-          <div className="controles-camara">
+          <div className="controles-camara" style={{ display: 'flex', gap: 10, marginTop: 10 }}>
             <button
               type="button"
               onClick={capturarFoto}
@@ -98,7 +111,6 @@ export default function CapturaCamara({ onCaptura }) {
             >
               <Emoji symbol="📸" /> Capturar
             </button>
-
             <button
               type="button"
               onClick={cambiarCamara}
@@ -115,13 +127,15 @@ export default function CapturaCamara({ onCaptura }) {
             alt="Previsualización"
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '260px',
+              height: 'auto',
+              aspectRatio: '4/3',
               borderRadius: '12px',
               border: '2px solid #e0e0e0'
             }}
           />
 
-          <div className="acciones-foto">
+          <div className="acciones-foto" style={{ marginTop: 10 }}>
             <button
               type="button"
               onClick={() => setFoto(null)}
