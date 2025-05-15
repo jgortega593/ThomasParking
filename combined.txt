@@ -21,6 +21,7 @@ C:\parking-app\src\components\ResumenRegistros.jsx
 C:\parking-app\src\components\SelectorDeFoto.jsx
 C:\parking-app\src\components\SyncIndicator.jsx
 C:\parking-app\src\components\TablaResultados.jsx
+C:\parking-app\src\components\ThemeToggle.jsx
 C:\parking-app\src\context\ThemeContext.jsx
 C:\parking-app\src\context\ViewContext.jsx
 C:\parking-app\src\hooks\useHover.jsx
@@ -52,7 +53,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
-// Componentes de páginas
+// Páginas
 import RegistroParqueo from './pages/RegistroParqueo';
 import Consultas from './pages/Consultas';
 import Recaudo from './pages/ResumenRecaudo';
@@ -62,8 +63,9 @@ import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 
-// Componentes de layout/navegación
+// Componentes de layout
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 // Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
@@ -76,98 +78,108 @@ function ProtectedRoute({ user, allowedRoles, children }) {
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Mantener el usuario autenticado
   useEffect(() => {
-    const session = supabase.auth.session?.() || supabase.auth.getSession?.();
-    setUser(session?.user || null);
+    let mounted = true;
+    async function getSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (mounted) setUser(user || null);
+    }
+    getSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
+      }
+    );
     return () => {
-      listener?.unsubscribe?.();
+      mounted = false;
+      subscription?.unsubscribe();
     };
   }, []);
 
   return (
     <BrowserRouter>
-      {user && <Navbar user={user} />}
-       <div className="pt-16"> {/* Espacio para el Navbar fijo */}
-        <Routes>
-          {/* Ruta de login pública */}
-          <Route path="/login" element={<Login />} />
+      <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      {/* Oculta el contenido principal cuando el menú móvil está abierto */}
+      {!menuOpen && (
+        <div className="pt-16 min-h-screen flex flex-col">
+          <Routes>
+            {/* Ruta de login pública */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Rutas protegidas para cualquier usuario autenticado */}
-          <Route
-            path="/registros"
-            element={
-              <ProtectedRoute user={user}>
-                <RegistroParqueo />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/consultas"
-            element={
-              <ProtectedRoute user={user}>
-                <Consultas />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recaudo"
-            element={
-              <ProtectedRoute user={user}>
-                <Recaudo />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/descargos"
-            element={
-              <ProtectedRoute user={user}>
-                <Descargos />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/acercade"
-            element={
-              <ProtectedRoute user={user}>
-                <AcercaDe />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/usuarios"
-            element={
-              <ProtectedRoute user={user}>
-                <GestionUsuarios />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/copropietarios"
-            element={
-              <ProtectedRoute user={user}>
-                <GestionCopropietarios />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Redirección por defecto */}
-          <Route
-            path="/"
-            element={
-              user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
-            }
-          />
-          {/* Ruta catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            {/* Rutas protegidas para cualquier usuario autenticado */}
+            <Route
+              path="/registros"
+              element={
+                <ProtectedRoute user={user}>
+                  <RegistroParqueo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/consultas"
+              element={
+                <ProtectedRoute user={user}>
+                  <Consultas />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recaudo"
+              element={
+                <ProtectedRoute user={user}>
+                  <Recaudo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/descargos"
+              element={
+                <ProtectedRoute user={user}>
+                  <Descargos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/acercade"
+              element={
+                <ProtectedRoute user={user}>
+                  <AcercaDe />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/usuarios"
+              element={
+                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                  <GestionUsuarios />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/copropietarios"
+              element={
+                <ProtectedRoute user={user} allowedRoles={['admin']}>
+                  <GestionCopropietarios />
+                </ProtectedRoute>
+              }
+            />
+            {/* Redirección por defecto */}
+            <Route
+              path="/"
+              element={
+                user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
+              }
+            />
+            {/* Ruta catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Footer />
+        </div>
+      )}
     </BrowserRouter>
   );
 }
@@ -181,8 +193,10 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/global.css'
 
+// Si tienes ThemeProvider propio, descomenta e importa aquí:
+import { ThemeProvider } from './context/ThemeContext'
 
-// Registro de Service Worker para PWA (eliminar si no se usa)
+// Registro de Service Worker para PWA (opcional, elimina si no se usa)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -195,9 +209,14 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   })
 }
 
-// Creación del root y renderizado principal
+// Renderizado principal de la app
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* Si usas ThemeProvider global, envuelve <App /> así:
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+    */}
     <App />
   </React.StrictMode>
 )
@@ -206,68 +225,83 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ----- C:\parking-app\src\components\AuthGuard.jsx -----
 
 // src/components/AuthGuard.jsx
-import React, { useState, useEffect } from 'react'
-import { Navigate, useLocation, Outlet } from 'react-router-dom'
-import PropTypes from 'prop-types'
-import { supabase } from '../supabaseClient'
-import Loader from './Loader'
+import React, { useState, useEffect } from 'react';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import Loader from './Loader';
+import ErrorMessage from './ErrorMessage';
 
 export default function AuthGuard({ requiredRole = null }) {
-  const location = useLocation()
+  const location = useLocation();
   const [authState, setAuthState] = useState({
     user: null,
     loading: true,
     error: null,
     role: null
-  })
+  });
 
   const checkAuthorization = async (user) => {
     try {
+      // 1. Obtener rol desde la tabla usuarios_app
       const { data, error } = await supabase
         .from('usuarios_app')
         .select('email, rol, activo')
         .eq('email', user.email)
-        .single()
+        .single();
 
-      if (error) throw new Error('Error de autorización: ' + error.message)
-      if (!data) throw new Error('Usuario no registrado en el sistema')
-      if (!data.activo) throw new Error('Cuenta desactivada')
+      if (error) throw new Error('Error de autorización: ' + error.message);
+      if (!data) throw new Error('Usuario no registrado en el sistema');
+      if (!data.activo) throw new Error('Cuenta desactivada');
 
-      return { ...user, role: data.rol }
+      // 2. Actualizar metadata del usuario en Supabase
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { role: data.rol }
+      });
+
+      if (updateError) throw new Error('Error actualizando perfil: ' + updateError.message);
+
+      return { ...user, role: data.rol };
     } catch (error) {
-      await supabase.auth.signOut()
-      throw error
+      await supabase.auth.signOut();
+      throw error;
     }
-  }
+  };
 
   useEffect(() => {
-    let isMounted = true
+    let isMounted = true;
     const timeout = setTimeout(() => {
-      if (isMounted) {
-        setAuthState(prev => prev.loading ? {
+      if (isMounted && authState.loading) {
+        setAuthState(prev => ({
           ...prev,
           loading: false,
           error: 'Timeout al verificar credenciales'
-        } : prev)
+        }));
       }
-    }, 15000) // Timeout de 15 segundos
+    }, 15000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         try {
           if (!session?.user) {
-            setAuthState({ user: null, loading: false, error: null, role: null })
-            return
+            if (isMounted) {
+              setAuthState({
+                user: null,
+                loading: false,
+                error: null,
+                role: null
+              });
+            }
+            return;
           }
 
-          const authorizedUser = await checkAuthorization(session.user)
+          const authorizedUser = await checkAuthorization(session.user);
           if (isMounted) {
             setAuthState({
               user: authorizedUser,
               loading: false,
               error: null,
               role: authorizedUser.role
-            })
+            });
           }
         } catch (error) {
           if (isMounted) {
@@ -276,28 +310,28 @@ export default function AuthGuard({ requiredRole = null }) {
               loading: false,
               error: error.message,
               role: null
-            })
+            });
           }
         }
       }
-    )
+    );
 
     const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        const { data: { user }, error } = await supabase.auth.getUser();
         
-        if (!isMounted) return
-        if (error) throw error
-        if (!user) throw new Error('No autenticado')
+        if (!isMounted) return;
+        if (error) throw error;
+        if (!user) throw new Error('No autenticado');
 
-        const authorizedUser = await checkAuthorization(user)
+        const authorizedUser = await checkAuthorization(user);
         if (isMounted) {
           setAuthState({
             user: authorizedUser,
             loading: false,
             error: null,
             role: authorizedUser.role
-          })
+          });
         }
       } catch (error) {
         if (isMounted) {
@@ -306,88 +340,76 @@ export default function AuthGuard({ requiredRole = null }) {
             loading: false,
             error: error.message,
             role: null
-          })
+          });
         }
       }
-    }
+    };
 
-    initializeAuth()
+    initializeAuth();
     return () => {
-      isMounted = false
-      clearTimeout(timeout)
-      subscription?.unsubscribe()
-    }
-  }, [])
+      isMounted = false;
+      clearTimeout(timeout);
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const handleRetry = async () => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }))
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (error) throw error
-      if (!user) throw new Error('No autenticado')
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) throw new Error('No autenticado');
 
-      const authorizedUser = await checkAuthorization(user)
+      const authorizedUser = await checkAuthorization(user);
       setAuthState({
         user: authorizedUser,
         loading: false,
         error: null,
         role: authorizedUser.role
-      })
+      });
     } catch (error) {
       setAuthState({
         user: null,
         loading: false,
         error: error.message,
         role: null
-      })
+      });
     }
-  }
+  };
 
   if (authState.loading) {
-    return <Loader fullScreen text="Verificando credenciales..." />
+    return <Loader fullScreen text="Verificando credenciales..." />;
   }
 
   if (authState.error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 text-center">
-          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-            Error de Acceso
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">{authState.error}</p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={handleRetry}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Reintentar conexión
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
+        <ErrorMessage 
+          title="Error de acceso"
+          message={authState.error}
+          retryable
+          onRetry={handleRetry}
+        >
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          >
+            Cerrar Sesión
+          </button>
+        </ErrorMessage>
       </div>
-    )
+    );
   }
 
   if (!authState.user) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (requiredRole && authState.role !== requiredRole) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/" replace />;
   }
 
-  // Usar Outlet para rutas anidadas
-  return <Outlet />
-}
-
-AuthGuard.propTypes = {
-  requiredRole: PropTypes.oneOf(['admin', 'usuario', null])
+  return <Outlet />;
 }
 
 
@@ -2082,113 +2104,115 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Emoji from './Emoji';
 
-export default function Navbar({ user }) {
+export default function Navbar({ user, menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setMenuOpen(false);
     navigate('/login');
   };
 
+  const navItems = [
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
+    { to: '/consultas', label: 'Reportes', emoji: '📊' },
+    { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
+    { to: '/descargos', label: 'Descargos', emoji: '📤' },
+    { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
+    { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
+    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
+  ];
+
+  // Cierra el menú móvil al navegar
+  const handleNavClick = () => setMenuOpen(false);
+
   return (
-    <header className="w-full px-4 py-2 bg-gradient-to-r from-blue-700 to-purple-700 shadow-md flex items-center justify-between fixed top-0 left-0 z-40 h-16">
-      {/* Logo y título */}
-      <div className="flex items-center space-x-3">
-        <NavLink to="/" className="flex items-center space-x-2">
-          <Emoji symbol="🅿️" className="text-2xl" />
-          <span className="text-xl font-bold text-white tracking-wide">ParkingApp</span>
+    <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 h-16">
+        {/* Logo y título */}
+        <NavLink to="/" className="flex items-center space-x-2 text-white font-bold text-lg" onClick={handleNavClick}>
+          <Emoji symbol="🅿️" /> <span>ParkingApp</span>
         </NavLink>
-      </div>
 
-      {/* Navegación principal */}
-      <nav className="flex items-center space-x-2">
-        <NavLink
-          to="/registros"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="📝" /> Registro Parqueo
-        </NavLink>
-        <NavLink
-          to="/consultas"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="📊" /> Reportes
-        </NavLink>
-        <NavLink
-          to="/recaudo"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="💰" /> Recaudación
-        </NavLink>
-        <NavLink
-          to="/descargos"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="📤" /> Descargos
-        </NavLink>
-        <NavLink
-          to="/copropietarios"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="🏘️" /> Copropietarios
-        </NavLink>
-        <NavLink
-            to="/usuarios"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg font-medium transition-colors ${
-                isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-              }`
-            }
-          >
-            <Emoji symbol="👥" /> Usuarios
-          </NavLink>
-          <NavLink
-          to="/acercade"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg font-medium transition-colors ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-        >
-          <Emoji symbol="ℹ️" /> Acerca de
-        </NavLink>
-      </nav>
-
-      {/* Usuario y logout */}
-      <div className="flex items-center space-x-4">
-        {user && (
-          <div className="flex flex-col items-end mr-2">
-            <span className="text-white font-semibold text-sm leading-tight">{user.email}</span>
-            <span className="text-blue-200 text-xs">{user.user_metadata?.role || 'usuario'}</span>
-          </div>
-        )}
+        {/* Botón hamburguesa móvil */}
         <button
-          onClick={handleLogout}
-          className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+          className="md:hidden flex items-center text-white focus:outline-none"
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(!menuOpen)}
         >
-          <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
         </button>
+
+        {/* Menú horizontal (desktop) */}
+        <nav className="hidden md:flex items-center space-x-2">
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none ${
+                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                }`
+              }
+              onClick={handleNavClick}
+            >
+              <Emoji symbol={item.emoji} /> {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Usuario y logout (desktop) */}
+        <div className="hidden md:flex items-center space-x-4">
+          {user && (
+            <div className="flex flex-col items-end mr-2">
+              <span className="text-white font-semibold text-sm leading-tight">{user.email}</span>
+              <span className="text-blue-200 text-xs">{user.user_metadata?.role || 'usuario'}</span>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
+          </button>
+        </div>
       </div>
+
+      {/* Menú móvil overlay */}
+      {menuOpen && (
+        <nav className="md:hidden fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4">
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-6 py-4 rounded-lg font-medium text-2xl transition-colors focus:outline-none ${
+                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                }`
+              }
+            >
+              <Emoji symbol={item.emoji} /> {item.label}
+            </NavLink>
+          ))}
+          {user && (
+            <div className="flex flex-col items-center mt-6">
+              <span className="text-white font-semibold text-base">{user.email}</span>
+              <span className="text-blue-200 text-sm">{user.user_metadata?.role || 'usuario'}</span>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
+          >
+            <Emoji symbol="🚪" /> <span className="ml-2">Cerrar Sesión</span>
+          </button>
+        </nav>
+      )}
     </header>
   );
 }
@@ -2390,6 +2414,30 @@ TablaResultados.propTypes = {
 };
 
 export default TablaResultados;
+
+
+----- C:\parking-app\src\components\ThemeToggle.jsx -----
+
+// src/components/ThemeToggle.jsx
+import React from 'react';
+import { useTheme } from '../context/ThemeContext';
+
+export default function ThemeToggle() {
+  const { appearance, setAppearance } = useTheme();
+
+  return (
+    <select
+      value={appearance}
+      onChange={e => setAppearance(e.target.value)}
+      style={{ borderRadius: 8, padding: 6, marginLeft: 10, fontWeight: 600 }}
+      aria-label="Selector de tema"
+    >
+      <option value="light">🌞 Claro</option>
+      <option value="dark">🌙 Oscuro</option>
+      <option value="system">🖥️ Sistema</option>
+    </select>
+  );
+}
 
 
 ----- C:\parking-app\src\context\ThemeContext.jsx -----
@@ -5056,15 +5104,17 @@ export default function MyQueryClientProvider({ children }) {
 ----- C:\parking-app\src\styles\global.css -----
 
 /* src/styles/global.css */
+/* Fuentes modernas y disruptivas */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Variables base: diseño, colores, tipografía */
 :root {
-  /* Sistema de diseño */
   --max-width: 1400px;
+  --radius-lg: 20px;
   --radius-base: 12px;
   --radius-sm: 6px;
-  --transition: cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
-  
+  --transition: cubic-bezier(0.4, 0, 0.2, 1) 0.18s;
+
   /* Espaciado */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -5072,38 +5122,59 @@ export default function MyQueryClientProvider({ children }) {
   --space-lg: 24px;
   --space-xl: 32px;
 
-  /* Paleta principal */
-  --primary-50: #f5f3ff;
-  --primary-100: #ede9fe;
-  --primary-500: #6366f1;
-  --primary-600: #4f46e5;
-  
-  /* Neutrales */
+  /* Colores principales */
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #e0e7ff;
+  --secondary: #38bdf8;
+  --accent: #ff6f91;
+  --surface: #fff;
+  --background: #f8fafc;
   --neutral-50: #f8fafc;
   --neutral-100: #f1f5f9;
   --neutral-700: #334155;
   --neutral-900: #0f172a;
-  
+  --text: #18181b;
+  --text-muted: #6b7280;
+  --text-light: #fff;
+
   /* Feedback */
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #ef4444;
   --info: #3b82f6;
 
+  /* Sombra */
+  --shadow-lg: 0 8px 32px #6366f133;
+  --shadow-md: 0 2px 12px #6366f144;
+
   /* Tipografía */
-  --font-base: 'Inter', system-ui, sans-serif;
+  --font-main: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --text-base: 1rem;
   --text-lg: 1.125rem;
+
+  /* Focus */
+  --focus: #ff6f91;
 }
 
-/* Modo oscuro */
-[data-theme='dark'] {
-  --primary-50: #1e1b4b;
-  --primary-100: #312e81;
-  --neutral-50: #1e293b;
+/* Modo oscuro disruptivo */
+[data-theme='dark'], .dark {
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #23272f;
+  --secondary: #38bdf8;
+  --accent: #f472b6;
+  --surface: #23272f;
+  --background: #18181b;
+  --neutral-50: #23272f;
   --neutral-100: #334155;
-  --neutral-900: #f8fafc;
+  --neutral-900: #f3f4f6;
+  --text: #f3f4f6;
+  --text-muted: #a1a1aa;
+  --text-light: #fff;
+  --shadow-lg: 0 8px 32px #818cf833;
+  --shadow-md: 0 2px 12px #818cf844;
 }
 
 /* Reset y base */
@@ -5114,283 +5185,403 @@ export default function MyQueryClientProvider({ children }) {
   margin: 0;
 }
 
-html {
+html, body {
+  font-family: var(--font-main);
+  background: var(--background);
+  color: var(--text);
+  min-height: 100vh;
   scroll-behavior: smooth;
-  color-scheme: light dark;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  font-family: var(--font-base);
-  line-height: 1.5;
-  background: var(--neutral-50);
-  color: var(--neutral-900);
-  transition: background-color 0.3s, color 0.3s;
+#root, .app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--background);
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+a:hover, a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+  outline-offset: 2px;
+  outline: 2px solid var(--accent);
 }
 
 /* Tipografía avanzada */
-h1, h2, h3 {
-  font-weight: 700;
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-top: 0;
   line-height: 1.2;
-  margin-bottom: var(--space-md);
+  text-align: center;
 }
-
 h1 { font-size: 2.5rem; }
 h2 { font-size: 2rem; }
 h3 { font-size: 1.5rem; }
+h4 { font-size: 1.2rem; }
 
-/* Componentes clave */
-.button {
+/* Botones modernos y disruptivos */
+button, .button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-base);
-  font-weight: 600;
-  transition: var(--transition);
-  background: var(--primary-500);
-  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  background: var(--primary);
+  color: var(--text-light);
   border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  min-width: 120px;
+  min-height: 44px;
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+  user-select: none;
+}
+button:hover, .button:hover, button:focus, .button:focus {
+  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+  transform: translateY(-2px) scale(1.03);
+}
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+button:disabled, .button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #ccc;
+  color: #888;
+}
+
+/* Botón disruptivo especial */
+.btn-disruptivo {
+  background: linear-gradient(90deg, var(--primary) 60%, var(--secondary) 100%);
+  color: #fff;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 14px 0;
+  font-size: 1.1rem;
+  width: 100%;
+  max-width: 340px;
+  margin: 1rem auto;
+}
+
+/* Inputs y formularios */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  border-radius: var(--radius-base);
+  border: 1.5px solid #e5e7eb;
+  padding: 10px 14px;
+  outline-offset: 2px;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  margin: .25rem 0;
+  box-sizing: border-box;
+  background: var(--surface);
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  background: #f0f9ff;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+input[type=checkbox], input[type=radio] {
+  width: 1.1em;
+  height: 1.1em;
+  accent-color: var(--primary);
+  margin-right: 7px;
   cursor: pointer;
 }
 
-.button:hover {
-  background: var(--primary-600);
-  transform: translateY(-1px);
+/* Scrollbar moderno */
+::-webkit-scrollbar {
+  width: 10px;
+  background: #e0e7ef;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 8px;
 }
 
-.button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+/* Header y Footer disruptivos */
+.header-gradient {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #fff;
+  padding: 2.5rem 0 1.2rem;
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100vw;
+  text-align: center;
+}
+.footer {
+  margin-top: 3rem;
+  text-align: center;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #fff;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-size: 1.08rem;
+  padding: 1.2rem 0;
+  width: 100vw;
 }
 
-/* Sistema de tarjetas */
+/* Tarjetas y contenedores */
 .card {
-  background: var(--neutral-50);
+  background: var(--surface);
   border-radius: var(--radius-base);
   padding: var(--space-lg);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
   border: 1px solid var(--neutral-100);
+  margin-bottom: var(--space-lg);
 }
 
-/* Formularios modernos */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
-}
-
-.input {
-  padding: var(--space-sm);
-  border: 1px solid var(--neutral-100);
-  border-radius: var(--radius-sm);
-  background: var(--neutral-50);
-  transition: border-color 0.3s;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px var(--primary-100);
-}
-
-/* Tablas responsivas */
-.table-container {
+/* Tablas responsivas y disruptivas */
+.table-container, .resultados-table-container, .registros-table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius-base);
   border: 1px solid var(--neutral-100);
+  box-shadow: var(--shadow-md);
 }
-
-.table {
+.table, .resultados-table, .registros-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 800px;
+  background: var(--surface);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.table th, .resultados-table th, .registros-table th {
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.table td, .resultados-table td, .registros-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 1.02em;
+}
+.table tr:last-child td, .resultados-table tr:last-child td, .registros-table tr:last-child td {
+  border-bottom: none;
+}
+.table tr:hover, .resultados-table tr:hover, .registros-table tr:hover {
+  background: #f1f5f9;
+}
+.sin-resultados {
+  color: var(--text-muted);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 1.2em 0;
 }
 
-.table th {
-  background: var(--primary-50);
-  color: var(--primary-500);
-  padding: var(--space-md);
-  text-align: left;
-  font-weight: 600;
-}
-
-.table td {
-  padding: var(--space-md);
-  border-top: 1px solid var(--neutral-100);
-}
-
-/* Componentes específicos de la app */
-.registro-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-lg);
-  max-width: var(--max-width);
-  margin: 0 auto;
-}
-
+/* Miniaturas y thumbnails */
 .thumbnail {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   object-fit: cover;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--primary-100);
+  box-shadow: 0 2px 6px #6366f133;
+  border: 2px solid var(--primary-light);
   transition: transform 0.3s;
 }
-
 .thumbnail:hover {
   transform: scale(1.1);
 }
 
 /* Modales y overlays */
-.modal-overlay {
+.modal-backdrop, .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(24, 24, 27, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
-
 .modal-content {
-  background: var(--neutral-50);
+  background: var(--surface);
   padding: var(--space-lg);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-lg);
   max-width: 90vw;
   width: 500px;
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+  position: relative;
+}
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 800;
+  font-size: 1.5rem;
 }
 
-/* Utilidades responsivas */
-@media (max-width: 768px) {
-  .registro-form {
-    grid-template-columns: 1fr;
-  }
-  
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
+/* Loader y feedback */
+.loader, .loader-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 6px solid #e0e0e0;
+  border-top: 6px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
 }
 
 /* Animaciones clave */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px);}
+  to { opacity: 1; transform: translateY(0);}
 }
-
 .fade-in {
   animation: fadeIn 0.3s var(--transition);
 }
 
-/* Menú desplegable animado y hamburger fijo arriba derecha */
-.menu-container {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 1001;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+/* Responsive y pragmático */
+@media (max-width: 900px) {
+  .table, .resultados-table, .registros-table {
+    min-width: 600px;
+  }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+}
+@media (max-width: 600px) {
+  .table, .resultados-table, .registros-table {
+    min-width: 400px;
+  }
+  .modal-content {
+    width: 98vw;
+    padding: var(--space-md);
+  }
 }
 
-.hamburger-btn {
-  width: 48px;
-  height: 48px;
-  background: rgba(255,255,255,0.95);
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 2px 12px #6366f133;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Selector de tema disruptivo */
+.theme-toggle-select {
+  border-radius: var(--radius-base);
+  padding: 6px 12px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid #d1c4e9;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  margin-left: 10px;
+}
+.theme-toggle-select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+/* Emoji accesible */
+.emoji-selector {
+  font-size: 1.8rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-base);
+  padding: 6px 12px;
   cursor: pointer;
-  transition: background 0.18s;
-  position: relative;
+  background: transparent;
+  transition: border-color var(--transition);
+}
+.emoji-selector.selected, .emoji-selector:hover, .emoji-selector:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
-.hamburger-lines {
-  width: 30px;
-  height: 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
+/* Utilidades */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-muted { color: var(--text-muted); }
+.font-mono { font-family: var(--font-mono); }
+.rounded { border-radius: var(--radius-base); }
+.shadow { box-shadow: var(--shadow-md); }
+.bg-surface { background: var(--surface); }
+.bg-primary { background: var(--primary); color: #fff; }
+.bg-accent { background: var(--accent); color: #fff; }
+.p-2 { padding: var(--space-sm); }
+.p-4 { padding: var(--space-md); }
+.mt-2 { margin-top: var(--space-sm); }
+.mt-4 { margin-top: var(--space-md); }
+.mb-2 { margin-bottom: var(--space-sm); }
+.mb-4 { margin-bottom: var(--space-md); }
+.mx-auto { margin-left: auto; margin-right: auto; }
+
+/* Disruptivo: feedback de error/info */
+.info-message, .error-message {
+  margin-top: 1rem;
+  padding: 12px 18px;
+  border-radius: var(--radius-base);
+  font-size: 1.06em;
+  font-weight: 600;
+  text-align: center;
+  max-width: 700px;
+  word-wrap: break-word;
+}
+.info-message {
+  background: #e0ffe8;
+  color: var(--success);
+  border: 1.5px solid #22c55e;
+}
+.error-message {
+  background: #fffbe6;
+  color: var(--error);
+  border: 1.5px solid #ffe58f;
 }
 
-.line {
-  display: block;
-  height: 4px;
-  width: 100%;
-  background: var(--color-primary, #6366f1);
-  border-radius: 3px;
-  transition: all 0.34s cubic-bezier(.4,2,.6,1);
-  position: relative;
+/* Selector de tema para ThemeToggle.jsx */
+.theme-toggle-select {
+  min-width: 120px;
+  margin-left: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid #d1c4e9;
+  border-radius: var(--radius-base);
+  font-weight: 600;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.theme-toggle-select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
-.hamburger-btn.open .line1 {
-  transform: rotate(45deg) translate(5px, 6px);
+ul.navbar-inline > li {
+  display: inline-block;
+  padding: 0 16px;
 }
-.hamburger-btn.open .line2 {
-  opacity: 0;
-}
-.hamburger-btn.open .line3 {
-  transform: rotate(-45deg) translate(5px, -6px);
+ul.navbar-inline > li + li {
+  border-left: 2px solid #fff;
 }
 
-/* Menú desplegable animado */
-.menu-dropdown {
-  position: absolute;
-  top: 58px;
-  right: 0;
-  background: var(--bg-elevated, #fff);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px #6366f133;
-  min-width: 210px;
-  padding: 14px 0;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-12px) scale(0.97);
-  transition: opacity 0.25s, transform 0.25s;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.menu-dropdown.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0) scale(1);
-}
-
-.menu-item {
-  width: 100%;
-  background: none;
-  border: none;
-  color: var(--text, #22223b);
-  font-family: var(--font-body, Inter, Arial, sans-serif);
-  font-size: 1.08rem;
-  padding: 13px 26px;
-  text-align: left;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: background 0.19s, color 0.19s;
-}
-
-.menu-item:hover,
-.menu-item.active {
-  background: var(--color-primary, #6366f1);
-  color: #fff;
-}
-
-.menu-emoji {
-  font-size: 1.3em;
-  width: 1.7em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}

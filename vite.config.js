@@ -1,14 +1,14 @@
-import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
-import viteImagemin from 'vite-plugin-imagemin'
-import path from 'path'
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+import viteImagemin from 'vite-plugin-imagemin';
+import path from 'path';
 
 export default ({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, process.cwd(), '');
 
   return defineConfig({
-    base: './',
+    base: '/', // Configuración base para Vercel (sin subruta)
     plugins: [
       react({
         jsxRuntime: 'automatic',
@@ -37,11 +37,10 @@ export default ({ mode }) => {
       'process.env': {
         VITE_SUPABASE_URL: JSON.stringify(env.VITE_SUPABASE_URL),
         VITE_SUPABASE_ANON_KEY: JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
-        VITE_ALLOWED_HOSTS: JSON.stringify(env.VITE_ALLOWED_HOSTS),
         BASE_URL: JSON.stringify(
-          mode === 'development' 
-            ? 'http://localhost:5173' 
-            : 'https://parking1-mu.vercel.app'
+          mode === 'production' 
+            ? 'https://thomas-parking.vercel.app'  // Dominio de Vercel
+            : 'http://localhost:5173'  // Desarrollo local
         )
       }
     },
@@ -49,8 +48,8 @@ export default ({ mode }) => {
       alias: {
         '@': '/src',
         '@components': '/src/components',
-		react: path.resolve('./node_modules/react'),
-      'react-dom': path.resolve('./node_modules/react-dom')
+        react: path.resolve('./node_modules/react'),
+        'react-dom': path.resolve('./node_modules/react-dom')
       }
     },
     build: {
@@ -59,7 +58,6 @@ export default ({ mode }) => {
       minify: mode === 'production' ? 'esbuild' : false,
       emptyOutDir: true,
       rollupOptions: {
-        external: ['react-router-dom'],
         output: {
           globals: {
             'react-router-dom': 'ReactRouterDOM'
@@ -84,5 +82,5 @@ export default ({ mode }) => {
         localsConvention: 'camelCaseOnly'
       }
     }
-  })
-}
+  });
+};
