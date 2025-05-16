@@ -147,7 +147,7 @@ export default function RegistroParqueo() {
             checked={form.gratis}
             onChange={handleChange}
           />
-          <Emoji symbol="🆓" label="Gratis" /> Gratis
+          <Emoji symbol="🆓" label="Gratis " /> Gratis
         </label>
         <button type="submit" className="save-btn" disabled={loading}>
           Guardar
