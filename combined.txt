@@ -62,7 +62,7 @@ import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
-import SignUp from './components/SignUp'; // Nuevo import
+import SignUp from './components/SignUp';
 
 // Componentes de layout
 import Navbar from './components/Navbar';
@@ -70,6 +70,9 @@ import Footer from './components/Footer';
 
 // Hook para estado online/offline
 import useOnlineStatus from './hooks/useOnlineStatus';
+
+// Error boundary
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
@@ -83,7 +86,7 @@ function ProtectedRoute({ user, allowedRoles, children }) {
 function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
   // Rutas donde NO quieres mostrar el Navbar
-  const hideNavbarRoutes = ['/login', '/', '/registro']; // Agregada ruta de registro
+  const hideNavbarRoutes = ['/login', '/', '/registro'];
 
   return (
     <>
@@ -118,7 +121,7 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<SignUp />} /> {/* Nueva ruta */}
+            <Route path="/registro" element={<SignUp />} />
             <Route
               path="/registros"
               element={
@@ -217,12 +220,14 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppRoutes
-        user={user}
-        menuOpen={menuOpen}
-        setMenuOpen={setMenuOpen}
-        isOnline={isOnline}
-      />
+      <ErrorBoundary>
+        <AppRoutes
+          user={user}
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+          isOnline={isOnline}
+        />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
@@ -671,70 +676,86 @@ export default function Emoji({ symbol, label }) {
 ----- C:\ThomasParking\ThomasParking\src\components\ErrorBoundary.jsx -----
 
 // src/components/ErrorBoundary.jsx
-import React from 'react'
-import PropTypes from 'prop-types'
+import React from 'react';
+import PropTypes from 'prop-types';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
-    super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    super(props);
+    this.state = { 
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
   }
 
   static getDerivedStateFromError(error) {
-    // Actualiza el estado para mostrar la UI de repuesto
-    return { hasError: true, error }
+    return { 
+      hasError: true,
+      error: error 
+    };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Puedes loguear el error a un servicio externo aquí
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('ErrorBoundary atrapó un error:', error, errorInfo)
+    console.error("Error capturado:", error, errorInfo);
+    this.setState({ errorInfo });
+    
+    // Ejemplo de envío a servicio de monitoreo
+    if (process.env.NODE_ENV === 'production') {
+      // logErrorToService(error, errorInfo);
     }
-    this.setState({ errorInfo })
-    // Ejemplo: enviar a un servicio externo
-    // logErrorToService(error, errorInfo)
   }
 
   handleRetry = () => {
-    // Restablece el estado para intentar renderizar de nuevo
-    this.setState({ hasError: false, error: null, errorInfo: null })
-  }
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
+    
+    // Opcional: Recargar la aplicación completa
+    // window.location.reload();
+  };
 
   render() {
     if (this.state.hasError) {
-      // UI de repuesto personalizada
       return (
         <div className="max-w-lg mx-auto my-16 p-8 bg-red-50 dark:bg-red-900 rounded-lg shadow border border-red-200 dark:border-red-800 text-center">
           <h2 className="text-2xl font-bold text-red-700 dark:text-red-100 mb-2">
             ¡Algo salió mal!
           </h2>
+          
           {this.state.error && (
             <p className="text-red-600 dark:text-red-300 mb-4">
               {this.state.error.message}
             </p>
           )}
+
           <button
             onClick={this.handleRetry}
             className="mt-4 px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            aria-label="Reintentar operación"
           >
             Reintentar
           </button>
+
           {process.env.NODE_ENV !== 'production' && this.state.errorInfo && (
             <details className="mt-4 text-xs text-left text-red-500 whitespace-pre-wrap">
-              {this.state.errorInfo.componentStack}
+              <summary>Detalles técnicos</summary>
+              <p className="mt-2">{this.state.errorInfo.componentStack}</p>
             </details>
           )}
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
 ErrorBoundary.propTypes = {
   children: PropTypes.node.isRequired
-}
+};
 
 
 ----- C:\ThomasParking\ThomasParking\src\components\ErrorMessage.jsx -----
@@ -1732,7 +1753,6 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
       {user && (
         <div className="flex flex-col items-center mt-6">
           <span className="text-white font-semibold text-base">{user.email}</span>
-          <span className="text-blue-200 text-sm">{user.user_metadata?.role || 'usuario'}</span>
         </div>
       )}
       <button
@@ -1782,6 +1802,14 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
             <Emoji symbol="🅿️" /> <span>ParkingApp</span>
           </NavLink>
         </div>
+
+        {/* Usuario logueado: email y rol (solo escritorio) */}
+        {user && (
+          <div className="hidden md:flex flex-col items-end ml-auto mr-4 text-white">
+            <span className="font-semibold">{user.email}</span>
+          </div>
+        )}
+
         {/* Botón hamburguesa SIEMPRE visible */}
         <button
           className="flex items-center justify-center text-white focus:outline-none ml-2 p-1"
@@ -1931,8 +1959,12 @@ export default function SelectorDeFoto({ onFileSelected }) {
 
 ----- C:\ThomasParking\ThomasParking\src\components\SignUp.jsx -----
 
+import React from 'react';
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { Link } from 'react-router-dom';
+import Loader from './Loader';
+import Emoji from './Emoji';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -1940,77 +1972,143 @@ export default function SignUp() {
   const [nombre, setNombre] = useState('');
   const [rol, setRol] = useState('registrador');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
-      // 1. Registrar usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Validaciones del cliente
+      if (!nombre.trim()) throw new Error('El nombre es obligatorio');
+      if (!/\S+@\S+\.\S+/.test(email)) throw new Error('Formato de correo inválido');
+      if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres');
+
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            nombre,
-            rol,
+            nombre: nombre.trim(),
+            rol: rol === 'copropietario' ? 'copropietario' : rol
           },
+          emailRedirectTo: `${window.location.origin}/login`
         },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          throw new Error('Este correo ya está registrado');
+        }
+        throw authError;
+      }
 
-      // 2. El trigger automáticamente creará el registro en usuarios_app
-      alert('Registro exitoso! Verifica tu correo.');
-      
+      alert('Registro exitoso! Verifica tu correo electrónico para activar la cuenta.');
+      setTimeout(() => window.location.href = '/login', 2000);
+
     } catch (error) {
-      alert('Error: ' + error.message);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSignUp} className="signup-form">
-      <div>
-        <label>Nombre completo:</label>
-        <input
-          type="text"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label>Correo electrónico:</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label>Contraseña:</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label>Rol:</label>
-        <select value={rol} onChange={(e) => setRol(e.target.value)}>
-          <option value="registrador">Registrador</option>
-          <option value="admin">Administrador</option>
-          <option value="copropietario">Copropietario</option>
-        </select>
-      </div>
-      <button type="submit" disabled={loading}>
-        {loading ? 'Registrando...' : 'Registrarse'}
-      </button>
-    </form>
+    <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-center dark:text-white">
+        <Emoji symbol="📝" /> Registro de Usuario
+      </h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          ⚠️ {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSignUp} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Nombre Completo
+          </label>
+          <input
+            type="text"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Ej: Juan Pérez"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Correo Electrónico
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="tucorreo@ejemplo.com"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Contraseña
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Mínimo 6 caracteres"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Rol del Usuario
+          </label>
+          <select
+            value={rol}
+            onChange={(e) => setRol(e.target.value)}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="registrador">Registrador</option>
+            <option value="admin">Administrador</option>
+            <option value="copropietario">Copropietario</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+        >
+          {loading ? (
+            <Loader text="Registrando..." small />
+          ) : (
+            <>
+              <Emoji symbol="📝" /> Registrarse
+            </>
+          )}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-sm dark:text-gray-300">
+        ¿Ya tienes cuenta?{' '}
+        <Link
+          to="/login"
+          className="text-blue-600 hover:underline dark:text-blue-400"
+        >
+          Inicia sesión aquí
+        </Link>
+      </p>
+    </div>
   );
 }
 
@@ -3570,9 +3668,29 @@ export default function DescargoGestion() {
 ----- C:\ThomasParking\ThomasParking\src\pages\GestionCopropietarios.jsx -----
 
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
 import Loader from '../components/Loader'
 import Emoji from '../components/Emoji'
+
+// Utilidad para fetch seguro de copropietarios usando el proxy
+async function fetchCopropietariosSeguro() {
+  try {
+    const response = await fetch('/api/cors-proxy/copropietarios');
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Error HTTP ${response.status}: ${text}`);
+    }
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      throw new Error("Respuesta no es JSON: " + text);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error cargando copropietarios:", error.message);
+    throw error;
+  }
+}
 
 export default function GestionCopropietarios() {
   const [copropietarios, setCopropietarios] = useState([])
@@ -3581,12 +3699,16 @@ export default function GestionCopropietarios() {
   const [modal, setModal] = useState({ open: false, copropietario: null })
   const [form, setForm] = useState({ nombre: '', propiedad: '', unidad_asignada: '' })
 
-  // Leer copropietarios
+  // Leer copropietarios con manejo robusto de errores
   const fetchCopropietarios = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('copropietarios').select('*').order('propiedad')
-    if (error) setError(error.message)
-    else setCopropietarios(data)
+    setError(null)
+    try {
+      const data = await fetchCopropietariosSeguro()
+      setCopropietarios(data)
+    } catch (err) {
+      setError(err.message)
+    }
     setLoading(false)
   }
 
@@ -3600,31 +3722,51 @@ export default function GestionCopropietarios() {
       setError('Todos los campos son obligatorios')
       return
     }
-    if (modal.copropietario) {
-      // Update
-      const { error } = await supabase
-        .from('copropietarios')
-        .update(form)
-        .eq('id', modal.copropietario.id)
-      if (error) setError(error.message)
-    } else {
-      // Create
-      const { error } = await supabase
-        .from('copropietarios')
-        .insert([form])
-      if (error) setError(error.message)
+    try {
+      let response;
+      if (modal.copropietario) {
+        // Update
+        response = await fetch(`/api/cors-proxy/copropietarios?id=eq.${modal.copropietario.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+      } else {
+        // Create
+        response = await fetch('/api/cors-proxy/copropietarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([form])
+        });
+      }
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Error: ${text}`);
+      }
+      setModal({ open: false, copropietario: null })
+      setForm({ nombre: '', propiedad: '', unidad_asignada: '' })
+      fetchCopropietarios()
+    } catch (err) {
+      setError(err.message)
     }
-    setModal({ open: false, copropietario: null })
-    setForm({ nombre: '', propiedad: '', unidad_asignada: '' })
-    fetchCopropietarios()
   }
 
   // Eliminar copropietario
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar copropietario?')) return
-    const { error } = await supabase.from('copropietarios').delete().eq('id', id)
-    if (error) setError(error.message)
-    fetchCopropietarios()
+    setError(null)
+    try {
+      const response = await fetch(`/api/cors-proxy/copropietarios?id=eq.${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Error: ${text}`);
+      }
+      fetchCopropietarios()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   // Abrir modal para editar
