@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
@@ -155,7 +157,6 @@ export default function App() {
       if (mounted) setUser(user || null);
     }
     getSession();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);

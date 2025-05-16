@@ -4323,303 +4323,160 @@ export default function Login() {
 // src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
-import SelectorDeFoto from '../components/SelectorDeFoto';
-import useOnlineStatus from '../hooks/useOnlineStatus';
-import dayjs from 'dayjs';
 
 export default function RegistroParqueo() {
-  const navigate = useNavigate();
+  const [copropietarios, setCopropietarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const isOnline = useOnlineStatus();
-
-  // Estado para manejar la foto y su previsualización
-  const [foto, setFoto] = useState(null);
-  const [preview, setPreview] = useState(null);
-
-  // Estado principal del formulario
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
-    fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
-    dependencia_id: '',
+    fecha_hora_ingreso: '',
     observaciones: '',
+    dependencia_id: '',
     gratis: false,
-    audio: null
   });
+  const [success, setSuccess] = useState(null);
 
-  // Generar previsualización de la foto
+  // Cargar copropietarios
   useEffect(() => {
-    if (!foto) {
-      setPreview(null);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(foto);
-    setPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [foto]);
-
-  // Cargar lista de copropietarios
-  useEffect(() => {
+    let isMounted = true;
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
         .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada')
-        .order('propiedad', { ascending: true });
-
-      if (error) setError('Error cargando copropietarios: ' + error.message);
-      else setCopropietarios(data || []);
-      
+        .select('id, nombre, propiedad, unidad_asignada');
+      if (!error && isMounted) setCopropietarios(data);
       setLoading(false);
     };
-
     fetchCopropietarios();
+    return () => { isMounted = false };
   }, []);
 
-  // Manejar cambios en los inputs del formulario
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setForm(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  // Manejar la selección de foto (desde cámara o archivo)
-  const handleFileSelected = (file) => {
-    setFoto(file);
-  };
-
-  // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
-
+    setSuccess(null);
+    setLoading(true);
     try {
-      // 1. Subir foto si existe
-      let fotoUrl = '';
-      if (foto) {
-        const nombreFoto = `foto_${Date.now()}_${formData.placa_vehiculo}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from('evidencias-parqueadero')
-          .upload(nombreFoto, foto);
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: urlData } = supabase.storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(nombreFoto);
-        fotoUrl = urlData.publicUrl;
+      if (!form.placa_vehiculo || !form.fecha_hora_ingreso || !form.dependencia_id) {
+        setError('Todos los campos obligatorios deben estar completos.');
+        setLoading(false);
+        return;
       }
-
-      // 2. Subir audio si existe
-      let audioUrl = '';
-      if (formData.audio) {
-        const nombreAudio = `audio_${Date.now()}_${formData.placa_vehiculo}.webm`;
-        const { error: audioError } = await supabase.storage
-          .from('evidencias-parqueadero')
-          .upload(nombreAudio, formData.audio);
-        
-        if (audioError) throw audioError;
-        
-        const { data: audioUrlData } = supabase.storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(nombreAudio);
-        audioUrl = audioUrlData.publicUrl;
-      }
-
-      // 3. Obtener ID del usuario
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: usuarioApp } = await supabase
-        .from('usuarios_app')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (!usuarioApp) throw new Error('Usuario no encontrado');
-
-      // 4. Insertar registro en la base de datos
-      const { error: insertError } = await supabase
+      const monto = form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
+      const { error } = await supabase
         .from('registros_parqueadero')
         .insert([{
-          ...formData,
-          foto_url: fotoUrl,
-          observacion_audio_url: audioUrl,
-          monto: formData.gratis ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          usuario_id: usuarioApp.id,
-          fecha_hora_ingreso: formData.fecha_hora_ingreso
+          ...form,
+          monto,
         }]);
-
-      if (insertError) throw insertError;
-
-      // 5. Redirigir y limpiar formulario
-      navigate('/consultas', { state: { success: true } });
-      setFormData({
+      if (error) throw error;
+      setSuccess('Registro guardado exitosamente.');
+      setForm({
         placa_vehiculo: '',
         tipo_vehiculo: 'carro',
-        fecha_hora_ingreso: dayjs().format('YYYY-MM-DD'),
-        dependencia_id: '',
+        fecha_hora_ingreso: '',
         observaciones: '',
+        dependencia_id: '',
         gratis: false,
-        audio: null
       });
-      setFoto(null);
-      
     } catch (err) {
-      setError(`Error registrando parqueo: ${err.message}`);
+      setError(err.message);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (loading) return <Loader text="Cargando formulario..." />;
+  if (loading) return <Loader text="Cargando copropietarios..." />;
 
   return (
-    <div className="registro-container">
-      <h2><Emoji symbol="📝" /> Registro de Parqueo</h2>
-
-      <form onSubmit={handleSubmit} className="form-registro">
-        {/* Campos del formulario */}
-        <div className="grid-form">
-          <label>
-            <Emoji symbol="📅" /> Fecha de Ingreso:
-            <input
-              type="date"
-              name="fecha_hora_ingreso"
-              value={formData.fecha_hora_ingreso}
-              onChange={handleChange}
-              required
-            />
-          </label>
-
-          <label>
-            <Emoji symbol="🚗" /> Placa del Vehículo:
-            <input
-              type="text"
-              name="placa_vehiculo"
-              value={formData.placa_vehiculo}
-              onChange={handleChange}
-              pattern="[A-Za-z0-9]{6,8}"
-              title="Formato de placa válido (6-8 caracteres alfanuméricos)"
-              required
-            />
-          </label>
-
-          <label>
-            <Emoji symbol="🚦" /> Tipo de Vehículo:
-            <select
-              name="tipo_vehiculo"
-              value={formData.tipo_vehiculo}
-              onChange={handleChange}
-              required
-            >
-              <option value="carro">Carro 🚗</option>
-              <option value="moto">Moto 🏍️</option>
-            </select>
-          </label>
-
-          <label>
-            <Emoji symbol="🏠" /> Copropietario:
-            <select
-              name="dependencia_id"
-              value={formData.dependencia_id}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Seleccione un copropietario...</option>
-              {copropietarios.map(cop => (
-                <option key={cop.id} value={cop.id}>
-                  {cop.nombre} ({cop.propiedad} - {cop.unidad_asignada})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* Selector de foto con previsualización */}
-        <div className="seccion-foto">
-          <label>
-            <Emoji symbol="📷" /> Evidencia Fotográfica:
-            <SelectorDeFoto onFileSelected={handleFileSelected} />
-          </label>
-          
-          {preview && (
-            <div className="preview-container">
-              <img
-                src={preview}
-                alt="Previsualización"
-                className="thumbnail"
-              />
-              <button
-                type="button"
-                onClick={() => setFoto(null)}
-                className="btn-eliminar-foto"
-              >
-                ×
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Campo de audio */}
+    <div className="registro-parqueo-container">
+      <h2>
+        <Emoji symbol="📝" label="Registro" /> Registro de Parqueo de Visita
+      </h2>
+      <form className="registro-form" onSubmit={handleSubmit}>
         <label>
-          <Emoji symbol="🎙️" /> Observación de Audio:
+          Placa del vehículo:
           <input
-            type="file"
-            accept="audio/*"
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              audio: e.target.files?.[0] || null
-            }))}
-          />
-        </label>
-
-        {/* Observaciones */}
-        <label>
-          <Emoji symbol="📝" /> Observaciones:
-          <textarea
-            name="observaciones"
-            value={formData.observaciones}
+            name="placa_vehiculo"
+            value={form.placa_vehiculo}
             onChange={handleChange}
-            rows="3"
-            maxLength="500"
+            required
+            autoFocus
           />
         </label>
-
-        {/* Checkbox de parqueo gratis */}
+        <label>
+          Tipo de vehículo:
+          <select
+            name="tipo_vehiculo"
+            value={form.tipo_vehiculo}
+            onChange={handleChange}
+            required
+          >
+            <option value="carro">Carro 🚗</option>
+            <option value="moto">Moto 🏍️</option>
+          </select>
+        </label>
+        <label>
+          Fecha y hora de ingreso:
+          <input
+            type="datetime-local"
+            name="fecha_hora_ingreso"
+            value={form.fecha_hora_ingreso}
+            onChange={handleChange}
+            required
+          />
+        </label>
+        <label>
+          Observaciones:
+          <input
+            name="observaciones"
+            value={form.observaciones}
+            onChange={handleChange}
+            placeholder="Opcional"
+          />
+        </label>
+        <label>
+          Copropietario:
+          <select
+            name="dependencia_id"
+            value={form.dependencia_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Seleccione...</option>
+            {copropietarios.map(dep => (
+              <option key={dep.id} value={dep.id}>
+                {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="checkbox-label">
           <input
             type="checkbox"
             name="gratis"
-            checked={formData.gratis}
+            checked={form.gratis}
             onChange={handleChange}
           />
-          <Emoji symbol="🆓" /> Parqueo Gratuito
+          <Emoji symbol="🆓" label="Gratis " /> Gratis
         </label>
-
-        {/* Mensajes de estado */}
-        {error && <div className="error-message">{error}</div>}
-        {!isOnline && (
-          <div className="offline-warning">
-            <Emoji symbol="⚠️" /> Modo offline - Los datos se sincronizarán cuando se recupere la conexión
-          </div>
-        )}
-
-        {/* Botón de envío */}
-        <button
-          type="submit"
-          disabled={submitting || !isOnline}
-          className="btn-submit"
-        >
-          {submitting ? <Loader text="Registrando..." /> : <><Emoji symbol="✅" /> Registrar Parqueo</>}
+        <button type="submit" className="save-btn" disabled={loading}>
+          Guardar
         </button>
       </form>
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="info-message">{success}</div>}
     </div>
   );
 }
