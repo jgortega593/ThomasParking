@@ -1,39 +1,32 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "builds": [{
+    "src": "package.json",
+    "use": "@vercel/static-build",
+    "config": { "distDir": "dist" }
+  }],
   "rewrites": [
-    { "source": "/api/cors-proxy/(.*)", "destination": "/api/cors-proxy" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
     {
       "source": "/api/cors-proxy/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://thomas-parking.vercel.app, http://localhost:5173" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "apikey, authorization, content-type" }
-      ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/old-registro",
-      "destination": "/registro",
-      "permanent": true
+      "destination": "/api/cors-proxy"
     },
     {
-      "source": "/old-login",
-      "destination": "/login",
-      "permanent": true
+      "source": "/(.*)",
+      "destination": "/index.html",
+      "has": [{ "type": "header", "key": "accept", "value": "text/html" }]
     }
+  ],
+  "headers": [{
+    "source": "/api/cors-proxy/(.*)",
+    "headers": [
+      { "key": "Access-Control-Allow-Origin", "value": "https://thomas-parking.vercel.app, http://localhost:5173" },
+      { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+      { "key": "Access-Control-Allow-Headers", "value": "apikey, authorization, content-type" }
+    ]
+  }],
+  "redirects": [
+    { "source": "/old-registro", "destination": "/registro", "permanent": true },
+    { "source": "/old-login", "destination": "/login", "permanent": true }
   ],
   "trailingSlash": false
 }

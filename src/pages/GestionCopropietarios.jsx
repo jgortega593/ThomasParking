@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
 import Loader from '../components/Loader'
 import Emoji from '../components/Emoji'
+
+// Utilidad para fetch seguro de copropietarios usando el proxy
+async function fetchCopropietariosSeguro() {
+  try {
+    const response = await fetch('/api/cors-proxy/copropietarios');
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Error HTTP ${response.status}: ${text}`);
+    }
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      throw new Error("Respuesta no es JSON: " + text);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error cargando copropietarios:", error.message);
+    throw error;
+  }
+}
 
 export default function GestionCopropietarios() {
   const [copropietarios, setCopropietarios] = useState([])
@@ -10,12 +30,16 @@ export default function GestionCopropietarios() {
   const [modal, setModal] = useState({ open: false, copropietario: null })
   const [form, setForm] = useState({ nombre: '', propiedad: '', unidad_asignada: '' })
 
-  // Leer copropietarios
+  // Leer copropietarios con manejo robusto de errores
   const fetchCopropietarios = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('copropietarios').select('*').order('propiedad')
-    if (error) setError(error.message)
-    else setCopropietarios(data)
+    setError(null)
+    try {
+      const data = await fetchCopropietariosSeguro()
+      setCopropietarios(data)
+    } catch (err) {
+      setError(err.message)
+    }
     setLoading(false)
   }
 
@@ -29,31 +53,51 @@ export default function GestionCopropietarios() {
       setError('Todos los campos son obligatorios')
       return
     }
-    if (modal.copropietario) {
-      // Update
-      const { error } = await supabase
-        .from('copropietarios')
-        .update(form)
-        .eq('id', modal.copropietario.id)
-      if (error) setError(error.message)
-    } else {
-      // Create
-      const { error } = await supabase
-        .from('copropietarios')
-        .insert([form])
-      if (error) setError(error.message)
+    try {
+      let response;
+      if (modal.copropietario) {
+        // Update
+        response = await fetch(`/api/cors-proxy/copropietarios?id=eq.${modal.copropietario.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+      } else {
+        // Create
+        response = await fetch('/api/cors-proxy/copropietarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([form])
+        });
+      }
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Error: ${text}`);
+      }
+      setModal({ open: false, copropietario: null })
+      setForm({ nombre: '', propiedad: '', unidad_asignada: '' })
+      fetchCopropietarios()
+    } catch (err) {
+      setError(err.message)
     }
-    setModal({ open: false, copropietario: null })
-    setForm({ nombre: '', propiedad: '', unidad_asignada: '' })
-    fetchCopropietarios()
   }
 
   // Eliminar copropietario
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar copropietario?')) return
-    const { error } = await supabase.from('copropietarios').delete().eq('id', id)
-    if (error) setError(error.message)
-    fetchCopropietarios()
+    setError(null)
+    try {
+      const response = await fetch(`/api/cors-proxy/copropietarios?id=eq.${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Error: ${text}`);
+      }
+      fetchCopropietarios()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   // Abrir modal para editar
