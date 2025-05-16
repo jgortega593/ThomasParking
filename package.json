@@ -5,7 +5,7 @@
   "author": "Gabriel Ortega",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --force",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx"
