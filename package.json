@@ -1,10 +1,11 @@
 {
   "name": "thomas-parking",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "vite --port 5173",
-    "build": "vite build",
-    "preview": "vite preview --port 4173",
+    "dev": "vite --mode development --port 5173",
+    "build": "vite build --mode production",
+    "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
