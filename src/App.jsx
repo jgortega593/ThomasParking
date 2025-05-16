@@ -1,6 +1,5 @@
-// src/App.jsx
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
 // Páginas
@@ -12,6 +11,7 @@ import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
+import SignUp from './components/SignUp';
 
 // Componentes de layout
 import Navbar from './components/Navbar';
@@ -19,6 +19,9 @@ import Footer from './components/Footer';
 
 // Hook para estado online/offline
 import useOnlineStatus from './hooks/useOnlineStatus';
+
+// Error boundary
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
@@ -29,34 +32,17 @@ function ProtectedRoute({ user, allowedRoles, children }) {
   return children;
 }
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const isOnline = useOnlineStatus();
-
-  // Mantener el usuario autenticado
-  useEffect(() => {
-    let mounted = true;
-    async function getSession() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (mounted) setUser(user || null);
-    }
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
-    };
-  }, []);
+function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
+  const location = useLocation();
+  // Rutas donde NO quieres mostrar el Navbar
+  const hideNavbarRoutes = ['/login', '/', '/registro'];
 
   return (
-    <BrowserRouter>
-      <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+    <>
+      {!hideNavbarRoutes.includes(location.pathname) && (
+        <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      )}
+
       {/* Indicador claro de estado offline */}
       {!isOnline && (
         <div className="offline-banner" role="status" aria-live="polite"
@@ -78,14 +64,13 @@ export default function App() {
           &nbsp;Modo offline: solo lectura. Edición y borrado están deshabilitados.
         </div>
       )}
+
       {/* Oculta el contenido principal cuando el menú móvil está abierto */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
-            {/* Ruta de login pública */}
             <Route path="/login" element={<Login />} />
-
-            {/* Rutas protegidas para cualquier usuario autenticado */}
+            <Route path="/registro" element={<SignUp />} />
             <Route
               path="/registros"
               element={
@@ -142,19 +127,56 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Redirección por defecto */}
             <Route
               path="/"
               element={
                 user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
               }
             />
-            {/* Ruta catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
         </div>
       )}
+    </>
+  );
+}
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isOnline = useOnlineStatus();
+
+  // Mantener el usuario autenticado
+  useEffect(() => {
+    let mounted = true;
+    async function getSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (mounted) setUser(user || null);
+    }
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <ErrorBoundary>
+        <AppRoutes
+          user={user}
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+          isOnline={isOnline}
+        />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
