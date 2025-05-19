@@ -1,8 +1,16 @@
 // src/App.jsx
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { supabase } from './supabaseClient';
+import supabase from './supabaseClient';
+import { ThemeProvider } from './context/ThemeContext';
+
+// Componentes principales
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
+import AuthGuard from './components/AuthGuard';
+import Loader from './components/Loader';
+import useOnlineStatus from './hooks/useOnlineStatus';
 
 // Páginas
 import RegistroParqueo from './pages/RegistroParqueo';
@@ -15,37 +23,34 @@ import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import SignUp from './components/SignUp';
 
-// Componentes de layout
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-
-// Hook para estado online/offline
-import useOnlineStatus from './hooks/useOnlineStatus';
-
-// Error boundary
-import ErrorBoundary from './components/ErrorBoundary';
-
-// Ruta protegida
 function ProtectedRoute({ user, allowedRoles, children }) {
-  if (!user) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.user_metadata?.role)) {
     return <Navigate to="/" replace />;
   }
+
   return children;
 }
 
 function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
-  // Rutas donde NO quieres mostrar el Navbar
   const hideNavbarRoutes = ['/login', '/', '/registro'];
 
   return (
     <>
       {!hideNavbarRoutes.includes(location.pathname) && (
-        <Navbar user={user} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <Navbar 
+          user={user} 
+          menuOpen={menuOpen} 
+          setMenuOpen={setMenuOpen} 
+        />
       )}
 
-      {/* Indicador claro de estado offline */}
       {!isOnline && (
         <div className="offline-banner" role="status" aria-live="polite"
           style={{
@@ -55,86 +60,69 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
             textAlign: 'center',
             fontWeight: 600,
             fontSize: '1rem',
-            letterSpacing: '0.02em',
             borderBottom: '1.5px solid #ffe58f',
-            zIndex: 100,
-            width: '100vw',
-            position: 'relative'
+            position: 'sticky',
+            top: '64px',
+            zIndex: 40
           }}
         >
           <span role="img" aria-label="offline">⚡</span>
-          &nbsp;Modo offline: solo lectura. Edición y borrado están deshabilitados.
+          &nbsp;Modo offline: solo lectura. Edición y borrado deshabilitados.
         </div>
       )}
 
-      {/* Oculta el contenido principal cuando el menú móvil está abierto */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<SignUp />} />
-            <Route
-              path="/registros"
-              element={
-                <ProtectedRoute user={user}>
-                  <RegistroParqueo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultas"
-              element={
-                <ProtectedRoute user={user}>
-                  <Consultas />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recaudo"
-              element={
-                <ProtectedRoute user={user}>
-                  <Recaudo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/descargos"
-              element={
-                <ProtectedRoute user={user}>
-                  <Descargos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/acercade"
-              element={
-                <ProtectedRoute user={user}>
-                  <AcercaDe />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/usuarios"
-              element={
-                <ProtectedRoute user={user}>
-                  <GestionUsuarios />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/copropietarios"
-              element={
-                <ProtectedRoute user={user}>
-                  <GestionCopropietarios />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/"
-              element={
-                user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
-              }
-            />
+            
+            <Route path="/registros" element={
+              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
+                <RegistroParqueo />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/consultas" element={
+              <ProtectedRoute user={user}>
+                <Consultas />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/recaudo" element={
+              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
+                <Recaudo />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/descargos" element={
+              <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <Descargos />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/acercade" element={
+              <ProtectedRoute user={user}>
+                <AcercaDe />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/usuarios" element={
+              <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <GestionUsuarios />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/copropietarios" element={
+              <ProtectedRoute user={user} allowedRoles={['admin']}>
+                <GestionCopropietarios />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/" element={
+              user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
+            }/>
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
@@ -144,40 +132,57 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
   );
 }
 
-export default function App() {
+function App() {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const isOnline = useOnlineStatus();
 
-  // Mantener el usuario autenticado
   useEffect(() => {
-    let mounted = true;
-    async function getSession() {
+    let isMounted = true;
+    
+    const getSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (mounted) setUser(user || null);
-    }
-    getSession();
+      if (isMounted) {
+        setUser(user || null);
+        setLoading(false);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user || null);
+      async (_event, session) => {
+        if (isMounted) {
+          setUser(session?.user || null);
+          setLoading(false);
+        }
       }
     );
+
+    getSession();
     return () => {
-      mounted = false;
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, []);
 
+  if (loading) {
+    return <Loader fullScreen text="Inicializando aplicación..." />;
+  }
+
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <AppRoutes
-          user={user}
-          menuOpen={menuOpen}
-          setMenuOpen={setMenuOpen}
-          isOnline={isOnline}
-        />
-      </ErrorBoundary>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <ErrorBoundary>
+          <AppRoutes
+            user={user}
+            menuOpen={menuOpen}
+            setMenuOpen={setMenuOpen}
+            isOnline={isOnline}
+          />
+        </ErrorBoundary>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
+
+export default App;

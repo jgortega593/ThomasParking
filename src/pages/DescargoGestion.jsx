@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { supabase } from "../supabaseClient";
+import supabase from "../supabaseClient";
 import dayjs from "dayjs";
 
 // Error Boundary para capturar errores en el componente

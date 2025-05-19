@@ -1,7 +1,7 @@
 // src/components/AuthGuard.jsx
 import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import supabase from '../supabaseClient';
 import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
 

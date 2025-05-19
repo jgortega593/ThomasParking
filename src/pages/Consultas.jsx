@@ -1,14 +1,17 @@
 // src/pages/Consultas.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import Loader from "../components/Loader";
+import supabase from '../supabaseClient';
+import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
-import ResumenRegistros from '../components/ResumenRegistros';
+import ErrorMessage from '../components/ErrorMessage';
+import Modal from '../components/Modal';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import dayjs from 'dayjs';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function Consultas() {
+  const [registros, setRegistros] = useState([]);
+  const [copropietarios, setCopropietarios] = useState([]);
+  const [resultados, setResultados] = useState([]);
   const [filtros, setFiltros] = useState({
     fechaInicio: '',
     fechaFin: '',
@@ -17,96 +20,63 @@ export default function Consultas() {
     unidadAsignada: '',
     tipoVehiculo: ''
   });
-  const [todos, setTodos] = useState([]);
-  const [resultados, setResultados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [editModal, setEditModal] = useState({ open: false, registro: null });
-  const [editData, setEditData] = useState({});
-  const [searching, setSearching] = useState(false);
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [modal, setModal] = useState({ open: false, registro: null });
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isOnline = useOnlineStatus();
 
+  // Cargar datos iniciales
   useEffect(() => {
-    const fetchCopropietarios = async () => {
-      const { data, error } = await supabase
-        .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada');
-      if (!error) setCopropietarios(data);
-    };
-    fetchCopropietarios();
-  }, []);
-
-  useEffect(() => {
-    const fetchTodos = async () => {
-      setLoading(true);
-      setError(null);
+    const cargarDatos = async () => {
       try {
-        const { data, error } = await supabase
-          .from('registros_parqueadero')
-          .select(`
-            id,
-            placa_vehiculo,
-            tipo_vehiculo,
-            fecha_hora_ingreso,
-            observaciones,
-            foto_url,
-            gratis,
-            monto,
-            recaudado,
-            fecha_recaudo,
-            dependencia_id,
-            observacion_audio_url,
-            copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
-            usuario:usuario_id!inner(id, nombre)
-          `)
-          .order('fecha_hora_ingreso', { ascending: false });
-        if (error) throw error;
-        setTodos(data || []);
-        setResultados(data || []);
+        const [resRegistros, resCopropietarios] = await Promise.all([
+          supabase
+            .from('registros_parqueadero')
+            .select(`
+              id,
+              placa_vehiculo,
+              tipo_vehiculo,
+              fecha_hora_ingreso,
+              observaciones,
+              foto_url,
+              gratis,
+              monto,
+              recaudado,
+              fecha_recaudo,
+              dependencia_id,
+              observacion_audio_url,
+              copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
+              usuarios_app:usuario_id(nombre, rol)
+            `)
+            .order('fecha_hora_ingreso', { ascending: false }),
+          supabase
+            .from('copropietarios')
+            .select('id, nombre, propiedad, unidad_asignada')
+        ]);
+        if (resRegistros.error) throw resRegistros.error;
+        if (resCopropietarios.error) throw resCopropietarios.error;
+        setRegistros(resRegistros.data || []);
+        setCopropietarios(resCopropietarios.data || []);
+        setResultados(resRegistros.data || []);
       } catch (error) {
         setError(error.message);
-        setTodos([]);
-        setResultados([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchTodos();
+    cargarDatos();
   }, []);
 
+  // Filtros dinámicos
   const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
   const unidadesFiltradas = filtros.propiedad
     ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
     : [];
-  const copropietarioSeleccionado = copropietarios.find(
-    c => c.propiedad === filtros.propiedad && c.unidad_asignada === filtros.unidadAsignada
-  );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSearching(true);
-    let filtrados = [...todos];
-    if (filtros.fechaInicio)
-      filtrados = filtrados.filter(r => r.fecha_hora_ingreso >= `${filtros.fechaInicio}T00:00:00`);
-    if (filtros.fechaFin)
-      filtrados = filtrados.filter(r => r.fecha_hora_ingreso <= `${filtros.fechaFin}T23:59:59`);
-    if (filtros.placa)
-      filtrados = filtrados.filter(r => r.placa_vehiculo?.toLowerCase().includes(filtros.placa.toLowerCase()));
-    if (filtros.tipoVehiculo)
-      filtrados = filtrados.filter(r => r.tipo_vehiculo === filtros.tipoVehiculo);
-    if (filtros.propiedad && !filtros.unidadAsignada) {
-      filtrados = filtrados.filter(r => r.copropietarios?.propiedad === filtros.propiedad);
-    }
-    if (filtros.propiedad && filtros.unidadAsignada && copropietarioSeleccionado) {
-      filtrados = filtrados.filter(r => r.dependencia_id === copropietarioSeleccionado.id);
-    }
-    setResultados(filtrados);
-    setTimeout(() => setSearching(false), 500);
-  };
-
+  // Manejar cambios en filtros
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({
@@ -116,6 +86,44 @@ export default function Consultas() {
     }));
   };
 
+  // Aplicar filtros
+  const aplicarFiltros = (e) => {
+    e.preventDefault();
+    let filtrados = [...registros];
+    if (filtros.fechaInicio) {
+      filtrados = filtrados.filter(r =>
+        dayjs(r.fecha_hora_ingreso).isAfter(dayjs(filtros.fechaInicio).startOf('day'))
+      );
+    }
+    if (filtros.fechaFin) {
+      filtrados = filtrados.filter(r =>
+        dayjs(r.fecha_hora_ingreso).isBefore(dayjs(filtros.fechaFin).endOf('day'))
+      );
+    }
+    if (filtros.placa) {
+      filtrados = filtrados.filter(r =>
+        r.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase())
+      );
+    }
+    if (filtros.tipoVehiculo) {
+      filtrados = filtrados.filter(r =>
+        r.tipo_vehiculo === filtros.tipoVehiculo
+      );
+    }
+    if (filtros.propiedad) {
+      filtrados = filtrados.filter(r =>
+        r.copropietarios?.propiedad === filtros.propiedad
+      );
+    }
+    if (filtros.unidadAsignada) {
+      filtrados = filtrados.filter(r =>
+        r.copropietarios?.unidad_asignada === filtros.unidadAsignada
+      );
+    }
+    setResultados(filtrados);
+  };
+
+  // Limpiar filtros
   const limpiarFiltros = () => {
     setFiltros({
       fechaInicio: '',
@@ -125,393 +133,333 @@ export default function Consultas() {
       unidadAsignada: '',
       tipoVehiculo: ''
     });
-    setResultados(todos);
+    setResultados(registros);
   };
 
-  const handleEdit = (registro) => {
-    setEditModal({ open: true, registro });
-    setEditData({
+  // Manejar edición
+  const abrirEdicion = (registro) => {
+    setModal({ open: true, registro });
+    setForm({
       placa_vehiculo: registro.placa_vehiculo,
       tipo_vehiculo: registro.tipo_vehiculo,
-      fecha_hora_ingreso: registro.fecha_hora_ingreso?.slice(0, 10) || '',
-      gratis: !!registro.gratis,
-      observaciones: registro.observaciones || '',
+      fecha_hora_ingreso: dayjs(registro.fecha_hora_ingreso).format('YYYY-MM-DD'),
       dependencia_id: registro.dependencia_id,
-      recaudado: !!registro.recaudado,
+      observaciones: registro.observaciones || '',
+      monto: registro.monto,
+      gratis: registro.gratis,
+      recaudado: registro.recaudado,
       fecha_recaudo: registro.fecha_recaudo || ''
     });
   };
 
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
-    }));
-  };
-
-  const handleEditSave = async (e) => {
+  // Guardar cambios
+  const guardarCambios = async (e) => {
     e.preventDefault();
-    setSavingEdit(true);
-    const id = editModal.registro.id;
-    const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
+    setSaving(true);
     try {
       const { error } = await supabase
         .from('registros_parqueadero')
-        .update({ ...editData, monto })
-        .eq('id', id);
+        .update({
+          ...form,
+          monto: form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
+          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null
+        })
+        .eq('id', modal.registro.id);
       if (error) throw error;
-      const updated = todos.map(r => r.id === id ? { ...r, ...editData, monto } : r);
-      setTodos(updated);
-      setResultados(updated);
-      setEditModal({ open: false, registro: null });
+      const actualizados = registros.map(r =>
+        r.id === modal.registro.id ? { ...r, ...form } : r
+      );
+      setRegistros(actualizados);
+      setResultados(actualizados);
+      setModal({ open: false, registro: null });
     } catch (error) {
       setError(error.message);
     } finally {
-      setSavingEdit(false);
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (registro) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return;
+  // Eliminar registro
+  const eliminarRegistro = async (id) => {
+    if (!window.confirm('¿Eliminar registro permanentemente?')) return;
     setDeleting(true);
     try {
       const { error } = await supabase
         .from('registros_parqueadero')
         .delete()
-        .eq('id', registro.id);
+        .eq('id', id);
       if (error) throw error;
-      const updated = todos.filter(r => r.id !== registro.id);
-      setTodos(updated);
-      setResultados(updated);
-    } catch (err) {
-      setError(err.message);
+      const actualizados = registros.filter(r => r.id !== id);
+      setRegistros(actualizados);
+      setResultados(actualizados);
+    } catch (error) {
+      setError(error.message);
     } finally {
       setDeleting(false);
     }
   };
 
+  if (loading) return <Loader />;
+  if (error) return <ErrorMessage message={error} />;
+
   return (
-    <div className="consultas-container">
-      <h2><Emoji symbol="🔎" label="Consultas" /> Consultas y Reportes</h2>
-      <form
-        onSubmit={handleSubmit}
-        className="form-inline"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 16,
-          marginBottom: 18,
-          justifyContent: 'center'
-        }}
-      >
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="📅" /> Inicio:
-          <input
-            type="date"
-            name="fechaInicio"
-            value={filtros.fechaInicio}
-            onChange={handleChange}
-            style={{ marginLeft: 6, width: 120 }}
-          />
-        </label>
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="📅" /> Fin:
-          <input
-            type="date"
-            name="fechaFin"
-            value={filtros.fechaFin}
-            onChange={handleChange}
-            style={{ marginLeft: 6, width: 120 }}
-          />
-        </label>
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="🔍" /> Placa:
-          <input
-            type="text"
-            name="placa"
-            placeholder="Buscar por placa"
-            value={filtros.placa}
-            onChange={handleChange}
-            style={{ marginLeft: 6, width: 120 }}
-          />
-        </label>
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="🏠" /> Propiedad:
-          <select
-            name="propiedad"
-            value={filtros.propiedad}
-            onChange={handleChange}
-            style={{ marginLeft: 6, width: 90 }}
-          >
-            <option value="">Todas</option>
-            {propiedades.map(prop => (
-              <option key={prop} value={prop}>{prop}</option>
-            ))}
-          </select>
-        </label>
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="🔢" /> Unidad:
-          <select
-            name="unidadAsignada"
-            value={filtros.unidadAsignada}
-            onChange={handleChange}
-            disabled={!filtros.propiedad}
-            style={{ marginLeft: 6, width: 70 }}
-          >
-            <option value="">Todas</option>
-            {unidadesFiltradas.map(unidad => (
-              <option key={unidad} value={unidad}>{unidad}</option>
-            ))}
-          </select>
-        </label>
-        <label style={{ marginRight: 8, whiteSpace: 'nowrap' }}>
-          <Emoji symbol="🚗" /> Tipo:
-          <select
-            name="tipoVehiculo"
-            value={filtros.tipoVehiculo}
-            onChange={handleChange}
-            style={{ marginLeft: 6, width: 90 }}
-          >
-            <option value="">Todos</option>
-            <option value="carro">Carro 🚗</option>
-            <option value="moto">Moto 🏍️</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={loading || searching}
-          className="btn-buscar"
-          style={{ padding: '8px 20px', marginLeft: 8, minWidth: 110, display: 'flex', alignItems: 'center', gap: 7 }}
-        >
-          {searching ? <Loader text="" /> : <Emoji symbol="🔎" />}
-          {searching ? 'Buscando...' : 'Buscar'}
-        </button>
-        <button
-          type="button"
-          onClick={limpiarFiltros}
-          className="btn-limpiar"
-          style={{ padding: '8px 16px', marginLeft: 6 }}
-        >
-          <Emoji symbol="🧹" /> Limpiar
-        </button>
-      </form>
-      {error && <div className="error-message">{error}</div>}
-      {loading && <Loader text="Buscando registros..." />}
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">
+        <Emoji symbol="🔎" /> Consulta de Registros
+      </h2>
 
-      {resultados.length > 0 && (
-        <ResumenRegistros registros={resultados} titulo="Resumen de Consultas" />
-      )}
-
-      {resultados.length > 0 ? (
-        <div
-          className="resultados-table-container"
-          style={{
-            maxHeight: '500px',
-            overflowY: 'auto',
-            overflowX: 'auto',
-            border: '1px solid #ccc',
-            borderRadius: 8,
-          }}
-        >
-          <table
-            className="resultados-table"
-            style={{ width: 'max-content', minWidth: '100%' }}
-          >
-            <thead>
-              <tr>
-                <th><Emoji symbol="📅" label="Fecha" /> Fecha</th>
-                <th><Emoji symbol="🚗" label="Placa" /> Placa</th>
-                <th><Emoji symbol="🏍️" label="Tipo" /> Tipo</th>
-                <th><Emoji symbol="👥" label="Copropietario" /> Copropietario</th>
-                <th><Emoji symbol="💵" label="Monto" /> Monto</th>
-                <th><Emoji symbol="🟢" label="Estado" /> Estado</th>
-                <th><Emoji symbol="📷" label="Foto" /> Foto</th>
-                <th><Emoji symbol="👤" label="Registrado por" /> Registrado por</th>
-                <th><Emoji symbol="⚙️" label="Acciones" /> Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resultados.map(reg => (
-                <tr key={reg.id} className={reg.gratis ? 'registro-gratis' : ''}>
-                  <td>
-                    {reg.fecha_hora_ingreso
-                      ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY')
-                      : ''}
-                  </td>
-                  <td>{reg.placa_vehiculo}</td>
-                  <td>
-                    {reg.tipo_vehiculo?.toLowerCase() === 'carro' && <Emoji symbol="🚗" />}
-                    {reg.tipo_vehiculo?.toLowerCase() === 'moto' && <Emoji symbol="🏍️" />}
-                    <span style={{ marginLeft: 6 }}>{reg.tipo_vehiculo?.toUpperCase()}</span>
-                  </td>
-                  <td>
-                    {reg.copropietarios?.nombre || '-'}
-                    <br />
-                    <small>
-                      {reg.copropietarios?.propiedad || 'Sin propiedad'} - {reg.copropietarios?.unidad_asignada || 'Sin unidad'}
-                    </small>
-                  </td>
-                  <td>${Number(reg.monto).toFixed(2)}</td>
-                  <td>
-                    {reg.gratis ? <Emoji symbol="🆓" label="Gratis" />
-                      : reg.recaudado ? <Emoji symbol="🔗" label="Recaudado" />
-                      : <Emoji symbol="⏳" label="Pendiente" />}
-                  </td>
-                  <td>
-                    {reg.foto_url && (
-                      <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
-                        <img src={reg.foto_url} alt="Evidencia" className="thumbnail" />
-                      </a>
-                    )}
-                  </td>
-                  <td>{reg.usuario?.nombre || '-'}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(reg)}
-                      title="Editar"
-                      disabled={!isOnline || savingEdit}
-                      style={{ marginRight: 4 }}
-                    >
-                      <Emoji symbol="✏️" label="Editar" />
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(reg)}
-                      title="Eliminar"
-                      disabled={!isOnline || deleting}
-                    >
-                      {deleting ? <Loader text="" /> : <Emoji symbol="🗑️" label="Eliminar" />}
-                    </button>
-                  </td>
-                </tr>
+      {/* Filtros */}
+      <form onSubmit={aplicarFiltros} className="bg-white p-4 rounded-lg shadow mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block mb-1">Fecha Inicio</label>
+            <input
+              type="date"
+              name="fechaInicio"
+              value={filtros.fechaInicio}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block mb-1">Fecha Fin</label>
+            <input
+              type="date"
+              name="fechaFin"
+              value={filtros.fechaFin}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block mb-1">Placa</label>
+            <input
+              type="text"
+              name="placa"
+              value={filtros.placa}
+              onChange={handleChange}
+              placeholder="Buscar por placa"
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block mb-1">Propiedad</label>
+            <select
+              name="propiedad"
+              value={filtros.propiedad}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Todas</option>
+              {propiedades.map(prop => (
+                <option key={prop} value={prop}>{prop}</option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        !loading && <div className="sin-resultados">No se encontraron resultados</div>
-      )}
-
-      {/* MODAL DE EDICIÓN */}
-      {editModal.open && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3><Emoji symbol="✏️" /> Editar Registro</h3>
-            <form onSubmit={handleEditSave}>
-              <label>
-                Placa:
-                <input
-                  name="placa_vehiculo"
-                  value={editData.placa_vehiculo}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Tipo:
-                <select
-                  name="tipo_vehiculo"
-                  value={editData.tipo_vehiculo}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                >
-                  <option value="carro">Carro 🚗</option>
-                  <option value="moto">Moto 🏍️</option>
-                </select>
-              </label>
-              <label>
-                Fecha ingreso:
-                <input
-                  type="date"
-                  name="fecha_hora_ingreso"
-                  value={editData.fecha_hora_ingreso}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Observaciones:
-                <input
-                  name="observaciones"
-                  value={editData.observaciones}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Copropietario:
-                <select
-                  name="dependencia_id"
-                  value={editData.dependencia_id || ''}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                >
-                  <option value="">Seleccione...</option>
-                  {copropietarios.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                      {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="gratis"
-                  checked={!!editData.gratis}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-                <Emoji symbol="🆓" label="Gratis" /> Gratis
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="recaudado"
-                  checked={!!editData.recaudado}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-                <Emoji symbol="🔗" label="Recaudado" /> Recaudado
-              </label>
-              {editData.recaudado && (
-                <label>
-                  Fecha Recaudo:
-                  <input
-                    type="date"
-                    name="fecha_recaudo"
-                    value={editData.fecha_recaudo || ''}
-                    onChange={handleEditChange}
-                    required={!!editData.recaudado}
-                    disabled={!isOnline || !editData.recaudado}
-                  />
-                </label>
-              )}
-              <div className="acciones-modal">
-                <button type="submit" className="save-btn" disabled={!isOnline || savingEdit}>
-                  {savingEdit ? <Loader text="" /> : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setEditModal({ open: false, registro: null })}
-                  disabled={savingEdit}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+            </select>
+          </div>
+          <div>
+            <label className="block mb-1">Unidad</label>
+            <select
+              name="unidadAsignada"
+              value={filtros.unidadAsignada}
+              onChange={handleChange}
+              disabled={!filtros.propiedad}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Todas</option>
+              {unidadesFiltradas.map(unidad => (
+                <option key={unidad} value={unidad}>{unidad}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-1">Tipo Vehículo</label>
+            <select
+              name="tipoVehiculo"
+              value={filtros.tipoVehiculo}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Todos</option>
+              <option value="carro">Carro</option>
+              <option value="moto">Moto</option>
+            </select>
           </div>
         </div>
-      )}
+        <div className="flex gap-2 mt-4">
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Aplicar Filtros
+          </button>
+          <button
+            type="button"
+            onClick={limpiarFiltros}
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+          >
+            Limpiar Filtros
+          </button>
+        </div>
+      </form>
+
+      {/* Tabla de resultados */}
+      <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+        <table className="min-w-full divide-y divide-gray-300">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3">ID</th>
+              <th className="px-4 py-3">Fecha/Hora</th>
+              <th className="px-4 py-3">Placa</th>
+              <th className="px-4 py-3">Tipo</th>
+              <th className="px-4 py-3">Copropietario</th>
+              <th className="px-4 py-3">Propiedad</th>
+              <th className="px-4 py-3">Unidad</th>
+              <th className="px-4 py-3">Observaciones</th>
+              <th className="px-4 py-3">Monto</th>
+              <th className="px-4 py-3">Gratis</th>
+              <th className="px-4 py-3">Recaudado</th>
+              <th className="px-4 py-3">Fecha Recaudo</th>
+              <th className="px-4 py-3">Registrado por</th>
+              <th className="px-4 py-3">Rol usuario</th>
+              <th className="px-4 py-3">Foto</th>
+              <th className="px-4 py-3">Audio</th>
+              <th className="px-4 py-3">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {resultados.map(registro => (
+              <tr key={registro.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">{registro.id}</td>
+                <td className="px-4 py-3">{registro.fecha_hora_ingreso ? dayjs(registro.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
+                <td className="px-4 py-3">{registro.placa_vehiculo}</td>
+                <td className="px-4 py-3">
+                  <Emoji symbol={registro.tipo_vehiculo === 'carro' ? '🚗' : '🏍️'} />
+                  {registro.tipo_vehiculo}
+                </td>
+                <td className="px-4 py-3">{registro.copropietarios?.nombre || '-'}</td>
+                <td className="px-4 py-3">{registro.copropietarios?.propiedad || '-'}</td>
+                <td className="px-4 py-3">{registro.copropietarios?.unidad_asignada || '-'}</td>
+                <td className="px-4 py-3">{registro.observaciones || '-'}</td>
+                <td className="px-4 py-3">${Number(registro.monto).toFixed(2)}</td>
+                <td className="px-4 py-3">
+                  {registro.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
+                </td>
+                <td className="px-4 py-3">
+                  {registro.recaudado ? <Emoji symbol="🔗" /> : <Emoji symbol="⏳" />}
+                </td>
+                <td className="px-4 py-3">{registro.fecha_recaudo || '-'}</td>
+                <td className="px-4 py-3">{registro.usuarios_app?.nombre || '-'}</td>
+                <td className="px-4 py-3">{registro.usuarios_app?.rol || '-'}</td>
+                <td className="px-4 py-3">
+                  {registro.foto_url && (
+                    <a href={registro.foto_url} target="_blank" rel="noopener noreferrer">
+                      <img src={registro.foto_url} alt="Evidencia" className="thumbnail" />
+                    </a>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {registro.observacion_audio_url ? (
+                    <audio controls style={{ width: 90 }}>
+                      <source src={registro.observacion_audio_url} type="audio/webm" />
+                      Tu navegador no soporta audio.
+                    </audio>
+                  ) : (
+                    <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 space-x-2">
+                  <button
+                    onClick={() => abrirEdicion(registro)}
+                    className="text-blue-600 hover:text-blue-800"
+                    disabled={!isOnline}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => eliminarRegistro(registro.id)}
+                    className="text-red-600 hover:text-red-800"
+                    disabled={!isOnline}
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal de edición */}
+      <Modal isOpen={modal.open} onClose={() => setModal({ open: false })}>
+        <div className="p-6">
+          <h3 className="text-xl font-bold mb-4">Editar Registro</h3>
+          <form onSubmit={guardarCambios} className="space-y-4">
+            <div>
+              <label>Placa:</label>
+              <input
+                value={form.placa_vehiculo}
+                onChange={e => setForm({ ...form, placa_vehiculo: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label>Tipo:</label>
+              <select
+                value={form.tipo_vehiculo}
+                onChange={e => setForm({ ...form, tipo_vehiculo: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              >
+                <option value="carro">Carro</option>
+                <option value="moto">Moto</option>
+              </select>
+            </div>
+            <div>
+              <label>Fecha:</label>
+              <input
+                type="date"
+                value={form.fecha_hora_ingreso}
+                onChange={e => setForm({ ...form, fecha_hora_ingreso: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label>Copropietario:</label>
+              <select
+                value={form.dependencia_id}
+                onChange={e => setForm({ ...form, dependencia_id: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              >
+                <option value="">Seleccionar...</option>
+                {copropietarios.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre} ({c.propiedad} - {c.unidad_asignada})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setModal({ open: false })}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                disabled={saving}
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 }

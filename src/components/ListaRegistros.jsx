@@ -1,7 +1,7 @@
 // src/components/ListaRegistros.jsx
 import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import supabase from '../supabaseClient'
 import Loader from './Loader'
 import Emoji from './Emoji'
 import dayjs from 'dayjs'

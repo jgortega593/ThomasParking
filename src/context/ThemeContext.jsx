@@ -11,10 +11,13 @@ function getPreferredTheme() {
 }
 
 function applyTheme(appearance) {
-  const isDark =
-    appearance === 'dark' ||
-    (appearance === 'system' && getPreferredTheme() === 'dark')
-  document.documentElement.classList.toggle('dark', isDark)
+  const html = document.documentElement
+  let theme = appearance
+  if (appearance === 'system') {
+    theme = getPreferredTheme()
+  }
+  html.setAttribute('data-theme', theme)
+  html.classList.toggle('dark', theme === 'dark')
 }
 
 export function ThemeProvider({ children }) {
