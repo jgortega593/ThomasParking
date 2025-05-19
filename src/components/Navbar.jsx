@@ -4,9 +4,10 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import supabase from '../supabaseClient';
 import Emoji from './Emoji';
 import ThemeToggle from './ThemeToggle';
+import { useUser } from '../context/UserContext';
 
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
-  const rol = user?.user_metadata?.role || user?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
@@ -53,8 +54,9 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
   );
 }
 
-export default function Navbar({ user, menuOpen, setMenuOpen }) {
+export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
+  const { user } = useUser(); // <-- Obtiene usuario del contexto
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -74,7 +76,7 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
 
   const handleNavClick = () => setMenuOpen(false);
 
-  const rol = user?.user_metadata?.role || user?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
@@ -90,21 +92,22 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
           >
             <Emoji symbol="🅿️" label="Parking" /> <span>ParkingApp</span>
           </NavLink>
+          {/* Barra divisora y datos de usuario (escritorio) */}
+          {user && (
+            <div className="hidden md:flex items-center ml-6 pl-6 border-l border-white/30">
+              <div className="flex flex-col text-white text-right">
+                <span className="font-semibold">{user.email}</span>
+                <span className="text-sm font-normal text-blue-200 flex items-center gap-1 justify-end">
+                  <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+                  {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Usuario logueado: email y rol (escritorio) */}
-        {user && (
-          <div className="hidden md:flex flex-col items-end ml-auto mr-4 text-white text-right">
-            <span className="font-semibold">{user.email}</span>
-            <span className="text-sm font-normal text-blue-200 flex items-center gap-1 justify-end">
-              <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-              {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-            </span>
-          </div>
-        )}
-
         {/* Selector de tema (escritorio) */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center ml-auto">
           <ThemeToggle />
         </div>
 

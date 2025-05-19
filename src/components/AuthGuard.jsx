@@ -1,12 +1,20 @@
 // src/components/AuthGuard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import supabase from '../supabaseClient';
 import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
+import { useUser } from '../context/UserContext';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 
-export default function AuthGuard({ requiredRole = null }) {
+// Configuración de tiempo de espera
+const AUTH_CHECK_TIMEOUT = 5000; // 5 segundos
+const TOKEN_REFRESH_INTERVAL = 300000; // 5 minutos
+const INACTIVITY_TIMEOUT = 1800000; // 30 minutos
+
+export default function AuthGuard({ requiredRole = null, children }) {
   const location = useLocation();
+  const { user: contextUser, setUser } = useUser();
   const [authState, setAuthState] = useState({
     user: null,
     loading: true,
@@ -14,9 +22,10 @@ export default function AuthGuard({ requiredRole = null }) {
     role: null
   });
 
-  const checkAuthorization = async (user) => {
+  const isOnline = useOnlineStatus();
+
+  const checkAuthorization = useCallback(async (user) => {
     try {
-      // 1. Obtener rol desde la tabla usuarios_app
       const { data, error } = await supabase
         .from('usuarios_app')
         .select('email, rol, activo')
@@ -24,71 +33,44 @@ export default function AuthGuard({ requiredRole = null }) {
         .single();
 
       if (error) throw new Error('Error de autorización: ' + error.message);
-      if (!data) throw new Error('Usuario no registrado en el sistema');
+      if (!data) throw new Error('Usuario no registrado');
       if (!data.activo) throw new Error('Cuenta desactivada');
-
-      // 2. Actualizar metadata del usuario en Supabase
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { role: data.rol }
-      });
-
-      if (updateError) throw new Error('Error actualizando perfil: ' + updateError.message);
-
+      
       return { ...user, role: data.rol };
     } catch (error) {
       await supabase.auth.signOut();
       throw error;
     }
-  };
+  }, []);
+
+  const handleAuthStateChange = useCallback(async (session) => {
+    try {
+      if (!session?.user) {
+        setAuthState({ user: null, loading: false, error: null, role: null });
+        setUser(null);
+        return;
+      }
+
+      const authorizedUser = await checkAuthorization(session.user);
+      setAuthState({
+        user: authorizedUser,
+        loading: false,
+        error: null,
+        role: authorizedUser.role
+      });
+      setUser(authorizedUser);
+      localStorage.setItem('sb-access-token', session.access_token);
+    } catch (error) {
+      setAuthState({ user: null, loading: false, error: error.message, role: null });
+      setUser(null);
+    }
+  }, [checkAuthorization, setUser]);
 
   useEffect(() => {
     let isMounted = true;
-    const timeout = setTimeout(() => {
-      if (isMounted && authState.loading) {
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Timeout al verificar credenciales'
-        }));
-      }
-    }, 15000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (!session?.user) {
-            if (isMounted) {
-              setAuthState({
-                user: null,
-                loading: false,
-                error: null,
-                role: null
-              });
-            }
-            return;
-          }
-
-          const authorizedUser = await checkAuthorization(session.user);
-          if (isMounted) {
-            setAuthState({
-              user: authorizedUser,
-              loading: false,
-              error: null,
-              role: authorizedUser.role
-            });
-          }
-        } catch (error) {
-          if (isMounted) {
-            setAuthState({
-              user: null,
-              loading: false,
-              error: error.message,
-              role: null
-            });
-          }
-        }
-      }
-    );
+    let authCheckTimeout;
+    let refreshInterval;
+    let inactivityTimer;
 
     const initializeAuth = async () => {
       try {
@@ -98,6 +80,13 @@ export default function AuthGuard({ requiredRole = null }) {
         if (error) throw error;
         if (!user) throw new Error('No autenticado');
 
+        authCheckTimeout = setTimeout(() => {
+          if (isMounted && authState.loading) {
+            setAuthState(prev => ({ ...prev, loading: false }));
+            supabase.auth.signOut();
+          }
+        }, AUTH_CHECK_TIMEOUT);
+
         const authorizedUser = await checkAuthorization(user);
         if (isMounted) {
           setAuthState({
@@ -106,26 +95,62 @@ export default function AuthGuard({ requiredRole = null }) {
             error: null,
             role: authorizedUser.role
           });
+          setUser(authorizedUser);
         }
       } catch (error) {
         if (isMounted) {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: error.message,
-            role: null
-          });
+          setAuthState({ user: null, loading: false, error: error.message, role: null });
+          setUser(null);
         }
+      } finally {
+        clearTimeout(authCheckTimeout);
       }
     };
 
+    const setupAuthListeners = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          clearTimeout(authCheckTimeout);
+          await handleAuthStateChange(session);
+        }
+      );
+
+      // Intervalo para refrescar token
+      refreshInterval = setInterval(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) supabase.auth.setSession(session);
+      }, TOKEN_REFRESH_INTERVAL);
+
+      // Timer de inactividad
+      const resetInactivityTimer = () => {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+          supabase.auth.signOut();
+        }, INACTIVITY_TIMEOUT);
+      };
+
+      window.addEventListener('mousemove', resetInactivityTimer);
+      window.addEventListener('keydown', resetInactivityTimer);
+      resetInactivityTimer();
+
+      return () => {
+        subscription?.unsubscribe();
+        clearInterval(refreshInterval);
+        clearTimeout(inactivityTimer);
+        window.removeEventListener('mousemove', resetInactivityTimer);
+        window.removeEventListener('keydown', resetInactivityTimer);
+      };
+    };
+
     initializeAuth();
+    const cleanupListeners = setupAuthListeners();
+
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
-      subscription?.unsubscribe();
+      clearTimeout(authCheckTimeout);
+      cleanupListeners();
     };
-  }, []);
+  }, [checkAuthorization, handleAuthStateChange, setUser, authState.loading]);
 
   const handleRetry = async () => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
@@ -133,7 +158,7 @@ export default function AuthGuard({ requiredRole = null }) {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (!user) throw new Error('No autenticado');
-
+      
       const authorizedUser = await checkAuthorization(user);
       setAuthState({
         user: authorizedUser,
@@ -141,19 +166,14 @@ export default function AuthGuard({ requiredRole = null }) {
         error: null,
         role: authorizedUser.role
       });
+      setUser(authorizedUser);
     } catch (error) {
-      setAuthState({
-        user: null,
-        loading: false,
-        error: error.message,
-        role: null
-      });
+      setAuthState({ user: null, loading: false, error: error.message, role: null });
+      setUser(null);
     }
   };
 
-  if (authState.loading) {
-    return <Loader fullScreen text="Verificando credenciales..." />;
-  }
+  if (authState.loading) return <Loader fullScreen text="Verificando credenciales..." />;
 
   if (authState.error) {
     return (
@@ -161,7 +181,7 @@ export default function AuthGuard({ requiredRole = null }) {
         <ErrorMessage 
           title="Error de acceso"
           message={authState.error}
-          retryable
+          retryable={isOnline}
           onRetry={handleRetry}
         >
           <button
@@ -183,5 +203,5 @@ export default function AuthGuard({ requiredRole = null }) {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return children || <Outlet />;
 }

@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
+import { UserProvider, useUser } from './context/UserContext'; // Importar el UserContext
 
-// Componentes principales
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -23,32 +23,15 @@ import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import SignUp from './components/SignUp';
 
-function ProtectedRoute({ user, allowedRoles, children }) {
-  const location = useLocation();
-  
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.user_metadata?.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
-function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
+function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
   const hideNavbarRoutes = ['/login', '/', '/registro'];
+  const { user } = useUser(); // Obtener usuario del contexto
 
   return (
     <>
       {!hideNavbarRoutes.includes(location.pathname) && (
-        <Navbar 
-          user={user} 
-          menuOpen={menuOpen} 
-          setMenuOpen={setMenuOpen} 
-        />
+        <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
 
       {!isOnline && (
@@ -76,53 +59,67 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<SignUp />} />
-            
-            <Route path="/registros" element={
-              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
-                <RegistroParqueo />
-              </ProtectedRoute>
-            }/>
 
-            <Route path="/consultas" element={
-              <ProtectedRoute user={user}>
-                <Consultas />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/recaudo" element={
-              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
-                <Recaudo />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/descargos" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <Descargos />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/acercade" element={
-              <ProtectedRoute user={user}>
-                <AcercaDe />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/usuarios" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <GestionUsuarios />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/copropietarios" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <GestionCopropietarios />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/" element={
-              user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
-            }/>
-
+            <Route
+              path="/registros"
+              element={
+                <AuthGuard>
+                  <RegistroParqueo />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/consultas"
+              element={
+                <AuthGuard>
+                  <Consultas />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/recaudo"
+              element={
+                <AuthGuard requiredRole="registrador">
+                  <Recaudo />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/descargos"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <Descargos />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/acercade"
+              element={
+                <AuthGuard>
+                  <AcercaDe />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/usuarios"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <GestionUsuarios />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/copropietarios"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <GestionCopropietarios />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/"
+              element={<Navigate to="/registros" replace />}
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
@@ -133,36 +130,12 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const isOnline = useOnlineStatus();
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const getSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (isMounted) {
-        setUser(user || null);
-        setLoading(false);
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (isMounted) {
-          setUser(session?.user || null);
-          setLoading(false);
-        }
-      }
-    );
-
-    getSession();
-    return () => {
-      isMounted = false;
-      subscription?.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -171,16 +144,17 @@ function App() {
 
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <ErrorBoundary>
-          <AppRoutes
-            user={user}
-            menuOpen={menuOpen}
-            setMenuOpen={setMenuOpen}
-            isOnline={isOnline}
-          />
-        </ErrorBoundary>
-      </BrowserRouter>
+      <UserProvider> {/* Envolver con UserProvider */}
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+          <ErrorBoundary>
+            <AppRoutes
+              menuOpen={menuOpen}
+              setMenuOpen={setMenuOpen}
+              isOnline={isOnline}
+            />
+          </ErrorBoundary>
+        </BrowserRouter>
+      </UserProvider>
     </ThemeProvider>
   );
 }

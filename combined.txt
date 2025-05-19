@@ -24,6 +24,7 @@ C:\ThomasParking\ThomasParking\src\components\SyncIndicator.jsx
 C:\ThomasParking\ThomasParking\src\components\TablaResultados.jsx
 C:\ThomasParking\ThomasParking\src\components\ThemeToggle.jsx
 C:\ThomasParking\ThomasParking\src\context\ThemeContext.jsx
+C:\ThomasParking\ThomasParking\src\context\UserContext.jsx
 C:\ThomasParking\ThomasParking\src\context\ViewContext.jsx
 C:\ThomasParking\ThomasParking\src\hooks\useHover.jsx
 C:\ThomasParking\ThomasParking\src\hooks\useOnlineStatus.jsx
@@ -55,8 +56,8 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
+import { UserProvider, useUser } from './context/UserContext'; // Importar el UserContext
 
-// Componentes principales
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -75,32 +76,15 @@ import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import SignUp from './components/SignUp';
 
-function ProtectedRoute({ user, allowedRoles, children }) {
-  const location = useLocation();
-  
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.user_metadata?.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
-function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
+function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
   const hideNavbarRoutes = ['/login', '/', '/registro'];
+  const { user } = useUser(); // Obtener usuario del contexto
 
   return (
     <>
       {!hideNavbarRoutes.includes(location.pathname) && (
-        <Navbar 
-          user={user} 
-          menuOpen={menuOpen} 
-          setMenuOpen={setMenuOpen} 
-        />
+        <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
 
       {!isOnline && (
@@ -128,53 +112,67 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<SignUp />} />
-            
-            <Route path="/registros" element={
-              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
-                <RegistroParqueo />
-              </ProtectedRoute>
-            }/>
 
-            <Route path="/consultas" element={
-              <ProtectedRoute user={user}>
-                <Consultas />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/recaudo" element={
-              <ProtectedRoute user={user} allowedRoles={['admin', 'registrador']}>
-                <Recaudo />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/descargos" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <Descargos />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/acercade" element={
-              <ProtectedRoute user={user}>
-                <AcercaDe />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/usuarios" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <GestionUsuarios />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/copropietarios" element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
-                <GestionCopropietarios />
-              </ProtectedRoute>
-            }/>
-
-            <Route path="/" element={
-              user ? <Navigate to="/registros" replace /> : <Navigate to="/login" replace />
-            }/>
-
+            <Route
+              path="/registros"
+              element={
+                <AuthGuard>
+                  <RegistroParqueo />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/consultas"
+              element={
+                <AuthGuard>
+                  <Consultas />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/recaudo"
+              element={
+                <AuthGuard requiredRole="registrador">
+                  <Recaudo />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/descargos"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <Descargos />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/acercade"
+              element={
+                <AuthGuard>
+                  <AcercaDe />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/usuarios"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <GestionUsuarios />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/copropietarios"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <GestionCopropietarios />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/"
+              element={<Navigate to="/registros" replace />}
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
@@ -185,36 +183,12 @@ function AppRoutes({ user, menuOpen, setMenuOpen, isOnline }) {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const isOnline = useOnlineStatus();
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const getSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (isMounted) {
-        setUser(user || null);
-        setLoading(false);
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (isMounted) {
-          setUser(session?.user || null);
-          setLoading(false);
-        }
-      }
-    );
-
-    getSession();
-    return () => {
-      isMounted = false;
-      subscription?.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -223,16 +197,17 @@ function App() {
 
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <ErrorBoundary>
-          <AppRoutes
-            user={user}
-            menuOpen={menuOpen}
-            setMenuOpen={setMenuOpen}
-            isOnline={isOnline}
-          />
-        </ErrorBoundary>
-      </BrowserRouter>
+      <UserProvider> {/* Envolver con UserProvider */}
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+          <ErrorBoundary>
+            <AppRoutes
+              menuOpen={menuOpen}
+              setMenuOpen={setMenuOpen}
+              isOnline={isOnline}
+            />
+          </ErrorBoundary>
+        </BrowserRouter>
+      </UserProvider>
     </ThemeProvider>
   );
 }
@@ -248,10 +223,11 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/global.css'
 
-// Si tienes ThemeProvider propio, descomenta e importa aquí:
-import { ThemeProvider } from './context/ThemeContext'
+// Si tu ThemeProvider está en App.jsx, no es necesario envolver aquí.
+// Si prefieres envolver aquí, descomenta la siguiente línea:
+// import { ThemeProvider } from './context/ThemeContext'
 
-// Registro de Service Worker para PWA (opcional, elimina si no se usa)
+// Registro de Service Worker para PWA (opcional)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -267,7 +243,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 // Renderizado principal de la app
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* Si usas ThemeProvider global, envuelve <App /> así:
+    {/* Si usas ThemeProvider global, puedes envolver aquí:
     <ThemeProvider>
       <App />
     </ThemeProvider>
@@ -280,14 +256,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ----- C:\ThomasParking\ThomasParking\src\components\AuthGuard.jsx -----
 
 // src/components/AuthGuard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import supabase from '../supabaseClient';
 import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
+import { useUser } from '../context/UserContext';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 
-export default function AuthGuard({ requiredRole = null }) {
+// Configuración de tiempo de espera
+const AUTH_CHECK_TIMEOUT = 5000; // 5 segundos
+const TOKEN_REFRESH_INTERVAL = 300000; // 5 minutos
+const INACTIVITY_TIMEOUT = 1800000; // 30 minutos
+
+export default function AuthGuard({ requiredRole = null, children }) {
   const location = useLocation();
+  const { user: contextUser, setUser } = useUser();
   const [authState, setAuthState] = useState({
     user: null,
     loading: true,
@@ -295,9 +279,10 @@ export default function AuthGuard({ requiredRole = null }) {
     role: null
   });
 
-  const checkAuthorization = async (user) => {
+  const isOnline = useOnlineStatus();
+
+  const checkAuthorization = useCallback(async (user) => {
     try {
-      // 1. Obtener rol desde la tabla usuarios_app
       const { data, error } = await supabase
         .from('usuarios_app')
         .select('email, rol, activo')
@@ -305,71 +290,44 @@ export default function AuthGuard({ requiredRole = null }) {
         .single();
 
       if (error) throw new Error('Error de autorización: ' + error.message);
-      if (!data) throw new Error('Usuario no registrado en el sistema');
+      if (!data) throw new Error('Usuario no registrado');
       if (!data.activo) throw new Error('Cuenta desactivada');
-
-      // 2. Actualizar metadata del usuario en Supabase
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { role: data.rol }
-      });
-
-      if (updateError) throw new Error('Error actualizando perfil: ' + updateError.message);
-
+      
       return { ...user, role: data.rol };
     } catch (error) {
       await supabase.auth.signOut();
       throw error;
     }
-  };
+  }, []);
+
+  const handleAuthStateChange = useCallback(async (session) => {
+    try {
+      if (!session?.user) {
+        setAuthState({ user: null, loading: false, error: null, role: null });
+        setUser(null);
+        return;
+      }
+
+      const authorizedUser = await checkAuthorization(session.user);
+      setAuthState({
+        user: authorizedUser,
+        loading: false,
+        error: null,
+        role: authorizedUser.role
+      });
+      setUser(authorizedUser);
+      localStorage.setItem('sb-access-token', session.access_token);
+    } catch (error) {
+      setAuthState({ user: null, loading: false, error: error.message, role: null });
+      setUser(null);
+    }
+  }, [checkAuthorization, setUser]);
 
   useEffect(() => {
     let isMounted = true;
-    const timeout = setTimeout(() => {
-      if (isMounted && authState.loading) {
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Timeout al verificar credenciales'
-        }));
-      }
-    }, 15000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (!session?.user) {
-            if (isMounted) {
-              setAuthState({
-                user: null,
-                loading: false,
-                error: null,
-                role: null
-              });
-            }
-            return;
-          }
-
-          const authorizedUser = await checkAuthorization(session.user);
-          if (isMounted) {
-            setAuthState({
-              user: authorizedUser,
-              loading: false,
-              error: null,
-              role: authorizedUser.role
-            });
-          }
-        } catch (error) {
-          if (isMounted) {
-            setAuthState({
-              user: null,
-              loading: false,
-              error: error.message,
-              role: null
-            });
-          }
-        }
-      }
-    );
+    let authCheckTimeout;
+    let refreshInterval;
+    let inactivityTimer;
 
     const initializeAuth = async () => {
       try {
@@ -379,6 +337,13 @@ export default function AuthGuard({ requiredRole = null }) {
         if (error) throw error;
         if (!user) throw new Error('No autenticado');
 
+        authCheckTimeout = setTimeout(() => {
+          if (isMounted && authState.loading) {
+            setAuthState(prev => ({ ...prev, loading: false }));
+            supabase.auth.signOut();
+          }
+        }, AUTH_CHECK_TIMEOUT);
+
         const authorizedUser = await checkAuthorization(user);
         if (isMounted) {
           setAuthState({
@@ -387,26 +352,62 @@ export default function AuthGuard({ requiredRole = null }) {
             error: null,
             role: authorizedUser.role
           });
+          setUser(authorizedUser);
         }
       } catch (error) {
         if (isMounted) {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: error.message,
-            role: null
-          });
+          setAuthState({ user: null, loading: false, error: error.message, role: null });
+          setUser(null);
         }
+      } finally {
+        clearTimeout(authCheckTimeout);
       }
     };
 
+    const setupAuthListeners = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          clearTimeout(authCheckTimeout);
+          await handleAuthStateChange(session);
+        }
+      );
+
+      // Intervalo para refrescar token
+      refreshInterval = setInterval(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) supabase.auth.setSession(session);
+      }, TOKEN_REFRESH_INTERVAL);
+
+      // Timer de inactividad
+      const resetInactivityTimer = () => {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+          supabase.auth.signOut();
+        }, INACTIVITY_TIMEOUT);
+      };
+
+      window.addEventListener('mousemove', resetInactivityTimer);
+      window.addEventListener('keydown', resetInactivityTimer);
+      resetInactivityTimer();
+
+      return () => {
+        subscription?.unsubscribe();
+        clearInterval(refreshInterval);
+        clearTimeout(inactivityTimer);
+        window.removeEventListener('mousemove', resetInactivityTimer);
+        window.removeEventListener('keydown', resetInactivityTimer);
+      };
+    };
+
     initializeAuth();
+    const cleanupListeners = setupAuthListeners();
+
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
-      subscription?.unsubscribe();
+      clearTimeout(authCheckTimeout);
+      cleanupListeners();
     };
-  }, []);
+  }, [checkAuthorization, handleAuthStateChange, setUser, authState.loading]);
 
   const handleRetry = async () => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
@@ -414,7 +415,7 @@ export default function AuthGuard({ requiredRole = null }) {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (!user) throw new Error('No autenticado');
-
+      
       const authorizedUser = await checkAuthorization(user);
       setAuthState({
         user: authorizedUser,
@@ -422,19 +423,14 @@ export default function AuthGuard({ requiredRole = null }) {
         error: null,
         role: authorizedUser.role
       });
+      setUser(authorizedUser);
     } catch (error) {
-      setAuthState({
-        user: null,
-        loading: false,
-        error: error.message,
-        role: null
-      });
+      setAuthState({ user: null, loading: false, error: error.message, role: null });
+      setUser(null);
     }
   };
 
-  if (authState.loading) {
-    return <Loader fullScreen text="Verificando credenciales..." />;
-  }
+  if (authState.loading) return <Loader fullScreen text="Verificando credenciales..." />;
 
   if (authState.error) {
     return (
@@ -442,7 +438,7 @@ export default function AuthGuard({ requiredRole = null }) {
         <ErrorMessage 
           title="Error de acceso"
           message={authState.error}
-          retryable
+          retryable={isOnline}
           onRetry={handleRetry}
         >
           <button
@@ -464,7 +460,7 @@ export default function AuthGuard({ requiredRole = null }) {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return children || <Outlet />;
 }
 
 
@@ -1735,9 +1731,10 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import supabase from '../supabaseClient';
 import Emoji from './Emoji';
 import ThemeToggle from './ThemeToggle';
+import { useUser } from '../context/UserContext';
 
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
-  const rol = user?.user_metadata?.role || user?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
@@ -1784,8 +1781,9 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
   );
 }
 
-export default function Navbar({ user, menuOpen, setMenuOpen }) {
+export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
+  const { user } = useUser(); // <-- Obtiene usuario del contexto
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -1805,7 +1803,7 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
 
   const handleNavClick = () => setMenuOpen(false);
 
-  const rol = user?.user_metadata?.role || user?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
@@ -1821,21 +1819,22 @@ export default function Navbar({ user, menuOpen, setMenuOpen }) {
           >
             <Emoji symbol="🅿️" label="Parking" /> <span>ParkingApp</span>
           </NavLink>
+          {/* Barra divisora y datos de usuario (escritorio) */}
+          {user && (
+            <div className="hidden md:flex items-center ml-6 pl-6 border-l border-white/30">
+              <div className="flex flex-col text-white text-right">
+                <span className="font-semibold">{user.email}</span>
+                <span className="text-sm font-normal text-blue-200 flex items-center gap-1 justify-end">
+                  <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+                  {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Usuario logueado: email y rol (escritorio) */}
-        {user && (
-          <div className="hidden md:flex flex-col items-end ml-auto mr-4 text-white text-right">
-            <span className="font-semibold">{user.email}</span>
-            <span className="text-sm font-normal text-blue-200 flex items-center gap-1 justify-end">
-              <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-              {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-            </span>
-          </div>
-        )}
-
         {/* Selector de tema (escritorio) */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center ml-auto">
           <ThemeToggle />
         </div>
 
@@ -2306,20 +2305,57 @@ export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled
 
 ----- C:\ThomasParking\ThomasParking\src\components\SignUp.jsx -----
 
-import React from 'react';
-import { useState } from 'react';
-import supabase from '../supabaseClient';
+// src/components/SignUp.jsx
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import supabase from '../supabaseClient';
 import Loader from './Loader';
 import Emoji from './Emoji';
 
 export default function SignUp() {
-  const [email, setEmail] = useState('');
+  const [usuariosApp, setUsuariosApp] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [rol, setRol] = useState('registrador');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    rol: 'registrador'
+  });
+
+  // Cargar usuarios de la tabla usuarios_app
+  useEffect(() => {
+    const fetchUsuariosApp = async () => {
+      const { data, error } = await supabase
+        .from('usuarios_app')
+        .select('id, nombre, email, rol')
+        .order('nombre', { ascending: true });
+
+      if (error) {
+        console.error('Error cargando usuarios:', error);
+        setError('Error al cargar usuarios registrados');
+        return;
+      }
+      setUsuariosApp(data || []);
+    };
+    fetchUsuariosApp();
+  }, []);
+
+  // Actualizar formulario cuando seleccionan un usuario
+  const handleUserSelect = (e) => {
+    const userId = e.target.value;
+    setSelectedUserId(userId);
+    
+    const selectedUser = usuariosApp.find(u => u.id === userId);
+    if (selectedUser) {
+      setFormData({
+        nombre: selectedUser.nombre,
+        email: selectedUser.email,
+        rol: selectedUser.rol || 'registrador'
+      });
+    }
+  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -2327,32 +2363,35 @@ export default function SignUp() {
     setError('');
 
     try {
-      // Validaciones del cliente
-      if (!nombre.trim()) throw new Error('El nombre es obligatorio');
-      if (!/\S+@\S+\.\S+/.test(email)) throw new Error('Formato de correo inválido');
+      // Validaciones
+      if (!selectedUserId) throw new Error('Debes seleccionar un usuario');
       if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres');
 
+      // Crear usuario en Auth
       const { data, error: authError } = await supabase.auth.signUp({
-        email,
+        email: formData.email,
         password,
         options: {
           data: {
-            nombre: nombre.trim(),
-            rol: rol === 'copropietario' ? 'copropietario' : rol
+            nombre: formData.nombre,
+            rol: formData.rol
           },
           emailRedirectTo: `${window.location.origin}/login`
-        },
+        }
       });
 
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          throw new Error('Este correo ya está registrado');
-        }
-        throw authError;
-      }
+      if (authError) throw authError;
 
-      alert('Registro exitoso! Verifica tu correo electrónico para activar la cuenta.');
-      setTimeout(() => window.location.href = '/login', 2000);
+      // Actualizar usuario en tabla usuarios_app
+      const { error: updateError } = await supabase
+        .from('usuarios_app')
+        .update({ activo: true })
+        .eq('id', selectedUserId);
+
+      if (updateError) throw updateError;
+
+      alert('Usuario activado! Credenciales enviadas por correo.');
+      setTimeout(() => window.location.href = '/usuarios', 2000);
 
     } catch (error) {
       setError(error.message);
@@ -2364,7 +2403,7 @@ export default function SignUp() {
   return (
     <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center dark:text-white">
-        <Emoji symbol="📝" /> Registro de Usuario
+        <Emoji symbol="👥" /> Activar Usuario Existente
       </h2>
 
       {error && (
@@ -2376,16 +2415,23 @@ export default function SignUp() {
       <form onSubmit={handleSignUp} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Nombre Completo
+            Seleccionar Usuario
           </label>
-          <input
-            type="text"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+          <select
+            value={selectedUserId}
+            onChange={handleUserSelect}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Ej: Juan Pérez"
             required
-          />
+          >
+            <option value="">Seleccione un usuario...</option>
+            {usuariosApp
+              .filter(u => !u.activo) // Mostrar solo usuarios inactivos
+              .map(usuario => (
+                <option key={usuario.id} value={usuario.id}>
+                  {usuario.nombre} ({usuario.email})
+                </option>
+              ))}
+          </select>
         </div>
 
         <div>
@@ -2394,17 +2440,41 @@ export default function SignUp() {
           </label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="tucorreo@ejemplo.com"
-            required
+            value={formData.email}
+            readOnly
+            className="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Contraseña
+            Nombre Completo
+          </label>
+          <input
+            type="text"
+            value={formData.nombre}
+            readOnly
+            className="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Rol del Usuario
+          </label>
+          <select
+            value={formData.rol}
+            onChange={(e) => setFormData(prev => ({ ...prev, rol: e.target.value }))}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="registrador">Registrador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Contraseña Temporal
           </label>
           <input
             type="password"
@@ -2416,43 +2486,27 @@ export default function SignUp() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Rol del Usuario
-          </label>
-          <select
-            value={rol}
-            onChange={(e) => setRol(e.target.value)}
-            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            <option value="registrador">Registrador</option>
-            <option value="admin">Administrador</option>
-            <option value="copropietario">Copropietario</option>
-          </select>
-        </div>
-
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
         >
           {loading ? (
-            <Loader text="Registrando..." small />
+            <Loader text="Activando..." small />
           ) : (
             <>
-              <Emoji symbol="📝" /> Registrarse
+              <Emoji symbol="✅" /> Activar Usuario
             </>
           )}
         </button>
       </form>
 
       <p className="mt-4 text-center text-sm dark:text-gray-300">
-        ¿Ya tienes cuenta?{' '}
         <Link
-          to="/login"
+          to="/usuarios"
           className="text-blue-600 hover:underline dark:text-blue-400"
         >
-          Inicia sesión aquí
+          ← Volver a gestión de usuarios
         </Link>
       </p>
     </div>
@@ -2570,63 +2624,95 @@ export default function ThemeToggle() {
 ----- C:\ThomasParking\ThomasParking\src\context\ThemeContext.jsx -----
 
 // src/context/ThemeContext.jsx
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-const ThemeContext = createContext()
+const ThemeContext = createContext();
 
-const THEMES = ['light', 'dark', 'system']
+const THEMES = ['light', 'dark', 'system'];
 
+// Detecta el tema preferido del sistema operativo
 function getPreferredTheme() {
-  if (typeof window === 'undefined') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+// Aplica el tema al <html>
 function applyTheme(appearance) {
-  const isDark =
-    appearance === 'dark' ||
-    (appearance === 'system' && getPreferredTheme() === 'dark')
-  document.documentElement.classList.toggle('dark', isDark)
+  const html = document.documentElement;
+  let theme = appearance;
+  if (appearance === 'system') {
+    theme = getPreferredTheme();
+  }
+  html.setAttribute('data-theme', theme);
+  html.classList.toggle('dark', theme === 'dark');
 }
 
 export function ThemeProvider({ children }) {
   const [appearance, setAppearance] = useState(() => {
-    if (typeof window === 'undefined') return 'system'
-    return localStorage.getItem('appearance') || 'system'
-  })
+    if (typeof window === 'undefined') return 'system';
+    return localStorage.getItem('appearance') || 'system';
+  });
 
-  // Actualiza el tema cuando cambia la preferencia
+  // Cambia el tema y lo guarda en localStorage
   const updateAppearance = useCallback(
     (mode) => {
-      if (!THEMES.includes(mode)) mode = 'system'
-      setAppearance(mode)
-      localStorage.setItem('appearance', mode)
-      applyTheme(mode)
+      if (!THEMES.includes(mode)) mode = 'system';
+      setAppearance(mode);
+      localStorage.setItem('appearance', mode);
+      applyTheme(mode);
     },
     []
-  )
+  );
 
-  // Inicializa y escucha cambios del sistema
+  // Aplica el tema al montar y cuando cambia la preferencia
   useEffect(() => {
-    applyTheme(appearance)
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    applyTheme(appearance);
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      if (appearance === 'system') applyTheme('system')
-    }
-    mq.addEventListener('change', handleChange)
-    return () => mq.removeEventListener('change', handleChange)
-  }, [appearance])
+      if (appearance === 'system') applyTheme('system');
+    };
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, [appearance]);
 
   return (
     <ThemeContext.Provider value={{ appearance, setAppearance: updateAppearance }}>
       {children}
     </ThemeContext.Provider>
-  )
+  );
 }
 
+// Hook para consumir el contexto
 export function useTheme() {
-  const context = useContext(ThemeContext)
-  if (!context) throw new Error('useTheme debe usarse dentro de ThemeProvider')
-  return context
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme debe usarse dentro de ThemeProvider');
+  return context;
+}
+
+
+----- C:\ThomasParking\ThomasParking\src\context\UserContext.jsx -----
+
+// src/context/UserContext.jsx
+import { createContext, useContext, useState } from 'react';
+
+const UserContext = createContext();
+
+export function UserProvider({ children }) {
+  const [user, setUser] = useState(null);
+
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUser() {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser debe usarse dentro de un UserProvider');
+  }
+  return context;
 }
 
 
@@ -4673,136 +4759,154 @@ export default function Login() {
 
 ----- C:\ThomasParking\ThomasParking\src\pages\RegistroParqueo.jsx -----
 
+// src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import supabase from '../supabaseClient';
-import ResizeImage from '../components/ResizeImage';
+import SelectorDeFoto from '../components/SelectorDeFoto';
 import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
+function getLocalDateTimeString() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+}
+
 export default function RegistroParqueo() {
-  const [formData, setFormData] = useState({
+  const [copropietarios, setCopropietarios] = useState([]);
+  const [form, setForm] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
-    propiedad: '',
-    unidad: '',
+    fecha_hora_ingreso: getLocalDateTimeString(),
     observaciones: '',
+    dependencia_id: '',
     gratis: false,
-    fecha_hora_ingreso: new Date().toISOString().slice(0, 16)
+    recaudado: false,
+    fecha_recaudo: '',
+    fotos: [],
+    audio: null,
   });
-
-  const [fotos, setFotos] = useState([]);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [propiedades, setPropiedades] = useState([]);
-  const [unidadesFiltradas, setUnidadesFiltradas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const isOnline = useOnlineStatus();
-  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
 
-  // Cargar copropietarios y propiedades
+  // Obtener usuario autenticado
   useEffect(() => {
+    let isMounted = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (isMounted) setUser(user);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Cargar copropietarios
+  useEffect(() => {
+    let isMounted = true;
     const fetchCopropietarios = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('copropietarios')
-          .select('id, propiedad, unidad_asignada');
-        
-        if (error) throw error;
-        
-        const uniquePropiedades = [...new Set(data.map(c => c.propiedad))].sort();
-        setCopropietarios(data);
-        setPropiedades(uniquePropiedades);
-        
-      } catch (error) {
-        setError(`Error cargando propiedades: ${error.message}`);
-      }
+      const { data, error } = await supabase
+        .from('copropietarios')
+        .select('id, nombre, propiedad, unidad_asignada');
+      if (!error && isMounted) setCopropietarios(data || []);
     };
-    
-    if (isOnline) fetchCopropietarios();
-  }, [isOnline]);
+    fetchCopropietarios();
+    return () => { isMounted = false; };
+  }, []);
 
-  // Actualizar unidades al cambiar propiedad
-  useEffect(() => {
-    if (formData.propiedad) {
-      const unidades = copropietarios
-        .filter(c => c.propiedad === formData.propiedad)
-        .map(c => c.unidad_asignada)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort();
-      
-      setUnidadesFiltradas(unidades);
-      setFormData(prev => ({ ...prev, unidad: '' }));
-    }
-  }, [formData.propiedad, copropietarios]);
-
-  const handleFotos = (files) => {
-    setFotos(files.slice(0, 5)); // Limitar a máximo 5 fotos
+  const handleChange = e => {
+    const { name, value, type, checked } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
+    }));
   };
 
-  const obtenerDependenciaId = () => {
-    return copropietarios.find(
-      c => c.propiedad === formData.propiedad && 
-           c.unidad_asignada === formData.unidad
-    )?.id || null;
-  };
+  const handleFotos = archivos => setForm(prev => ({ ...prev, fotos: archivos }));
 
-  const submitRegistro = async (e) => {
+  const handleAudio = archivo => setForm(prev => ({ ...prev, audio: archivo }));
+
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMensaje('');
 
     try {
-      // Validaciones
-      if (!formData.placa_vehiculo.match(/^[A-Z0-9]{3,8}$/i)) {
-        throw new Error('Formato de placa inválido (3-8 caracteres alfanuméricos)');
-      }
-      
-      const dependenciaId = obtenerDependenciaId();
-      if (!dependenciaId) throw new Error('Debe seleccionar propiedad y unidad válida');
+      if (!form.placa_vehiculo.trim()) throw new Error('La placa es obligatoria');
+      if (!form.dependencia_id) throw new Error('Seleccione un copropietario');
+      if (!form.fecha_hora_ingreso) throw new Error('La fecha/hora es obligatoria');
+      if (!user?.id) throw new Error('No se pudo identificar el usuario. Inicie sesión nuevamente.');
 
-      // Subir múltiples fotos si hay conexión
-      let fotoUrls = [];
-      if (isOnline && fotos.length > 0) {
-        fotoUrls = await Promise.all(
-          fotos.map(async (foto) => {
-            const fileName = `parqueo/${Date.now()}_${foto.name}`;
-            const { error: uploadError } = await supabase.storage
-              .from('evidencias-parqueadero')
-              .upload(fileName, foto);
-            
-            if (uploadError) throw uploadError;
-            
-            const { data: urlData } = supabase.storage
-              .from('evidencias-parqueadero')
-              .getPublicUrl(fileName);
-            return urlData.publicUrl;
-          })
-        );
+      // Subir fotos (array)
+      let foto_urls = [];
+      for (const file of form.fotos) {
+        const fileName = `foto_${form.placa_vehiculo}_${Date.now()}_${Math.floor(Math.random()*10000)}.jpg`;
+        const { error: uploadError } = await supabase
+          .storage
+          .from('evidencias-parqueadero')
+          .upload(fileName, file, { contentType: 'image/jpeg' });
+        if (uploadError) throw new Error('Error al subir la foto: ' + uploadError.message);
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('evidencias-parqueadero')
+          .getPublicUrl(fileName);
+        foto_urls.push(publicUrlData.publicUrl);
       }
 
-      // Insertar registro principal
-      const { data: userData } = await supabase.auth.getUser();
-      
+      // Subir audio (opcional)
+      let observacion_audio_url = null;
+      if (form.audio) {
+        const fileName = `audio_obs_${form.placa_vehiculo}_${Date.now()}.webm`;
+        const { error: audioError } = await supabase
+          .storage
+          .from('evidencias-parqueadero')
+          .upload(fileName, form.audio, { contentType: 'audio/webm' });
+        if (audioError) throw new Error('Error al subir el audio: ' + audioError.message);
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('evidencias-parqueadero')
+          .getPublicUrl(fileName);
+        observacion_audio_url = publicUrlData.publicUrl;
+      }
+
+      // Monto según tipo y gratis
+      const monto = form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
+
+      // Insertar registro
       const { error: insertError } = await supabase
         .from('registros_parqueadero')
         .insert([{
-          placa_vehiculo: formData.placa_vehiculo.toUpperCase(),
-          tipo_vehiculo: formData.tipo_vehiculo,
-          dependencia_id: dependenciaId,
-          usuario_id: userData.user?.id,
-          observaciones: formData.observaciones,
-          fecha_hora_ingreso: formData.fecha_hora_ingreso,
-          monto: formData.gratis ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          gratis: formData.gratis,
-          foto_url: isOnline ? fotoUrls : [],
-          pending_photos: !isOnline && fotos.length > 0
+          placa_vehiculo: form.placa_vehiculo.trim().toUpperCase(),
+          tipo_vehiculo: form.tipo_vehiculo,
+          fecha_hora_ingreso: form.fecha_hora_ingreso,
+          observaciones: form.observaciones,
+          dependencia_id: form.dependencia_id,
+          gratis: form.gratis,
+          recaudado: form.recaudado,
+          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null,
+          monto,
+          foto_url: foto_urls.length > 0 ? foto_urls : null, // array
+          observacion_audio_url,
+          usuario_id: user.id // Campo obligatorio
         }]);
+      if (insertError) throw new Error('Error al guardar registro: ' + insertError.message);
 
-      if (insertError) throw insertError;
-
-      navigate('/consultas');
+      setMensaje('Registro guardado correctamente');
+      setForm({
+        placa_vehiculo: '',
+        tipo_vehiculo: 'carro',
+        fecha_hora_ingreso: getLocalDateTimeString(),
+        observaciones: '',
+        dependencia_id: '',
+        gratis: false,
+        recaudado: false,
+        fecha_recaudo: '',
+        fotos: [],
+        audio: null,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -4811,161 +4915,146 @@ export default function RegistroParqueo() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <h2 className="text-2xl font-bold mb-6">
+    <div className="max-w-lg mx-auto my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <h2 className="text-2xl font-bold mb-4 text-center dark:text-white">
         <Emoji symbol="📝" /> Registro de Parqueo
       </h2>
-
-      <form onSubmit={submitRegistro} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Se mantienen todos los inputs existentes */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Placa del vehículo</label>
-            <input
-              type="text"
-              value={formData.placa_vehiculo}
-              onChange={(e) => setFormData({ ...formData, placa_vehiculo: e.target.value.toUpperCase() })}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-              placeholder="ABC123"
-              required
-              pattern="[A-Z0-9]{3,8}"
-              title="3-8 caracteres alfanuméricos"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Tipo de vehículo</label>
-            <select
-              value={formData.tipo_vehiculo}
-              onChange={(e) => setFormData({ ...formData, tipo_vehiculo: e.target.value })}
-              className="w-full p-2 border rounded bg-white"
-            >
-              <option value="carro">🚗 Carro</option>
-              <option value="moto">🏍️ Moto</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Propiedad</label>
-            <select
-              value={formData.propiedad}
-              onChange={(e) => setFormData({ ...formData, propiedad: e.target.value })}
-              className="w-full p-2 border rounded bg-white"
-              required
-            >
-              <option value="">Seleccionar propiedad...</option>
-              {propiedades.map(propiedad => (
-                <option key={propiedad} value={propiedad}>{propiedad}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Unidad asignada</label>
-            <select
-              value={formData.unidad}
-              onChange={(e) => setFormData({ ...formData, unidad: e.target.value })}
-              className="w-full p-2 border rounded bg-white"
-              required
-              disabled={!formData.propiedad}
-            >
-              <option value="">Seleccionar unidad...</option>
-              {unidadesFiltradas.map(unidad => (
-                <option key={unidad} value={unidad}>{unidad}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Fecha y Hora</label>
-            <input
-              type="datetime-local"
-              value={formData.fecha_hora_ingreso}
-              onChange={(e) => setFormData({ ...formData, fecha_hora_ingreso: e.target.value })}
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
+      {!isOnline && (
+        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
+          <Emoji symbol="⚡" /> Modo offline: el registro se guardará localmente y se sincronizará al volver la conexión.
         </div>
-
-        {/* Sección de fotos modificada para múltiples imágenes */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">Evidencia fotográfica</label>
-          <ResizeImage 
-            onFilesSelected={handleFotos}
-            maxFiles={5}
-            disabled={!isOnline}
-            maxWidth={800}
-            quality={0.8}
-          />
-          <div className="flex flex-wrap gap-2 mt-2">
-            {fotos.map((file, index) => (
-              <img
-                key={index}
-                src={URL.createObjectURL(file)}
-                alt={`Previsualización ${index + 1}`}
-                className="w-16 h-16 object-cover rounded border"
-              />
-            ))}
-          </div>
-          <small className="text-gray-500 text-sm">
-            Máximo 5 fotos (JPEG/PNG, 2MB cada una)
-          </small>
+      )}
+      {error && (
+        <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">
+          {error}
         </div>
-
-        {/* Resto del formulario se mantiene igual */}
+      )}
+      {mensaje && (
+        <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">
+          {mensaje}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Observaciones</label>
-          <textarea
-            value={formData.observaciones}
-            onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+          <label>Placa del vehículo:</label>
+          <input
+            name="placa_vehiculo"
+            value={form.placa_vehiculo}
+            onChange={handleChange}
+            required
             className="w-full p-2 border rounded"
-            rows="3"
-            placeholder="Detalles adicionales..."
+            autoFocus
           />
         </div>
-
-        <div className="flex items-center gap-2">
+        <div>
+          <label>Tipo de vehículo:</label>
+          <select
+            name="tipo_vehiculo"
+            value={form.tipo_vehiculo}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          >
+            <option value="carro">Carro</option>
+            <option value="moto">Moto</option>
+          </select>
+        </div>
+        <div>
+          <label>Fecha y hora de ingreso:</label>
           <input
-            type="checkbox"
-            id="gratis"
-            checked={formData.gratis}
-            onChange={(e) => setFormData({ ...formData, gratis: e.target.checked })}
-            className="w-4 h-4 text-blue-600 border rounded"
+            type="datetime-local"
+            name="fecha_hora_ingreso"
+            value={form.fecha_hora_ingreso}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
           />
-          <label htmlFor="gratis" className="flex items-center gap-1 text-sm">
-            <Emoji symbol="🆓" /> Registro gratuito (justificar en observaciones)
+        </div>
+        <div>
+          <label>Copropietario:</label>
+          <select
+            name="dependencia_id"
+            value={form.dependencia_id}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value="">Seleccione...</option>
+            {copropietarios.map(dep => (
+              <option key={dep.id} value={dep.id}>
+                {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Observaciones:</label>
+          <input
+            name="observaciones"
+            value={form.observaciones}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            maxLength={100}
+          />
+        </div>
+        <div>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="gratis"
+              checked={form.gratis}
+              onChange={handleChange}
+            />
+            <span><Emoji symbol="🆓" /> Gratis</span>
           </label>
         </div>
-
-        {error && (
-          <div className="p-3 bg-red-100 text-red-700 rounded-lg">
-            <Emoji symbol="⚠️" /> {error}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-4 mt-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
-            disabled={loading || (!isOnline && fotos.length > 0)}
-          >
-            {loading ? <Loader text="Guardando..." /> : 'Guardar Registro'}
-          </button>
+        <div>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="recaudado"
+              checked={form.recaudado}
+              onChange={handleChange}
+            />
+            <span><Emoji symbol="🔗" /> Recaudado</span>
+          </label>
         </div>
-
-        {!isOnline && (
-          <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
-            <Emoji symbol="⚠️" /> Modo offline: Las fotos se sincronizarán automáticamente al recuperar conexión
+        {form.recaudado && (
+          <div>
+            <label>Fecha de recaudación:</label>
+            <input
+              type="date"
+              name="fecha_recaudo"
+              value={form.fecha_recaudo}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              required={form.recaudado}
+            />
           </div>
         )}
+        <div>
+          <label>Evidencia fotográfica:</label>
+          <SelectorDeFoto
+            onFilesSelected={handleFotos}
+            maxFiles={1}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label>Evidencia auditiva (opcional):</label>
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={e => handleAudio(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+            disabled={loading}
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
+          disabled={loading}
+        >
+          {loading ? <Loader text="Guardando..." /> : <>Registrar</>}
+        </button>
       </form>
     </div>
   );
@@ -5372,243 +5461,333 @@ export default function MyQueryClientProvider({ children }) {
 
 ----- C:\ThomasParking\ThomasParking\src\styles\global.css -----
 
-/* global.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* global.css - Moderno, disruptivo, pragmático, dinámico y responsive */
 
+/* 1. Reset y box-sizing universal */
 :root {
-  /* Sistema de diseño */
-  --max-width: 1280px;
-  --border-radius: 12px;
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  /* Paleta de colores - Modo claro */
-  --background: 255 255 255;
-  --foreground: 23 23 23;
-  --primary: 99 102 241;
-  --primary-foreground: 255 255 255;
-  --secondary: 56 189 248;
-  --muted: 244 244 245;
-  --muted-foreground: 82 82 91;
-  --success: 34 197 94;
-  --warning: 245 158 66;
-  --danger: 239 68 68;
-  --accent: 255 111 145;
-  
-  /* Sombras */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --font-main: 'Inter', 'Georgia', 'Times New Roman', serif;
+  --font-display: 'Playfair Display', 'Georgia', serif;
+  --color-bg: #f8fafc;
+  --color-surface: #fff;
+  --color-text: #18181b;
+  --color-text-muted: #6b7280;
+  --color-primary: #6366f1;
+  --color-secondary: #38bdf8;
+  --color-accent: #ff6f91;
+  --color-success: #10b981;
+  --color-warning: #f59e42;
+  --color-danger: #ef4444;
+  --color-glass: rgba(255,255,255,0.7);
+  --radius-lg: 24px;
+  --radius-md: 12px;
+  --radius-sm: 6px;
+  --shadow-lg: 0 8px 32px #6366f133;
+  --shadow-md: 0 2px 12px #6366f144;
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --focus: #ff6f91;
 }
 
-/* Modo oscuro */
 [data-theme="dark"] {
-  --background: 24 24 27;
-  --foreground: 244 244 245;
-  --primary: 129 140 248;
-  --muted: 39 39 42;
-  --muted-foreground: 161 161 170;
-  --accent: 244 114 182;
+  --color-bg: #18181b;
+  --color-surface: #23272f;
+  --color-text: #f3f4f6;
+  --color-text-muted: #a1a1aa;
+  --color-primary: #818cf8;
+  --color-accent: #f472b6;
+  --color-glass: rgba(30, 41, 59, 0.7);
+  --shadow-lg: 0 8px 32px #818cf833;
+  --shadow-md: 0 2px 12px #818cf844;
 }
 
-/* Base */
-* {
+html, body {
   margin: 0;
   padding: 0;
+  font-family: var(--font-main);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 80px;
-}
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  color: rgb(var(--foreground));
-  background-color: rgb(var(--background));
-  -webkit-font-smoothing: antialiased;
-  transition: var(--transition);
-}
-
-/* Tipografía */
+/* 2. Tipografía disruptiva y variable */
 h1, h2, h3, h4 {
-  line-height: 1.2;
+  font-family: var(--font-display), serif;
+  font-weight: 900;
+  letter-spacing: -2px;
+  margin: 0 0 0.5em 0;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px #6366f144;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  animation: popTitle 1s cubic-bezier(.16,1,.3,1) 1;
+}
+@keyframes popTitle {
+  0% { transform: scale(0.8) rotate(-2deg); opacity: 0; }
+  70% { transform: scale(1.05) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+h2 {
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+}
+h3, h4 {
+  font-size: 1.2rem;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition);
+}
+a:hover, a:focus {
+  color: var(--color-accent);
+  text-decoration: underline;
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+p, li, label, input, select, textarea, button {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* 3. Botones y formularios */
+button, input, select, textarea {
+  font-family: inherit;
+  border-radius: var(--radius-md);
+  border: 1.5px solid #e5e7eb;
+  padding: 10px 14px;
+  outline-offset: 2px;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  margin: .25rem 0;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  background: linear-gradient(90deg, var(--color-primary) 60%, var(--color-accent) 100%);
+  color: #fff;
+  border: none;
   font-weight: 700;
-  margin-bottom: 1.25rem;
-}
-
-h1 { font-size: 2.5rem; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.75rem; }
-
-/* Componentes principales */
-.container {
-  width: 100%;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-/* Navbar */
-.navbar {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  background: linear-gradient(135deg, rgb(var(--primary)) 0%, rgb(var(--secondary)) 100%);
-  box-shadow: var(--shadow-lg);
-  z-index: 50;
-}
-
-.navbar-content {
-  height: 4rem;
-  display: flex;
+  box-shadow: var(--shadow-md);
+  min-width: 120px;
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  letter-spacing: 0.5px;
+  transition: background var(--transition), box-shadow var(--transition);
 }
-
-/* Footer */
-.footer {
-  background: rgb(var(--muted));
-  border-top: 1px solid rgb(var(--muted) / 0.2);
-  padding: 2rem 0;
-  margin-top: auto;
+button:hover, button:focus {
+  background: linear-gradient(90deg, var(--color-secondary) 60%, var(--color-accent) 100%);
+  box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
 }
-
-.footer-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
-}
-
-/* Formularios */
-.input-group {
-  display: grid;
-  gap: 0.75rem;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgb(var(--muted));
-  border-radius: calc(var(--border-radius) / 2);
-  background: rgb(var(--background));
-  transition: var(--transition);
+button:active {
+  transform: scale(0.97);
 }
 
 input:focus, select:focus, textarea:focus {
-  outline: 2px solid rgb(var(--primary) / 0.5);
-  border-color: rgb(var(--primary));
+  border-color: var(--color-primary);
+  background: #f0f9ff;
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
-/* Botones */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius);
-  font-weight: 500;
-  transition: var(--transition);
+input[type="checkbox"], input[type="radio"] {
+  width: 1.1em;
+  height: 1.1em;
+  accent-color: var(--color-primary);
+  margin-right: 7px;
   cursor: pointer;
 }
 
-.btn-primary {
-  background: rgb(var(--primary));
-  color: rgb(var(--primary-foreground));
+/* 4. Glassmorphism y animaciones dinámicas */
+.card, .modal-content, .glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(16px) saturate(180%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid #e0e7ef44;
+  animation: fadeInGlass 0.7s cubic-bezier(.16,1,.3,1);
+}
+@keyframes fadeInGlass {
+  from { opacity: 0; transform: translateY(20px) scale(0.98);}
+  to { opacity: 1; transform: none;}
 }
 
-.btn-primary:hover {
-  background: rgb(var(--primary) / 0.9);
-  transform: translateY(-1px);
+/* 5. Responsive grid y utilidades */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.2rem;
 }
 
-/* Tablas */
-.table-container {
-  overflow-x: auto;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+@media (min-width: 640px) {
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr);}
+}
+@media (min-width: 1024px) {
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr);}
 }
 
-.table {
+/* 6. Scrollbar custom */
+::-webkit-scrollbar {
+  width: 10px;
+  background: #e0e7ef;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 8px;
+}
+
+/* 7. Tablas y listas */
+table {
   width: 100%;
   border-collapse: collapse;
-  background: rgb(var(--background));
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
-
-.table th {
-  background: rgb(var(--muted));
-  padding: 1rem;
+th, td {
+  padding: 0.75em 1em;
   text-align: left;
-  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
 }
-
-.table td {
-  padding: 1rem;
-  border-top: 1px solid rgb(var(--muted));
+th {
+  background: linear-gradient(90deg, var(--color-primary) 60%, var(--color-accent) 100%);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
-
-.table tr:hover {
-  background: rgb(var(--muted) / 0.1);
+tr:last-child td {
+  border-bottom: none;
 }
-
-/* Modales */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgb(0 0 0 / 0.5);
-  backdrop-filter: blur(4px);
-  display: grid;
-  place-items: center;
-  z-index: 100;
-}
-
-.modal-content {
-  background: rgb(var(--background));
-  border-radius: var(--border-radius);
-  padding: 2rem;
-  width: min(90vw, 600px);
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-}
-
-/* Utilidades */
-.loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid rgb(var(--muted));
-  border-top-color: rgb(var(--primary));
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.thumbnail {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: calc(var(--border-radius) / 2);
-  border: 1px solid rgb(var(--muted));
-}
-
-.error-message {
-  padding: 1rem;
-  background: rgb(var(--danger) / 0.1);
-  border: 1px solid rgb(var(--danger));
-  color: rgb(var(--danger));
-  border-radius: calc(var(--border-radius) / 2);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .navbar-menu { display: none; }
-  .table th, .table td { padding: 0.75rem; }
-  
-  .mobile-menu-active {
-    transform: translateX(0) !important;
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  th, td {
+    padding: 0.6em 0.4em;
   }
 }
+
+/* 8. Imágenes y multimedia */
+img, video {
+  max-width: 100%;
+  display: block;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px #6366f133;
+}
+
+/* 9. Utilidades y helpers */
+.text-center { text-align: center; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.rounded-lg { border-radius: var(--radius-lg); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* 10. Animaciones de entrada y microinteracciones */
+@keyframes float {
+  0%, 100% { transform: translateY(0);}
+  50% { transform: translateY(-8px);}
+}
+.float {
+  animation: float 2.5s ease-in-out infinite;
+}
+
+/* 11. Mobile-first y media queries */
+@media (max-width: 768px) {
+  body, html {
+    font-size: 17px;
+  }
+  .container {
+    padding: 0 0.5rem;
+  }
+  h1 { font-size: 2rem; }
+  .modal-content, .card {
+    padding: 1rem;
+    max-width: 98vw;
+  }
+}
+
+/* 12. Modo oscuro automático */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #18181b;
+    --color-surface: #23272f;
+    --color-text: #f3f4f6;
+    --color-text-muted: #a1a1aa;
+    --color-primary: #818cf8;
+    --color-accent: #f472b6;
+    --color-glass: rgba(30, 41, 59, 0.7);
+    --shadow-lg: 0 8px 32px #818cf833;
+    --shadow-md: 0 2px 12px #818cf844;
+  }
+}
+
+/* 13. Estado offline */
+.offline-banner {
+  background: #fff3cd;
+  color: #856404;
+  padding: 10px 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  border-bottom: 1.5px solid #ffe58f;
+  position: sticky;
+  top: 64px;
+  z-index: 40;
+  animation: shake 1s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px);}
+  20%, 80% { transform: translateX(4px);}
+  30%, 50%, 70% { transform: translateX(-8px);}
+  40%, 60% { transform: translateX(8px);}
+}
+
+/* 14. Disruptivo: píxeles, neón, maximalismo */
+.pixel-border {
+  border: 3px solid #ff6f91;
+  box-shadow: 0 0 8px 2px #ff6f91, 0 0 24px 6px #38bdf8;
+  border-radius: 0;
+  font-family: 'Press Start 2P', monospace;
+  background: repeating-linear-gradient(
+    45deg,
+    #23272f,
+    #23272f 10px,
+    #18181b 10px,
+    #18181b 20px
+  );
+  color: #fff;
+  text-shadow: 0 0 4px #38bdf8;
+}
+
+/* 15. Inclusión de fuentes variables y experimentales */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700;900&family=Press+Start+2P&display=swap');

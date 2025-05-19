@@ -1,17 +1,54 @@
-import React from 'react';
-import { useState } from 'react';
-import supabase from '../supabaseClient';
+// src/components/SignUp.jsx
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import supabase from '../supabaseClient';
 import Loader from './Loader';
 import Emoji from './Emoji';
 
 export default function SignUp() {
-  const [email, setEmail] = useState('');
+  const [usuariosApp, setUsuariosApp] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [rol, setRol] = useState('registrador');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    rol: 'registrador'
+  });
+
+  // Cargar usuarios de la tabla usuarios_app
+  useEffect(() => {
+    const fetchUsuariosApp = async () => {
+      const { data, error } = await supabase
+        .from('usuarios_app')
+        .select('id, nombre, email, rol')
+        .order('nombre', { ascending: true });
+
+      if (error) {
+        console.error('Error cargando usuarios:', error);
+        setError('Error al cargar usuarios registrados');
+        return;
+      }
+      setUsuariosApp(data || []);
+    };
+    fetchUsuariosApp();
+  }, []);
+
+  // Actualizar formulario cuando seleccionan un usuario
+  const handleUserSelect = (e) => {
+    const userId = e.target.value;
+    setSelectedUserId(userId);
+    
+    const selectedUser = usuariosApp.find(u => u.id === userId);
+    if (selectedUser) {
+      setFormData({
+        nombre: selectedUser.nombre,
+        email: selectedUser.email,
+        rol: selectedUser.rol || 'registrador'
+      });
+    }
+  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -19,32 +56,35 @@ export default function SignUp() {
     setError('');
 
     try {
-      // Validaciones del cliente
-      if (!nombre.trim()) throw new Error('El nombre es obligatorio');
-      if (!/\S+@\S+\.\S+/.test(email)) throw new Error('Formato de correo inválido');
+      // Validaciones
+      if (!selectedUserId) throw new Error('Debes seleccionar un usuario');
       if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres');
 
+      // Crear usuario en Auth
       const { data, error: authError } = await supabase.auth.signUp({
-        email,
+        email: formData.email,
         password,
         options: {
           data: {
-            nombre: nombre.trim(),
-            rol: rol === 'copropietario' ? 'copropietario' : rol
+            nombre: formData.nombre,
+            rol: formData.rol
           },
           emailRedirectTo: `${window.location.origin}/login`
-        },
+        }
       });
 
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          throw new Error('Este correo ya está registrado');
-        }
-        throw authError;
-      }
+      if (authError) throw authError;
 
-      alert('Registro exitoso! Verifica tu correo electrónico para activar la cuenta.');
-      setTimeout(() => window.location.href = '/login', 2000);
+      // Actualizar usuario en tabla usuarios_app
+      const { error: updateError } = await supabase
+        .from('usuarios_app')
+        .update({ activo: true })
+        .eq('id', selectedUserId);
+
+      if (updateError) throw updateError;
+
+      alert('Usuario activado! Credenciales enviadas por correo.');
+      setTimeout(() => window.location.href = '/usuarios', 2000);
 
     } catch (error) {
       setError(error.message);
@@ -56,7 +96,7 @@ export default function SignUp() {
   return (
     <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center dark:text-white">
-        <Emoji symbol="📝" /> Registro de Usuario
+        <Emoji symbol="👥" /> Activar Usuario Existente
       </h2>
 
       {error && (
@@ -68,16 +108,23 @@ export default function SignUp() {
       <form onSubmit={handleSignUp} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Nombre Completo
+            Seleccionar Usuario
           </label>
-          <input
-            type="text"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+          <select
+            value={selectedUserId}
+            onChange={handleUserSelect}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Ej: Juan Pérez"
             required
-          />
+          >
+            <option value="">Seleccione un usuario...</option>
+            {usuariosApp
+              .filter(u => !u.activo) // Mostrar solo usuarios inactivos
+              .map(usuario => (
+                <option key={usuario.id} value={usuario.id}>
+                  {usuario.nombre} ({usuario.email})
+                </option>
+              ))}
+          </select>
         </div>
 
         <div>
@@ -86,17 +133,41 @@ export default function SignUp() {
           </label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="tucorreo@ejemplo.com"
-            required
+            value={formData.email}
+            readOnly
+            className="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Contraseña
+            Nombre Completo
+          </label>
+          <input
+            type="text"
+            value={formData.nombre}
+            readOnly
+            className="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Rol del Usuario
+          </label>
+          <select
+            value={formData.rol}
+            onChange={(e) => setFormData(prev => ({ ...prev, rol: e.target.value }))}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="registrador">Registrador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Contraseña Temporal
           </label>
           <input
             type="password"
@@ -108,43 +179,27 @@ export default function SignUp() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Rol del Usuario
-          </label>
-          <select
-            value={rol}
-            onChange={(e) => setRol(e.target.value)}
-            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            <option value="registrador">Registrador</option>
-            <option value="admin">Administrador</option>
-            <option value="copropietario">Copropietario</option>
-          </select>
-        </div>
-
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
         >
           {loading ? (
-            <Loader text="Registrando..." small />
+            <Loader text="Activando..." small />
           ) : (
             <>
-              <Emoji symbol="📝" /> Registrarse
+              <Emoji symbol="✅" /> Activar Usuario
             </>
           )}
         </button>
       </form>
 
       <p className="mt-4 text-center text-sm dark:text-gray-300">
-        ¿Ya tienes cuenta?{' '}
         <Link
-          to="/login"
+          to="/usuarios"
           className="text-blue-600 hover:underline dark:text-blue-400"
         >
-          Inicia sesión aquí
+          ← Volver a gestión de usuarios
         </Link>
       </p>
     </div>
