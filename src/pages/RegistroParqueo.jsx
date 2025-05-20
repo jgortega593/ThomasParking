@@ -116,20 +116,23 @@ export default function RegistroParqueo() {
       const copropietarioId = getCopropietarioId();
       if (!copropietarioId) throw new Error('Unidad no válida');
 
-      // FIX: Si fechaHora es "" (string vacío), enviar null
-      const fechaHoraValida = formData.fechaHora && formData.fechaHora.trim() !== ''
-        ? dayjs.tz(formData.fechaHora, 'America/Guayaquil').toISOString()
-        : null;
-
+      // FIX: Convertir campos vacíos a null según el esquema
       const registro = {
         placa_vehiculo: formData.placa.toUpperCase().replace(/\s/g, ''),
         tipo_vehiculo: formData.tipoVehiculo,
-        fecha_hora_ingreso: fechaHoraValida,
-        observaciones: formData.observaciones,
         dependencia_id: copropietarioId,
         usuario_id: user.id,
+        observaciones: formData.observaciones.trim() || null,
+        fecha_hora_ingreso:
+          formData.fechaHora && formData.fechaHora.trim() !== ''
+            ? dayjs.tz(formData.fechaHora, 'America/Guayaquil').toISOString()
+            : null,
+        recaudado: false,
+        fecha_recaudo: null,
         monto: formData.gratis ? 0 : (formData.tipoVehiculo === 'carro' ? 1.00 : 0.50),
         gratis: formData.gratis,
+        observacion_audio_url: null,
+        pending_photos: !isOnline,
         foto_url: []
       };
 
@@ -266,48 +269,48 @@ export default function RegistroParqueo() {
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           >
-            <option value="">Seleccione una propiedad</option>
-            {propiedades.map(prop => (
-              <option key={prop} value={prop}>{prop}</option>
+            <option value="">Seleccione propiedad</option>
+            {propiedades.map(propiedad => (
+              <option key={propiedad} value={propiedad}>{propiedad}</option>
             ))}
           </select>
         </div>
 
-        {/* Selector de Unidad */}
-        <div>
-          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-            Unidad
-          </label>
-          <select
-            name="unidadAsignada"
-            value={formData.unidadAsignada}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-            disabled={!formData.propiedad}
-          >
-            <option value="">Seleccione una unidad</option>
-            {unidades.map(u => (
-              <option key={u.copropietarioId} value={u.unidad}>
-                {u.unidad} - {u.nombreCopropietario}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Selector de Unidad con Copropietario integrado */}
+        {formData.propiedad && (
+          <div>
+            <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+              Unidad y Copropietario
+            </label>
+            <select
+              name="unidadAsignada"
+              value={formData.unidadAsignada}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              required
+            >
+              <option value="">Seleccione unidad</option>
+              {unidades.map(({ unidad, nombreCopropietario }) => (
+                <option key={unidad} value={unidad}>
+                  {unidad} - {nombreCopropietario}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        {/* Observaciones */}
+        {/* Campo Observaciones */}
         <div>
           <label className="block text-sm font-medium mb-1 dark:text-gray-200">
             Observaciones
           </label>
-          <input
-            type="text"
+          <textarea
             name="observaciones"
             value={formData.observaciones}
             onChange={handleChange}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            maxLength={120}
             placeholder="Observaciones adicionales"
+            rows="3"
           />
         </div>
 
@@ -341,10 +344,10 @@ export default function RegistroParqueo() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors"
           disabled={submitting}
+          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
         >
-          {submitting ? 'Registrando...' : 'Registrar Parqueo'}
+          {submitting ? <Loader text="Guardando..." /> : <><Emoji symbol="✅" /> Registrar</>}
         </button>
       </form>
     </div>
