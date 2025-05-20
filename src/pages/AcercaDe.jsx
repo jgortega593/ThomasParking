@@ -7,7 +7,8 @@ export default function AcercaDe() {
     <section
       className="acerca-de-container"
       style={{
-        background: '#f8fafc',
+        background: 'var(--surface)',
+        color: 'var(--text)',
         borderRadius: 16,
         boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
         padding: '2rem',

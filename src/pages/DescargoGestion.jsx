@@ -336,13 +336,12 @@ function DescargoGestionComponent() {
 
   return (
     <div
+      className="descargo-gestion-container"
       style={{
-        background: "linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%)",
-        borderRadius: 24,
-        boxShadow: "0 6px 32px #6366f133",
-        padding: "2.5rem 1.5rem",
-        maxWidth: 1200,
-        margin: "2.5rem auto",
+        background: "var(--surface)",
+        color: "var(--text)",
+        minHeight: "100vh",
+        padding: "2rem"
       }}
     >
       <h2

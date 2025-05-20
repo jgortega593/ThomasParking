@@ -1,5 +1,6 @@
 // src/components/Footer.jsx
 import React from 'react'
+import Emoji from './Emoji'
 
 export default function Footer() {
   const year = new Date().getFullYear()
@@ -11,21 +12,22 @@ export default function Footer() {
           © {year} Conjunto Habitacional Thomas II. Todos los derechos reservados.
         </div>
         <div className="flex space-x-4 mt-2 md:mt-0">
-          {/* Puedes agregar enlaces a políticas, contacto, etc. */}
           <a
-            href="mailto:admin@thomas2.com"
-            className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+            href="mailto:conjuntohabitacionalthomasii@gmail.com"
+            className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm flex items-center gap-1"
             aria-label="Contacto por correo"
           >
+            <Emoji symbol="✉️" label="Correo" />
             Contacto
           </a>
           <a
-            href="https://github.com/tu-usuario/tu-repo"
+            href="https://github.com/jgortega593/ThomasParking.git"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+            className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm flex items-center gap-1"
             aria-label="Repositorio en GitHub"
           >
+            <Emoji symbol="🐱" label="GitHub" />
             GitHub
           </a>
         </div>

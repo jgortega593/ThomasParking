@@ -1,9 +1,8 @@
-/* global.css mejorado para miniaturas de fotos y archivos en tablas */
-/* Mantiene el diseño moderno, dinámico y disruptivo, y asegura miniaturas consistentes en tablas */
-
 @charset "UTF-8";
 
-/* 1. Variables y temas */
+/* =======================
+   Variables de Tema
+======================== */
 :root {
   --background: #f8fafc;
   --surface: #fff;
@@ -24,10 +23,8 @@
   --transition: .22s cubic-bezier(.4,0,.2,1);
   --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
-  --thumbnail-size: 38px;
-  --thumbnail-size-lg: 90px;
-  --file-thumb-bg: #f3f4f6;
-  --file-thumb-icon: #6366f1;
+  --glass-bg: rgba(255,255,255,0.7);
+  --glass-blur: 12px;
 }
 
 [data-theme=dark] {
@@ -41,10 +38,12 @@
   --accent: #f472b6;
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
-  --file-thumb-bg: #23272f;
-  --file-thumb-icon: #818cf8;
+  --glass-bg: rgba(35,39,47,0.7);
 }
 
+/* =======================
+   Reset y Base
+======================== */
 html, body {
   margin: 0;
   padding: 0;
@@ -67,6 +66,9 @@ html, body {
   background: var(--background);
 }
 
+/* =======================
+   Tipografía y Enlaces
+======================== */
 a {
   color: var(--primary);
   text-decoration: none;
@@ -87,7 +89,9 @@ h1, h2, h3, h4 {
   line-height: 1.2;
 }
 
-/* 2. Inputs y botones */
+/* =======================
+   Formularios y Botones
+======================== */
 button, input, select, textarea {
   font-family: inherit;
   font-size: 1rem;
@@ -114,23 +118,17 @@ button {
   gap: 8px;
   -webkit-user-select: none;
   user-select: none;
+  transition: background var(--transition), box-shadow var(--transition), transform .12s;
 }
 button:hover, button:focus {
   background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
+  transform: scale(1.04);
   outline: none;
   box-shadow: 0 0 0 3px var(--focus);
 }
 button:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
-}
-button[aria-label="Abrir menú"], button[aria-label="Cerrar menú"], .btn-hamburguesa {
-  min-width: 0!important;
-  min-height: 0!important;
-  width: 32px!important;
-  height: 32px!important;
-  padding: 4px!important;
-  box-shadow: none!important;
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary);
@@ -145,7 +143,9 @@ input[type=checkbox], input[type=radio] {
   cursor: pointer;
 }
 
-/* 3. Scrollbar */
+/* =======================
+   Scrollbar Moderno
+======================== */
 ::-webkit-scrollbar {
   width: 10px;
   background: #e0e7ef;
@@ -155,187 +155,61 @@ input[type=checkbox], input[type=radio] {
   border-radius: 8px;
 }
 
-/* 4. Miniaturas de fotos y archivos en tablas */
-.thumbnail,
-.tabla-resultados .thumbnail,
-.registros-table .thumbnail,
-img.thumbnail,
-img.tabla-miniatura,
-img.miniatura,
-img.tabla-archivo {
-  width: var(--thumbnail-size);
-  height: var(--thumbnail-size);
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px #6366f133;
-  border: 1.5px solid #e5e7eb;
-  background: var(--file-thumb-bg);
-  display: inline-block;
-  vertical-align: middle;
-  transition: box-shadow .18s cubic-bezier(.4,0,.2,1), border-color .18s;
-}
-.thumbnail:hover,
-.tabla-resultados .thumbnail:hover,
-.registros-table .thumbnail:hover {
-  box-shadow: 0 0 0 3px var(--secondary), 0 2px 12px #6366f144;
-  border-color: var(--secondary);
-}
-
-.tabla-resultados .archivo-miniatura,
-.registros-table .archivo-miniatura,
-.file-thumbnail,
-.tabla-archivo {
-  width: var(--thumbnail-size);
-  height: var(--thumbnail-size);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--file-thumb-bg);
-  border: 1.5px solid #e5e7eb;
-  box-shadow: 0 2px 6px #6366f133;
-  font-size: 1.3em;
-  color: var(--file-thumb-icon);
-  transition: box-shadow .18s, border-color .18s;
-}
-.tabla-resultados .archivo-miniatura:hover,
-.registros-table .archivo-miniatura:hover,
-.file-thumbnail:hover {
-  box-shadow: 0 0 0 3px var(--accent), 0 2px 12px #6366f144;
-  border-color: var(--accent);
-}
-
-@media (min-width: 600px) {
-  .thumbnail,
-  .tabla-resultados .thumbnail,
-  .registros-table .thumbnail,
-  img.thumbnail,
-  img.tabla-miniatura,
-  img.miniatura,
-  img.tabla-archivo,
-  .tabla-resultados .archivo-miniatura,
-  .registros-table .archivo-miniatura,
-  .file-thumbnail,
-  .tabla-archivo {
-    width: var(--thumbnail-size-lg);
-    height: var(--thumbnail-size-lg);
-  }
-}
-
-/* 5. Tablas modernas */
-.registros-table,
-.tabla-resultados {
+/* =======================
+   Tablas y Grids
+======================== */
+table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  margin-bottom: 2rem;
   font-size: 1rem;
-  text-align: left;
 }
-.registros-table th,
-.tabla-resultados th {
+th, td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background var(--transition), color var(--transition);
+}
+th {
   background: var(--primary-light);
   color: var(--primary);
-  font-weight: bold;
-  padding: 10px 8px;
-  border-bottom: 2px solid #e0e7ef;
-  text-align: center;
+  font-weight: 700;
 }
-.registros-table td,
-.tabla-resultados td {
-  padding: 8px 6px;
-  border-bottom: 1px solid #e5e7eb;
-  vertical-align: middle;
-  text-align: center;
-}
-.registros-table tr:last-child td,
-.tabla-resultados tr:last-child td {
+tr:last-child td {
   border-bottom: none;
 }
-.registros-table tr:hover,
-.tabla-resultados tr:hover {
-  background: #f3f4f6;
-  transition: background .18s;
-}
-@media (max-width: 768px) {
-  .registros-table,
-  .tabla-resultados {
-    font-size: 0.92rem;
-    overflow-x: auto;
-  }
-  .registros-table th, .registros-table td,
-  .tabla-resultados th, .tabla-resultados td {
-    padding: 7px 3px;
-  }
+tr:hover {
+  background: var(--primary-light);
 }
 
-/* 6. Miniaturas grandes en previsualización y formularios */
-.selector-foto img,
-.resize-image img,
-img.previsualizacion-foto,
-img.previsualizacion-archivo {
-  width: var(--thumbnail-size-lg);
-  height: var(--thumbnail-size-lg);
+/* =======================
+   Miniaturas y Avatares
+======================== */
+.thumbnail {
+  width: 38px;
+  height: 38px;
   object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 1.5px solid #e5e7eb;
-  margin: 0 4px 4px 0;
-  background: var(--file-thumb-bg);
-  box-shadow: 0 2px 8px #6366f133;
-  transition: box-shadow .18s, border-color .18s;
-}
-.selector-foto img:hover,
-.resize-image img:hover,
-img.previsualizacion-foto:hover,
-img.previsualizacion-archivo:hover {
-  box-shadow: 0 0 0 3px var(--primary), 0 2px 12px #6366f144;
-  border-color: var(--primary);
-}
-
-/* 7. Archivos no imagen (PDF, audio, etc) como miniatura */
-.file-thumbnail,
-.tabla-archivo,
-.archivo-miniatura {
-  width: var(--thumbnail-size);
-  height: var(--thumbnail-size);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--radius-sm);
-  background: var(--file-thumb-bg);
-  border: 1.5px solid #e5e7eb;
   box-shadow: 0 2px 6px #6366f133;
-  font-size: 1.6em;
-  color: var(--file-thumb-icon);
-  transition: box-shadow .18s, border-color .18s;
-}
-.file-thumbnail svg,
-.tabla-archivo svg,
-.archivo-miniatura svg {
-  font-size: 1.3em;
-  color: var(--file-thumb-icon);
-}
-.file-thumbnail:hover,
-.tabla-archivo:hover,
-.archivo-miniatura:hover {
-  box-shadow: 0 0 0 3px var(--accent), 0 2px 12px #6366f144;
-  border-color: var(--accent);
 }
 
-/* 8. Modal y loader */
+/* =======================
+   Modales y Overlays
+======================== */
 .modal-backdrop {
   position: fixed;
   top: 0; left: 0;
   width: 100vw; height: 100vh;
-  background: #18181bbf;
+  background: rgba(24,24,27,0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  backdrop-filter: blur(var(--glass-blur));
 }
 .modal-content {
   background: var(--surface);
@@ -348,8 +222,17 @@ img.previsualizacion-archivo:hover {
   overflow-y: auto;
   text-align: left;
   position: relative;
+  animation: modalIn .38s cubic-bezier(.4,0,.2,1);
 }
-.loader-spinner {
+@keyframes modalIn {
+  0% { opacity: 0; transform: translateY(32px) scale(0.97);}
+  100% { opacity: 1; transform: none;}
+}
+
+/* =======================
+   Loader y LoadingOverlay
+======================== */
+.loader-spinner, .loading-spinner {
   width: 48px;
   height: 48px;
   border: 6px solid #e0e0e0;
@@ -367,29 +250,9 @@ img.previsualizacion-archivo:hover {
   100% { transform: rotate(360deg);}
 }
 
-/* 9. Utilidades y responsividad */
-.sin-resultados {
-  color: var(--text-muted);
-  font-size: 1.1em;
-  text-align: center;
-  padding: 1.2em 0;
-}
-.error-message {
-  background: #fffbe6;
-  color: var(--danger);
-  border: 1.5px solid #ffe58f;
-  margin-top: 1rem;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  font-size: 1.06em;
-  font-weight: 600;
-  text-align: center;
-  max-width: 700px;
-  word-wrap: break-word;
-}
-.pt-16 { padding-top: 4rem!important; }
-
-/* 10. Banner offline */
+/* =======================
+   Banners y Mensajes
+======================== */
 .offline-banner {
   background: #fff3cd;
   color: #856404;
@@ -401,23 +264,166 @@ img.previsualizacion-archivo:hover {
   position: sticky;
   top: 64px;
   z-index: 40;
+  letter-spacing: .02em;
+  animation: bannerIn .7s cubic-bezier(.4,0,.2,1);
 }
-@media (forced-colors: active) {
-  .offline-banner {
-    background: Canvas;
-    color: ButtonText;
-    border-bottom: 2px solid ButtonBorder;
-    forced-color-adjust: preserve-parent-color;
+[data-theme=dark] .offline-banner {
+  background: #23272f;
+  color: #fbbf24;
+  border-bottom: 1.5px solid #fbbf24;
+}
+@keyframes bannerIn {
+  0% { opacity: 0; transform: translateY(-16px);}
+  100% { opacity: 1; transform: none;}
+}
+
+.error-message,
+.bg-red-50,
+.bg-red-900 {
+  background: #fffbe6;
+  color: var(--danger);
+  border: 1.5px solid #ffe58f;
+  margin-top: 1rem;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-size: 1.06em;
+  font-weight: 600;
+  text-align: center;
+  max-width: 700px;
+  word-wrap: break-word;
+  box-shadow: 0 2px 8px #ef444422;
+}
+[data-theme=dark] .error-message,
+[data-theme=dark] .bg-red-50,
+[data-theme=dark] .bg-red-900 {
+  background: #7f1d1d;
+  color: #fde68a;
+  border-color: #b91c1c;
+}
+
+/* =======================
+   Contenedores Disruptivos
+======================== */
+.acerca-de-container,
+.descargos-container {
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  padding: 2.2rem 2rem;
+  max-width: 700px;
+  margin: 2.5rem auto;
+  text-align: left;
+  backdrop-filter: blur(var(--glass-blur));
+  transition: background var(--transition), color var(--transition);
+  animation: fadeIn .7s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(.98);}
+  100% { opacity: 1; transform: none;}
+}
+
+/* =======================
+   Utilidades y Helpers
+======================== */
+.pt-16 { padding-top: 4rem !important; }
+.min-h-screen { min-height: 100vh !important; }
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.my-8 { margin-top: 2rem !important; margin-bottom: 2rem !important; }
+.p-6 { padding: 1.5rem !important; }
+.p-8 { padding: 2rem !important; }
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+.shadow { box-shadow: var(--shadow-md) !important; }
+.text-center { text-align: center !important; }
+.text-left { text-align: left !important; }
+.font-bold { font-weight: 700 !important; }
+.font-semibold { font-weight: 600 !important; }
+.text-lg { font-size: 1.125rem !important; }
+.text-2xl { font-size: 1.5rem !important; }
+.text-red-700 { color: #b91c1c !important; }
+.text-red-100 { color: #fee2e2 !important; }
+.text-red-600 { color: #dc2626 !important; }
+.text-red-300 { color: #fca5a5 !important; }
+.sin-resultados {
+  color: var(--text-muted);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 1.2em 0;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+/* =======================
+   Responsive Moderno
+======================== */
+@media (max-width: 900px) {
+  .acerca-de-container,
+  .descargos-container {
+    padding: 1.2rem;
+    margin: 1rem;
+  }
+}
+@media (max-width: 768px) {
+  .filtros-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+  .filtro-item {
+    min-width: 100%;
+  }
+  .resultados-table-container {
+    max-height: 300px;
+  }
+  .acerca-de-container,
+  .descargos-container {
+    padding: 1.1rem;
+    margin: 0.7rem;
+  }
+}
+@media (max-width: 480px) {
+  .acerca-de-container,
+  .descargos-container {
+    padding: 0.7rem;
+    margin: 0.3rem;
+    font-size: 0.98rem;
+  }
+  table, th, td {
+    font-size: 0.97rem;
   }
 }
 
-/* 11. Accesibilidad */
-:focus {
-  outline-color: var(--focus);
+/* =======================
+   Microinteracciones
+======================== */
+button, .edit-btn, .delete-btn, .save-btn, .cancel-btn {
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition), transform .11s;
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition: none !important;
-    animation: none !important;
-  }
+button:active, .edit-btn:active, .delete-btn:active {
+  transform: scale(.97);
+}
+
+/* =======================
+   Glassmorphism (opcional)
+======================== */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+}
+
+/* =======================
+   Accesibilidad
+======================== */
+:focus-visible {
+  outline: 2.5px solid var(--focus);
+  outline-offset: 2.5px;
+}
+[aria-live] {
+  transition: color .18s;
 }
