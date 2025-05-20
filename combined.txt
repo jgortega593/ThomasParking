@@ -56,7 +56,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
-import { UserProvider, useUser } from './context/UserContext'; // Importar el UserContext
+import { UserProvider, useUser } from './context/UserContext';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -79,7 +79,7 @@ import SignUp from './components/SignUp';
 function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
   const hideNavbarRoutes = ['/login', '/', '/registro'];
-  const { user } = useUser(); // Obtener usuario del contexto
+  const { user } = useUser();
 
   return (
     <>
@@ -88,7 +88,10 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
       )}
 
       {!isOnline && (
-        <div className="offline-banner" role="status" aria-live="polite"
+        <div 
+          className="offline-banner" 
+          role="status" 
+          aria-live="polite"
           style={{
             background: '#fff3cd',
             color: '#856404',
@@ -99,7 +102,14 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
             borderBottom: '1.5px solid #ffe58f',
             position: 'sticky',
             top: '64px',
-            zIndex: 40
+            zIndex: 40,
+            // Corrección para Forced Colors Mode
+            '@media (forced-colors: active)': {
+              background: 'Canvas',
+              color: 'ButtonText',
+              borderBottom: '2px solid ButtonBorder',
+              forcedColorAdjust: 'preserve-parent-color'
+            }
           }}
         >
           <span role="img" aria-label="offline">⚡</span>
@@ -132,7 +142,7 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
             <Route
               path="/recaudo"
               element={
-                <AuthGuard requiredRole="registrador">
+                <AuthGuard requiredRole="admin">
                   <Recaudo />
                 </AuthGuard>
               }
@@ -197,8 +207,17 @@ function App() {
 
   return (
     <ThemeProvider>
-      <UserProvider> {/* Envolver con UserProvider */}
-        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+      <UserProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+            v7_fetcherPersist: true,
+            v7_normalizeFormMethod: true,
+            v7_partialHydration: true,
+            v7_skipActionErrorRevalidation: true,
+          }}
+        >
           <ErrorBoundary>
             <AppRoutes
               menuOpen={menuOpen}
@@ -469,14 +488,25 @@ export default function AuthGuard({ requiredRole = null, children }) {
 // src/components/CapturaCamara.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import Emoji from './Emoji'
+import Modal from './Modal'
 
-export default function CapturaCamara({ onCaptura }) {
+/**
+ * CapturaCamara
+ * Modal para capturar una foto desde la cámara, con previsualización y opción de aceptar o volver a tomar.
+ * Props:
+ * - onCaptura: function(File) => void (llamada al aceptar la foto)
+ * - onCancelar: function() => void (llamada al cancelar/cerrar el modal)
+ * - maxWidth: número o string (ancho máximo de la previsualización, opcional)
+ * - disabled: boolean (opcional)
+ */
+export default function CapturaCamara({ onCaptura, onCancelar, maxWidth = 220, disabled = false }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [error, setError] = useState(null)
   const [foto, setFoto] = useState(null)
   const [modoCamara, setModoCamara] = useState('environment')
   const [stream, setStream] = useState(null)
+  const [capturando, setCapturando] = useState(false)
 
   // Evita scroll en body mientras la cámara está activa
   useEffect(() => {
@@ -495,8 +525,8 @@ export default function CapturaCamara({ onCaptura }) {
         const constraints = {
           video: {
             facingMode: modoCamara,
-            width: { ideal: 220 },
-            height: { ideal: 165 }
+            width: { ideal: maxWidth },
+            height: { ideal: Math.round((maxWidth / 4) * 3) }
           },
           audio: false
         }
@@ -519,10 +549,12 @@ export default function CapturaCamara({ onCaptura }) {
       }
     }
     // eslint-disable-next-line
-  }, [modoCamara])
+  }, [modoCamara, maxWidth])
 
-  // Capturar foto
+  // Capturar foto y previsualizar
   const capturarFoto = () => {
+    if (disabled) return
+    setCapturando(true)
     const video = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
@@ -530,10 +562,21 @@ export default function CapturaCamara({ onCaptura }) {
     canvas.height = video.videoHeight
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     canvas.toBlob(blob => {
-      const file = new File([blob], 'foto-capturada.jpg', { type: 'image/jpeg' })
-      setFoto(URL.createObjectURL(file))
-      onCaptura(file)
-    }, 'image/jpeg', 0.9)
+      if (blob) {
+        const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' })
+        setFoto({ url: URL.createObjectURL(file), file })
+      }
+      setCapturando(false)
+    }, 'image/jpeg', 0.92)
+  }
+
+  // Aceptar la foto y devolver el archivo
+  const aceptarFoto = () => {
+    if (foto && foto.file) {
+      onCaptura(foto.file)
+      if (stream) stream.getTracks().forEach(track => track.stop())
+      setFoto(null)
+    }
   }
 
   // Cambiar cámara frontal/trasera
@@ -541,96 +584,121 @@ export default function CapturaCamara({ onCaptura }) {
     setModoCamara(prev => prev === 'user' ? 'environment' : 'user')
   }
 
+  // Cancelar y cerrar modal
+  const handleCancelar = () => {
+    if (stream) stream.getTracks().forEach(track => track.stop())
+    setFoto(null)
+    if (onCancelar) onCancelar()
+  }
+
   if (error) return (
-    <div className="error-camara">
-      <Emoji symbol="📷" /> {error}
-      <div style={{ fontSize: 14, marginTop: 8 }}>
-        Asegúrate de permitir el acceso a la cámara
+    <Modal isOpen={true} onClose={handleCancelar}>
+      <div className="error-camara" style={{ textAlign: 'center', padding: 24 }}>
+        <Emoji symbol="📷" /> {error}
+        <div style={{ fontSize: 14, marginTop: 8 }}>
+          Asegúrate de permitir el acceso a la cámara
+        </div>
+        <button onClick={handleCancelar} style={{ marginTop: 16 }}>
+          Cerrar
+        </button>
       </div>
-    </div>
+    </Modal>
   )
 
   return (
-    <div
-      className="contenedor-camara"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        background: '#18181b',
-        zIndex: 9999,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-    >
-      {!foto ? (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            style={{
-              width: '100%',
-              maxWidth: '220px',
-              aspectRatio: '4/3',
-              borderRadius: '12px',
-              background: '#222',
-              transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none',
-              boxShadow: '0 2px 16px #0006'
-            }}
-          />
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button
-              type="button"
-              onClick={capturarFoto}
-              className="btn-capturar"
-              style={{ minWidth: 90, fontSize: 18 }}
-            >
-              <Emoji symbol="📸" /> Capturar
-            </button>
-            <button
-              type="button"
-              onClick={cambiarCamara}
-              className="btn-cambiar-camara"
-              style={{ minWidth: 90, fontSize: 18 }}
-            >
-              <Emoji symbol="🔄" /> Cambiar
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <img
-            src={foto}
-            alt="Previsualización"
-            style={{
-              width: '100%',
-              maxWidth: '220px',
-              aspectRatio: '4/3',
-              borderRadius: '12px',
-              border: '2px solid #e0e0e0',
-              boxShadow: '0 2px 16px #0006'
-            }}
-          />
-          <div style={{ marginTop: 16 }}>
-            <button
-              type="button"
-              onClick={() => setFoto(null)}
-              className="btn-reintentar"
-              style={{ minWidth: 120, fontSize: 18 }}
-            >
-              <Emoji symbol="🔄" /> Volver a tomar
-            </button>
-          </div>
-        </>
-      )}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-    </div>
+    <Modal isOpen={true} onClose={handleCancelar}>
+      <div className="contenedor-camara" style={{ textAlign: 'center' }}>
+        {!foto ? (
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              style={{
+                width: '100%',
+                maxWidth: maxWidth,
+                aspectRatio: '4/3',
+                borderRadius: 12,
+                background: '#222',
+                transform: modoCamara === 'user' ? 'scaleX(-1)' : 'none',
+                boxShadow: '0 2px 16px #0006'
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={capturarFoto}
+                className="btn-capturar"
+                style={{ minWidth: 90, fontSize: 18 }}
+                disabled={capturando || disabled}
+              >
+                <Emoji symbol="📸" /> {capturando ? 'Capturando...' : 'Capturar'}
+              </button>
+              <button
+                type="button"
+                onClick={cambiarCamara}
+                className="btn-cambiar-camara"
+                style={{ minWidth: 90, fontSize: 18 }}
+                disabled={capturando || disabled}
+              >
+                <Emoji symbol="🔄" /> Cambiar
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelar}
+                style={{ minWidth: 90, fontSize: 18, background: '#eee', color: '#444' }}
+              >
+                <Emoji symbol="❌" /> Cancelar
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <img
+              src={foto.url}
+              alt="Previsualización"
+              style={{
+                width: '100%',
+                maxWidth: maxWidth,
+                aspectRatio: '4/3',
+                borderRadius: 12,
+                border: '2px solid #e0e0e0',
+                boxShadow: '0 2px 16px #0006'
+              }}
+            />
+            <div style={{ marginTop: 16, display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={aceptarFoto}
+                className="btn-aceptar"
+                style={{ minWidth: 120, fontSize: 18, background: '#22c55e', color: '#fff' }}
+              >
+                <Emoji symbol="✅" /> Aceptar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  URL.revokeObjectURL(foto.url)
+                  setFoto(null)
+                }}
+                className="btn-reintentar"
+                style={{ minWidth: 120, fontSize: 18, background: '#fbbf24', color: '#222' }}
+              >
+                <Emoji symbol="🔄" /> Volver a tomar
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelar}
+                style={{ minWidth: 90, fontSize: 18, background: '#eee', color: '#444' }}
+              >
+                <Emoji symbol="❌" /> Cancelar
+              </button>
+            </div>
+          </>
+        )}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+      </div>
+    </Modal>
   )
 }
 
@@ -2167,46 +2235,58 @@ export default function ResumenRegistros({ registros = [] }) {
 
 ----- C:\ThomasParking\ThomasParking\src\components\SelectorDeFoto.jsx -----
 
+// src/components/SelectorDeFoto.jsx
 import React, { useState, useEffect } from 'react';
 import CapturaCamara from './CapturaCamara';
 
+/**
+ * SelectorDeFoto
+ * Componente para seleccionar o capturar fotos, mostrando previsualización en miniatura.
+ * Props:
+ * - onFilesSelected: function(files[]) => void
+ * - maxFiles: número máximo de fotos permitidas (default: 5)
+ * - disabled: boolean (opcional)
+ */
 export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled }) {
   const [previews, setPreviews] = useState([]);
   const [files, setFiles] = useState([]);
   const [modo, setModo] = useState('galeria');
 
+  // Actualiza el listado de archivos y notifica al padre
   const actualizarArchivos = (nuevosArchivos) => {
     const archivosCombinados = [...files, ...nuevosArchivos].slice(0, maxFiles);
     setFiles(archivosCombinados);
-    if(onFilesSelected) onFilesSelected(archivosCombinados);
+    if (onFilesSelected) onFilesSelected(archivosCombinados);
   };
 
+  // Maneja selección desde galería
   const handleFileChange = (e) => {
-    if(disabled) return;
+    if (disabled) return;
     const selectedFiles = Array.from(e.target.files);
     actualizarArchivos(selectedFiles);
   };
 
+  // Maneja captura desde cámara
   const handleCapturaCamara = (file) => {
-    if(disabled) return;
+    if (disabled) return;
     actualizarArchivos([file]);
   };
 
+  // Elimina una foto seleccionada
   const eliminarFoto = (index) => {
     const nuevosArchivos = files.filter((_, i) => i !== index);
     setFiles(nuevosArchivos);
-    if(onFilesSelected) onFilesSelected(nuevosArchivos);
+    if (onFilesSelected) onFilesSelected(nuevosArchivos);
   };
 
+  // Genera y limpia previews de archivos
   useEffect(() => {
     const nuevasPreviews = files.map(file => ({
       url: URL.createObjectURL(file),
       name: file.name,
       type: file.type,
     }));
-    
     setPreviews(nuevasPreviews);
-
     return () => {
       nuevasPreviews.forEach(p => URL.revokeObjectURL(p.url));
     };
@@ -3211,181 +3291,275 @@ export default function Consultas() {
             </select>
           </div>
         </div>
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-4 mt-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
           >
-            Aplicar Filtros
+            <Emoji symbol="🔎" /> Buscar
           </button>
           <button
             type="button"
             onClick={limpiarFiltros}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
           >
-            Limpiar Filtros
+            Limpiar filtros
           </button>
         </div>
       </form>
 
       {/* Tabla de resultados */}
-      <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white rounded-lg shadow">
+          <thead>
             <tr>
-              <th className="px-4 py-3">ID</th>
-              <th className="px-4 py-3">Fecha/Hora</th>
-              <th className="px-4 py-3">Placa</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Copropietario</th>
-              <th className="px-4 py-3">Propiedad</th>
-              <th className="px-4 py-3">Unidad</th>
-              <th className="px-4 py-3">Observaciones</th>
-              <th className="px-4 py-3">Monto</th>
-              <th className="px-4 py-3">Gratis</th>
-              <th className="px-4 py-3">Recaudado</th>
-              <th className="px-4 py-3">Fecha Recaudo</th>
-              <th className="px-4 py-3">Registrado por</th>
-              <th className="px-4 py-3">Rol usuario</th>
-              <th className="px-4 py-3">Foto</th>
-              <th className="px-4 py-3">Audio</th>
-              <th className="px-4 py-3">Acciones</th>
+              <th className="px-2 py-2">Fecha/Hora</th>
+              <th className="px-2 py-2">Placa</th>
+              <th className="px-2 py-2">Tipo</th>
+              <th className="px-2 py-2">Observaciones</th>
+              <th className="px-2 py-2">Monto</th>
+              <th className="px-2 py-2">Gratis</th>
+              <th className="px-2 py-2">Recaudado</th>
+              <th className="px-2 py-2">Fecha Recaudo</th>
+              <th className="px-2 py-2">Copropietario</th>
+              <th className="px-2 py-2">Registrado por</th>
+              <th className="px-2 py-2">Foto</th>
+              <th className="px-2 py-2">Audio</th>
+              <th className="px-2 py-2">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {resultados.map(registro => (
-              <tr key={registro.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{registro.id}</td>
-                <td className="px-4 py-3">{registro.fecha_hora_ingreso ? dayjs(registro.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-                <td className="px-4 py-3">{registro.placa_vehiculo}</td>
-                <td className="px-4 py-3">
-                  <Emoji symbol={registro.tipo_vehiculo === 'carro' ? '🚗' : '🏍️'} />
-                  {registro.tipo_vehiculo}
-                </td>
-                <td className="px-4 py-3">{registro.copropietarios?.nombre || '-'}</td>
-                <td className="px-4 py-3">{registro.copropietarios?.propiedad || '-'}</td>
-                <td className="px-4 py-3">{registro.copropietarios?.unidad_asignada || '-'}</td>
-                <td className="px-4 py-3">{registro.observaciones || '-'}</td>
-                <td className="px-4 py-3">${Number(registro.monto).toFixed(2)}</td>
-                <td className="px-4 py-3">
-                  {registro.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
-                </td>
-                <td className="px-4 py-3">
-                  {registro.recaudado ? <Emoji symbol="🔗" /> : <Emoji symbol="⏳" />}
-                </td>
-                <td className="px-4 py-3">{registro.fecha_recaudo || '-'}</td>
-                <td className="px-4 py-3">{registro.usuarios_app?.nombre || '-'}</td>
-                <td className="px-4 py-3">{registro.usuarios_app?.rol || '-'}</td>
-                <td className="px-4 py-3">
-                  {registro.foto_url && (
-                    <a href={registro.foto_url} target="_blank" rel="noopener noreferrer">
-                      <img src={registro.foto_url} alt="Evidencia" className="thumbnail" />
-                    </a>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {registro.observacion_audio_url ? (
-                    <audio controls style={{ width: 90 }}>
-                      <source src={registro.observacion_audio_url} type="audio/webm" />
-                      Tu navegador no soporta audio.
-                    </audio>
-                  ) : (
-                    <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 space-x-2">
-                  <button
-                    onClick={() => abrirEdicion(registro)}
-                    className="text-blue-600 hover:text-blue-800"
-                    disabled={!isOnline}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => eliminarRegistro(registro.id)}
-                    className="text-red-600 hover:text-red-800"
-                    disabled={!isOnline}
-                  >
-                    Eliminar
-                  </button>
+          <tbody>
+            {resultados.length > 0 ? (
+              resultados.map(reg => (
+                <tr key={reg.id}>
+                  <td className="px-2 py-1 text-center">
+                    {reg.fecha_hora_ingreso
+                      ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')
+                      : ''}
+                  </td>
+                  <td className="px-2 py-1 text-center">{reg.placa_vehiculo}</td>
+                  <td className="px-2 py-1 text-center">{reg.tipo_vehiculo}</td>
+                  <td className="px-2 py-1">{reg.observaciones || '-'}</td>
+                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.recaudado ? <Emoji symbol="🔗" /> : <Emoji symbol="⏳" />}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.fecha_recaudo || '-'}
+                  </td>
+                  <td className="px-2 py-1">
+                    {reg.copropietarios?.nombre || '-'}
+                    <br />
+                    <small>
+                      {reg.copropietarios?.propiedad || ''} - {reg.copropietarios?.unidad_asignada || ''}
+                    </small>
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.usuarios_app?.nombre || '-'}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.foto_url && (
+                      <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
+                        <img src={reg.foto_url} alt="Evidencia" className="thumbnail" />
+                      </a>
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.observacion_audio_url ? (
+                      <audio controls style={{ width: 90 }}>
+                        <source src={reg.observacion_audio_url} type="audio/webm" />
+                        Tu navegador no soporta audio.
+                      </audio>
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    <button
+                      className="edit-btn"
+                      title="Editar"
+                      onClick={() => abrirEdicion(reg)}
+                      style={{ marginRight: 6 }}
+                      disabled={!isOnline || saving}
+                    >
+                      <Emoji symbol="✏️" /> Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      title="Eliminar"
+                      onClick={() => eliminarRegistro(reg.id)}
+                      disabled={!isOnline || deleting}
+                    >
+                      <Emoji symbol="🗑️" /> Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="13" className="sin-resultados">
+                  No se encontraron registros con los filtros seleccionados
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Modal de edición */}
-      <Modal isOpen={modal.open} onClose={() => setModal({ open: false })}>
-        <div className="p-6">
-          <h3 className="text-xl font-bold mb-4">Editar Registro</h3>
-          <form onSubmit={guardarCambios} className="space-y-4">
-            <div>
-              <label>Placa:</label>
+      {modal.open && (
+        <Modal isOpen={modal.open} onClose={() => setModal({ open: false, registro: null })}>
+          <h3 className="text-lg font-bold mb-4">Editar Registro</h3>
+          <form onSubmit={guardarCambios} className="space-y-3">
+            <label>
+              Placa:
               <input
+                name="placa_vehiculo"
                 value={form.placa_vehiculo}
-                onChange={e => setForm({ ...form, placa_vehiculo: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, placa_vehiculo: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               />
-            </div>
-            <div>
-              <label>Tipo:</label>
+            </label>
+            <label>
+              Tipo:
               <select
+                name="tipo_vehiculo"
                 value={form.tipo_vehiculo}
-                onChange={e => setForm({ ...form, tipo_vehiculo: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, tipo_vehiculo: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               >
                 <option value="carro">Carro</option>
                 <option value="moto">Moto</option>
               </select>
-            </div>
-            <div>
-              <label>Fecha:</label>
+            </label>
+            <label>
+              Fecha ingreso:
               <input
                 type="date"
+                name="fecha_hora_ingreso"
                 value={form.fecha_hora_ingreso}
-                onChange={e => setForm({ ...form, fecha_hora_ingreso: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, fecha_hora_ingreso: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               />
-            </div>
-            <div>
-              <label>Copropietario:</label>
-              <select
-                value={form.dependencia_id}
-                onChange={e => setForm({ ...form, dependencia_id: e.target.value })}
+            </label>
+            <label>
+              Observaciones:
+              <input
+                name="observaciones"
+                value={form.observaciones}
+                onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+                disabled={!isOnline}
                 className="w-full p-2 border rounded"
+              />
+            </label>
+            <label>
+              Copropietario:
+              <select
+                name="dependencia_id"
+                value={form.dependencia_id || ''}
+                onChange={e => setForm(f => ({ ...f, dependencia_id: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               >
-                <option value="">Seleccionar...</option>
-                {copropietarios.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre} ({c.propiedad} - {c.unidad_asignada})
+                <option value="">Seleccione...</option>
+                {copropietarios.map(dep => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="flex justify-end gap-2">
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="gratis"
+                checked={!!form.gratis}
+                onChange={e => setForm(f => ({ ...f, gratis: e.target.checked }))}
+                disabled={!isOnline}
+              />
+              <Emoji symbol="🆓" /> Gratis
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="recaudado"
+                checked={!!form.recaudado}
+                onChange={e => setForm(f => ({ ...f, recaudado: e.target.checked }))}
+                disabled={!isOnline}
+              />
+              <Emoji symbol="🔗" /> Recaudado
+            </label>
+            {form.recaudado && (
+              <label>
+                Fecha Recaudo:
+                <input
+                  type="date"
+                  name="fecha_recaudo"
+                  value={form.fecha_recaudo || ''}
+                  onChange={e => setForm(f => ({ ...f, fecha_recaudo: e.target.value }))}
+                  required={!!form.recaudado}
+                  disabled={!isOnline || !form.recaudado}
+                  className="w-full p-2 border rounded"
+                />
+              </label>
+            )}
+            <div className="flex gap-4 mt-4">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                disabled={!isOnline || saving}
+              >
+                Guardar
+              </button>
               <button
                 type="button"
-                onClick={() => setModal({ open: false })}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
+                onClick={() => setModal({ open: false, registro: null })}
+                disabled={saving}
               >
                 Cancelar
               </button>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                disabled={saving}
-              >
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
             </div>
           </form>
-        </div>
-      </Modal>
+        </Modal>
+      )}
+
+      {/* Forced Colors Mode - Accesibilidad */}
+      <style>
+        {`
+        @media (forced-colors: active) {
+          .container, .bg-white, .rounded-lg, .shadow, table, th, td, input, select, button {
+            background: Canvas !important;
+            color: CanvasText !important;
+            border-color: ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+          .edit-btn, .delete-btn {
+            background: ButtonFace !important;
+            color: ButtonText !important;
+            border: 2px solid ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+          .edit-btn:focus, .delete-btn:focus {
+            outline: 2px solid Highlight !important;
+          }
+          .thumbnail {
+            border: 2px solid ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+        }
+        `}
+      </style>
     </div>
   );
 }
@@ -4761,152 +4935,137 @@ export default function Login() {
 
 // src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import supabase from '../supabaseClient';
-import SelectorDeFoto from '../components/SelectorDeFoto';
-import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
+import Loader from '../components/Loader';
+import ErrorMessage from '../components/ErrorMessage';
 import useOnlineStatus from '../hooks/useOnlineStatus';
-
-function getLocalDateTimeString() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
-}
+import ResizeImage from '../components/ResizeImage';
 
 export default function RegistroParqueo() {
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
-    fecha_hora_ingreso: getLocalDateTimeString(),
+    fecha_hora_ingreso: new Date().toISOString().slice(0, 16),
     observaciones: '',
-    dependencia_id: '',
+    monto: 1.00,
     gratis: false,
     recaudado: false,
     fecha_recaudo: '',
+    dependencia_id: '',
     fotos: [],
-    audio: null,
+    audioObservacion: null
   });
-  const [loading, setLoading] = useState(false);
-  const [mensaje, setMensaje] = useState('');
-  const [error, setError] = useState('');
+  
+  const [copropietarios, setCopropietarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [grabandoAudio, setGrabandoAudio] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const navigate = useNavigate();
   const isOnline = useOnlineStatus();
-  const [user, setUser] = useState(null);
-
-  // Obtener usuario autenticado
-  useEffect(() => {
-    let isMounted = true;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (isMounted) setUser(user);
-    });
-    return () => { isMounted = false; };
-  }, []);
 
   // Cargar copropietarios
   useEffect(() => {
-    let isMounted = true;
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
         .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada');
-      if (!error && isMounted) setCopropietarios(data || []);
+        .select('id, nombre, propiedad, unidad_asignada')
+        .order('nombre');
+      
+      if (error) throw error;
+      setCopropietarios(data);
+      setLoading(false);
     };
-    fetchCopropietarios();
-    return () => { isMounted = false; };
+
+    fetchCopropietarios().catch(err => {
+      setError(err.message);
+      setLoading(false);
+    });
   }, []);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
+      ...(name === 'gratis' && { monto: checked ? 0 : (formData.tipo_vehiculo === 'carro' ? 1.00 : 0.50) }),
+      ...(name === 'tipo_vehiculo' && { monto: formData.gratis ? 0 : (value === 'carro' ? 1.00 : 0.50) })
     }));
   };
 
-  const handleFotos = archivos => setForm(prev => ({ ...prev, fotos: archivos }));
+  // Grabación de audio
+  const iniciarGrabacion = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const audioChunks = [];
 
-  const handleAudio = archivo => setForm(prev => ({ ...prev, audio: archivo }));
+      recorder.ondataavailable = (e) => audioChunks.push(e.data);
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        setFormData(prev => ({ ...prev, audioObservacion: audioBlob }));
+      };
 
-  const handleSubmit = async e => {
+      recorder.start();
+      setMediaRecorder(recorder);
+      setGrabandoAudio(true);
+    } catch (err) {
+      setError('Error al acceder al micrófono');
+    }
+  };
+
+  const detenerGrabacion = () => {
+    mediaRecorder.stop();
+    setGrabandoAudio(false);
+  };
+
+  // Subir archivos a Supabase Storage
+  const subirArchivo = async (file, bucket, path) => {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(`${path}/${Date.now()}_${file.name}`, file);
+
+    if (error) throw error;
+    return data.path;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setMensaje('');
-
+    
     try {
-      if (!form.placa_vehiculo.trim()) throw new Error('La placa es obligatoria');
-      if (!form.dependencia_id) throw new Error('Seleccione un copropietario');
-      if (!form.fecha_hora_ingreso) throw new Error('La fecha/hora es obligatoria');
-      if (!user?.id) throw new Error('No se pudo identificar el usuario. Inicie sesión nuevamente.');
+      // Subir fotos
+      const fotosPaths = await Promise.all(
+        formData.fotos.map(file => 
+          subirArchivo(file, 'evidencias-parqueadero', 'fotos')
+        )
+      );
 
-      // Subir fotos (array)
-      let foto_urls = [];
-      for (const file of form.fotos) {
-        const fileName = `foto_${form.placa_vehiculo}_${Date.now()}_${Math.floor(Math.random()*10000)}.jpg`;
-        const { error: uploadError } = await supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .upload(fileName, file, { contentType: 'image/jpeg' });
-        if (uploadError) throw new Error('Error al subir la foto: ' + uploadError.message);
-        const { data: publicUrlData } = supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(fileName);
-        foto_urls.push(publicUrlData.publicUrl);
+      // Subir audio si existe
+      let audioPath = null;
+      if (formData.audioObservacion) {
+        audioPath = await subirArchivo(
+          formData.audioObservacion, 
+          'evidencias-parqueadero', 
+          'audios'
+        );
       }
 
-      // Subir audio (opcional)
-      let observacion_audio_url = null;
-      if (form.audio) {
-        const fileName = `audio_obs_${form.placa_vehiculo}_${Date.now()}.webm`;
-        const { error: audioError } = await supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .upload(fileName, form.audio, { contentType: 'audio/webm' });
-        if (audioError) throw new Error('Error al subir el audio: ' + audioError.message);
-        const { data: publicUrlData } = supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(fileName);
-        observacion_audio_url = publicUrlData.publicUrl;
-      }
+      // Insertar registro en la base de datos
+      const { error } = await supabase.from('registros_parqueadero').insert([{
+        ...formData,
+        fotos_urls: fotosPaths,
+        observacion_audio_url: audioPath,
+        usuario_id: supabase.auth.user().id
+      }]);
 
-      // Monto según tipo y gratis
-      const monto = form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
-
-      // Insertar registro
-      const { error: insertError } = await supabase
-        .from('registros_parqueadero')
-        .insert([{
-          placa_vehiculo: form.placa_vehiculo.trim().toUpperCase(),
-          tipo_vehiculo: form.tipo_vehiculo,
-          fecha_hora_ingreso: form.fecha_hora_ingreso,
-          observaciones: form.observaciones,
-          dependencia_id: form.dependencia_id,
-          gratis: form.gratis,
-          recaudado: form.recaudado,
-          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null,
-          monto,
-          foto_url: foto_urls.length > 0 ? foto_urls : null, // array
-          observacion_audio_url,
-          usuario_id: user.id // Campo obligatorio
-        }]);
-      if (insertError) throw new Error('Error al guardar registro: ' + insertError.message);
-
-      setMensaje('Registro guardado correctamente');
-      setForm({
-        placa_vehiculo: '',
-        tipo_vehiculo: 'carro',
-        fecha_hora_ingreso: getLocalDateTimeString(),
-        observaciones: '',
-        dependencia_id: '',
-        gratis: false,
-        recaudado: false,
-        fecha_recaudo: '',
-        fotos: [],
-        audio: null,
-      });
+      if (error) throw error;
+      navigate('/registros');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -4914,148 +5073,244 @@ export default function RegistroParqueo() {
     }
   };
 
+  if (loading) return <Loader fullScreen text="Cargando formulario..." />;
+
   return (
-    <div className="max-w-lg mx-auto my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4 text-center dark:text-white">
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">
         <Emoji symbol="📝" /> Registro de Parqueo
-      </h2>
-      {!isOnline && (
-        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
-          <Emoji symbol="⚡" /> Modo offline: el registro se guardará localmente y se sincronizará al volver la conexión.
-        </div>
-      )}
-      {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">
-          {error}
-        </div>
-      )}
-      {mensaje && (
-        <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">
-          {mensaje}
-        </div>
-      )}
+      </h1>
+
+      {error && <ErrorMessage message={error} />}
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label>Placa del vehículo:</label>
-          <input
-            name="placa_vehiculo"
-            value={form.placa_vehiculo}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded"
-            autoFocus
-          />
+        {/* Sección de información básica */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-2">
+              <Emoji symbol="🚗" /> Placa del Vehículo
+              <input
+                type="text"
+                name="placa_vehiculo"
+                value={formData.placa_vehiculo}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+                pattern="[A-Za-z0-9]{6,8}"
+                title="Formato de placa inválido (6-8 caracteres alfanuméricos)"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label className="block mb-2">
+              <Emoji symbol="🏍️" /> Tipo de Vehículo
+              <select
+                name="tipo_vehiculo"
+                value={formData.tipo_vehiculo}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              >
+                <option value="carro">Carro</option>
+                <option value="moto">Moto</option>
+              </select>
+            </label>
+          </div>
         </div>
+
+        {/* Selector de copropietario */}
         <div>
-          <label>Tipo de vehículo:</label>
-          <select
-            name="tipo_vehiculo"
-            value={form.tipo_vehiculo}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          >
-            <option value="carro">Carro</option>
-            <option value="moto">Moto</option>
-          </select>
+          <label className="block mb-2">
+            <Emoji symbol="🏠" /> Copropietario
+            <select
+              name="dependencia_id"
+              value={formData.dependencia_id}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              required
+            >
+              <option value="">Seleccione un copropietario</option>
+              {copropietarios.map(copropietario => (
+                <option key={copropietario.id} value={copropietario.id}>
+                  {copropietario.nombre} ({copropietario.propiedad} - {copropietario.unidad_asignada})
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <div>
-          <label>Fecha y hora de ingreso:</label>
-          <input
-            type="datetime-local"
-            name="fecha_hora_ingreso"
-            value={form.fecha_hora_ingreso}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
+
+        {/* Sección de fecha y hora */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-2">
+              <Emoji symbol="⏱️" /> Fecha y Hora de Ingreso
+              <input
+                type="datetime-local"
+                name="fecha_hora_ingreso"
+                value={formData.fecha_hora_ingreso}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </label>
+          </div>
+
+          {formData.recaudado && (
+            <div>
+              <label className="block mb-2">
+                <Emoji symbol="💰" /> Fecha de Recaudo
+                <input
+                  type="date"
+                  name="fecha_recaudo"
+                  value={formData.fecha_recaudo}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded"
+                  required={formData.recaudado}
+                />
+              </label>
+            </div>
+          )}
         </div>
-        <div>
-          <label>Copropietario:</label>
-          <select
-            name="dependencia_id"
-            value={form.dependencia_id}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          >
-            <option value="">Seleccione...</option>
-            {copropietarios.map(dep => (
-              <option key={dep.id} value={dep.id}>
-                {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Observaciones:</label>
-          <input
-            name="observaciones"
-            value={form.observaciones}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            maxLength={100}
-          />
-        </div>
-        <div>
-          <label className="flex items-center space-x-2">
+
+        {/* Sección de estado de pago */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center space-x-2">
             <input
               type="checkbox"
               name="gratis"
-              checked={form.gratis}
+              checked={formData.gratis}
               onChange={handleChange}
+              className="form-checkbox"
+              id="gratis"
             />
-            <span><Emoji symbol="🆓" /> Gratis</span>
-          </label>
-        </div>
-        <div>
-          <label className="flex items-center space-x-2">
+            <label htmlFor="gratis" className="flex items-center">
+              <Emoji symbol="🆓" /> Registro Gratuito
+            </label>
+          </div>
+
+          <div className="flex items-center space-x-2">
             <input
               type="checkbox"
               name="recaudado"
-              checked={form.recaudado}
+              checked={formData.recaudado}
               onChange={handleChange}
+              className="form-checkbox"
+              id="recaudado"
             />
-            <span><Emoji symbol="🔗" /> Recaudado</span>
-          </label>
+            <label htmlFor="recaudado" className="flex items-center">
+              <Emoji symbol="✅" /> Pago Recaudado
+            </label>
+          </div>
         </div>
-        {form.recaudado && (
+
+        {/* Monto */}
+        {!formData.gratis && (
           <div>
-            <label>Fecha de recaudación:</label>
-            <input
-              type="date"
-              name="fecha_recaudo"
-              value={form.fecha_recaudo}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required={form.recaudado}
-            />
+            <label className="block mb-2">
+              <Emoji symbol="💲" /> Monto (USD)
+              <input
+                type="number"
+                name="monto"
+                value={formData.monto}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                step="0.01"
+                min="0"
+                required
+                disabled={formData.gratis}
+              />
+            </label>
           </div>
         )}
+
+        {/* Observaciones */}
         <div>
-          <label>Evidencia fotográfica:</label>
-          <SelectorDeFoto
-            onFilesSelected={handleFotos}
-            maxFiles={1}
-            disabled={loading}
-          />
+          <label className="block mb-2">
+            <Emoji symbol="📝" /> Observaciones
+            <textarea
+              name="observaciones"
+              value={formData.observaciones}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              rows="3"
+            />
+          </label>
         </div>
-        <div>
-          <label>Evidencia auditiva (opcional):</label>
-          <input
-            type="file"
-            accept="audio/*"
-            onChange={e => handleAudio(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
-            disabled={loading}
-          />
+
+        {/* Sección multimedia */}
+        <div className="space-y-4">
+          <div>
+            <label className="block mb-2">
+              <Emoji symbol="📷" /> Evidencia Fotográfica (Máx. 5 fotos)
+              <ResizeImage 
+                onFilesSelected={(files) => setFormData(prev => ({ ...prev, fotos: files }))}
+                disabled={!isOnline}
+              />
+            </label>
+          </div>
+
+          <div>
+            <label className="block mb-2">
+              <Emoji symbol="🎤" /> Observación por Audio
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={grabandoAudio ? detenerGrabacion : iniciarGrabacion}
+                  className={`px-4 py-2 rounded ${
+                    grabandoAudio 
+                      ? 'bg-red-500 hover:bg-red-600 text-white' 
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                  disabled={!isOnline}
+                >
+                  {grabandoAudio ? (
+                    <><Emoji symbol="⏹️" /> Detener Grabación</>
+                  ) : (
+                    <><Emoji symbol="⏺️" /> {audioUrl ? 'Regrabar Audio' : 'Iniciar Grabación'}</>
+                  )}
+                </button>
+                
+                {audioUrl && (
+                  <audio controls className="ml-2">
+                    <source src={audioUrl} type="audio/webm" />
+                    Tu navegador no soporta la reproducción de audio
+                  </audio>
+                )}
+              </div>
+            </label>
+          </div>
         </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
-          disabled={loading}
-        >
-          {loading ? <Loader text="Guardando..." /> : <>Registrar</>}
-        </button>
+
+        {/* Botones de acción */}
+        <div className="flex justify-end gap-4 mt-6">
+          <button
+            type="button"
+            onClick={() => navigate('/registros')}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            <Emoji symbol="❌" /> Cancelar
+          </button>
+          
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+            disabled={loading || !isOnline}
+          >
+            {loading ? (
+              <><Emoji symbol="⏳" /> Registrando...</>
+            ) : (
+              <><Emoji symbol="✅" /> Registrar Parqueo</>
+            )}
+          </button>
+        </div>
       </form>
+
+      {!isOnline && (
+        <div className="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded">
+          <Emoji symbol="⚠️" /> Modo offline: Los datos se guardarán localmente y se sincronizarán cuando se recupere la conexión.
+        </div>
+      )}
     </div>
   );
 }
@@ -5461,118 +5716,99 @@ export default function MyQueryClientProvider({ children }) {
 
 ----- C:\ThomasParking\ThomasParking\src\styles\global.css -----
 
-/* global.css - Moderno, disruptivo, pragmático, dinámico y responsive */
+/* global.css mejorado para miniaturas de fotos y archivos en tablas */
+/* Mantiene el diseño moderno, dinámico y disruptivo, y asegura miniaturas consistentes en tablas */
 
-/* 1. Reset y box-sizing universal */
+@charset "UTF-8";
+
+/* 1. Variables y temas */
 :root {
-  --font-main: 'Inter', 'Georgia', 'Times New Roman', serif;
-  --font-display: 'Playfair Display', 'Georgia', serif;
-  --color-bg: #f8fafc;
-  --color-surface: #fff;
-  --color-text: #18181b;
-  --color-text-muted: #6b7280;
-  --color-primary: #6366f1;
-  --color-secondary: #38bdf8;
-  --color-accent: #ff6f91;
-  --color-success: #10b981;
-  --color-warning: #f59e42;
-  --color-danger: #ef4444;
-  --color-glass: rgba(255,255,255,0.7);
-  --radius-lg: 24px;
+  --background: #f8fafc;
+  --surface: #fff;
+  --text: #18181b;
+  --text-muted: #6b7280;
+  --primary: #6366f1;
+  --primary-light: #e0e7ff;
+  --secondary: #38bdf8;
+  --accent: #ff6f91;
+  --success: #10b981;
+  --warning: #f59e42;
+  --danger: #ef4444;
+  --radius-lg: 20px;
   --radius-md: 12px;
   --radius-sm: 6px;
   --shadow-lg: 0 8px 32px #6366f133;
   --shadow-md: 0 2px 12px #6366f144;
   --transition: .22s cubic-bezier(.4,0,.2,1);
+  --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
+  --thumbnail-size: 38px;
+  --thumbnail-size-lg: 90px;
+  --file-thumb-bg: #f3f4f6;
+  --file-thumb-icon: #6366f1;
 }
 
-[data-theme="dark"] {
-  --color-bg: #18181b;
-  --color-surface: #23272f;
-  --color-text: #f3f4f6;
-  --color-text-muted: #a1a1aa;
-  --color-primary: #818cf8;
-  --color-accent: #f472b6;
-  --color-glass: rgba(30, 41, 59, 0.7);
+[data-theme=dark] {
+  --background: #18181b;
+  --surface: #23272f;
+  --text: #f3f4f6;
+  --text-muted: #a1a1aa;
+  --primary: #818cf8;
+  --primary-light: #23272f;
+  --secondary: #38bdf8;
+  --accent: #f472b6;
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
+  --file-thumb-bg: #23272f;
+  --file-thumb-icon: #818cf8;
 }
 
 html, body {
   margin: 0;
   padding: 0;
   font-family: var(--font-main);
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--background);
+  color: var(--text);
   min-height: 100vh;
   scroll-behavior: smooth;
+  text-align: center;
   transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-/* 2. Tipografía disruptiva y variable */
-h1, h2, h3, h4 {
-  font-family: var(--font-display), serif;
-  font-weight: 900;
-  letter-spacing: -2px;
-  margin: 0 0 0.5em 0;
-  line-height: 1.1;
-  text-shadow: 0 2px 12px #6366f144;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-align: center;
-}
-
-h1 {
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  animation: popTitle 1s cubic-bezier(.16,1,.3,1) 1;
-}
-@keyframes popTitle {
-  0% { transform: scale(0.8) rotate(-2deg); opacity: 0; }
-  70% { transform: scale(1.05) rotate(2deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); }
-}
-
-h2 {
-  font-size: clamp(1.7rem, 4vw, 2.5rem);
-}
-h3, h4 {
-  font-size: 1.2rem;
+#root, .app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--background);
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--primary);
   text-decoration: none;
-  font-weight: 600;
   transition: color var(--transition);
 }
 a:hover, a:focus {
-  color: var(--color-accent);
+  color: var(--accent);
   text-decoration: underline;
-  outline: 2px solid var(--focus);
   outline-offset: 2px;
+  outline: 2px solid var(--accent);
 }
 
-p, li, label, input, select, textarea, button {
-  font-size: 1rem;
-  line-height: 1.6;
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-top: 0;
+  text-align: center;
+  line-height: 1.2;
 }
 
-::selection {
-  background: var(--color-accent);
-  color: #fff;
-}
-
-/* 3. Botones y formularios */
+/* 2. Inputs y botones */
 button, input, select, textarea {
   font-family: inherit;
+  font-size: 1rem;
   border-radius: var(--radius-md);
   border: 1.5px solid #e5e7eb;
   padding: 10px 14px;
@@ -5581,13 +5817,12 @@ button, input, select, textarea {
   margin: .25rem 0;
   box-sizing: border-box;
 }
-
 button {
   cursor: pointer;
-  background: linear-gradient(90deg, var(--color-primary) 60%, var(--color-accent) 100%);
+  background: var(--primary);
   color: #fff;
   border: none;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: var(--shadow-md);
   min-width: 120px;
   min-height: 44px;
@@ -5595,163 +5830,284 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  -webkit-user-select: none;
   user-select: none;
-  letter-spacing: 0.5px;
-  transition: background var(--transition), box-shadow var(--transition);
 }
 button:hover, button:focus {
-  background: linear-gradient(90deg, var(--color-secondary) 60%, var(--color-accent) 100%);
-  box-shadow: 0 0 0 3px var(--focus);
+  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
   outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
 }
-button:active {
-  transform: scale(0.97);
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
-
+button[aria-label="Abrir menú"], button[aria-label="Cerrar menú"], .btn-hamburguesa {
+  min-width: 0!important;
+  min-height: 0!important;
+  width: 32px!important;
+  height: 32px!important;
+  padding: 4px!important;
+  box-shadow: none!important;
+}
 input:focus, select:focus, textarea:focus {
-  border-color: var(--color-primary);
+  border-color: var(--primary);
   background: #f0f9ff;
   box-shadow: 0 0 0 3px var(--focus);
 }
-
-input[type="checkbox"], input[type="radio"] {
+input[type=checkbox], input[type=radio] {
   width: 1.1em;
   height: 1.1em;
-  accent-color: var(--color-primary);
+  accent-color: var(--primary);
   margin-right: 7px;
   cursor: pointer;
 }
 
-/* 4. Glassmorphism y animaciones dinámicas */
-.card, .modal-content, .glass {
-  background: var(--color-glass);
-  backdrop-filter: blur(16px) saturate(180%);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  border: 1.5px solid #e0e7ef44;
-  animation: fadeInGlass 0.7s cubic-bezier(.16,1,.3,1);
-}
-@keyframes fadeInGlass {
-  from { opacity: 0; transform: translateY(20px) scale(0.98);}
-  to { opacity: 1; transform: none;}
-}
-
-/* 5. Responsive grid y utilidades */
-.container {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 1.2rem;
-}
-
-.grid {
-  display: grid;
-  gap: 1.5rem;
-}
-@media (min-width: 640px) {
-  .grid-cols-2 { grid-template-columns: repeat(2, 1fr);}
-}
-@media (min-width: 1024px) {
-  .grid-cols-3 { grid-template-columns: repeat(3, 1fr);}
-}
-
-/* 6. Scrollbar custom */
+/* 3. Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
   background: #e0e7ef;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-primary);
+  background: var(--primary);
   border-radius: 8px;
 }
 
-/* 7. Tablas y listas */
-table {
+/* 4. Miniaturas de fotos y archivos en tablas */
+.thumbnail,
+.tabla-resultados .thumbnail,
+.registros-table .thumbnail,
+img.thumbnail,
+img.tabla-miniatura,
+img.miniatura,
+img.tabla-archivo {
+  width: var(--thumbnail-size);
+  height: var(--thumbnail-size);
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px #6366f133;
+  border: 1.5px solid #e5e7eb;
+  background: var(--file-thumb-bg);
+  display: inline-block;
+  vertical-align: middle;
+  transition: box-shadow .18s cubic-bezier(.4,0,.2,1), border-color .18s;
+}
+.thumbnail:hover,
+.tabla-resultados .thumbnail:hover,
+.registros-table .thumbnail:hover {
+  box-shadow: 0 0 0 3px var(--secondary), 0 2px 12px #6366f144;
+  border-color: var(--secondary);
+}
+
+.tabla-resultados .archivo-miniatura,
+.registros-table .archivo-miniatura,
+.file-thumbnail,
+.tabla-archivo {
+  width: var(--thumbnail-size);
+  height: var(--thumbnail-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--file-thumb-bg);
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 2px 6px #6366f133;
+  font-size: 1.3em;
+  color: var(--file-thumb-icon);
+  transition: box-shadow .18s, border-color .18s;
+}
+.tabla-resultados .archivo-miniatura:hover,
+.registros-table .archivo-miniatura:hover,
+.file-thumbnail:hover {
+  box-shadow: 0 0 0 3px var(--accent), 0 2px 12px #6366f144;
+  border-color: var(--accent);
+}
+
+@media (min-width: 600px) {
+  .thumbnail,
+  .tabla-resultados .thumbnail,
+  .registros-table .thumbnail,
+  img.thumbnail,
+  img.tabla-miniatura,
+  img.miniatura,
+  img.tabla-archivo,
+  .tabla-resultados .archivo-miniatura,
+  .registros-table .archivo-miniatura,
+  .file-thumbnail,
+  .tabla-archivo {
+    width: var(--thumbnail-size-lg);
+    height: var(--thumbnail-size-lg);
+  }
+}
+
+/* 5. Tablas modernas */
+.registros-table,
+.tabla-resultados {
   width: 100%;
-  border-collapse: collapse;
-  background: var(--color-surface);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-}
-th, td {
-  padding: 0.75em 1em;
+  margin-bottom: 2rem;
+  font-size: 1rem;
   text-align: left;
+}
+.registros-table th,
+.tabla-resultados th {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: bold;
+  padding: 10px 8px;
+  border-bottom: 2px solid #e0e7ef;
+  text-align: center;
+}
+.registros-table td,
+.tabla-resultados td {
+  padding: 8px 6px;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+  text-align: center;
 }
-th {
-  background: linear-gradient(90deg, var(--color-primary) 60%, var(--color-accent) 100%);
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-tr:last-child td {
+.registros-table tr:last-child td,
+.tabla-resultados tr:last-child td {
   border-bottom: none;
 }
+.registros-table tr:hover,
+.tabla-resultados tr:hover {
+  background: #f3f4f6;
+  transition: background .18s;
+}
 @media (max-width: 768px) {
-  table, thead, tbody, th, td, tr {
-    display: block;
+  .registros-table,
+  .tabla-resultados {
+    font-size: 0.92rem;
+    overflow-x: auto;
   }
-  th, td {
-    padding: 0.6em 0.4em;
+  .registros-table th, .registros-table td,
+  .tabla-resultados th, .tabla-resultados td {
+    padding: 7px 3px;
   }
 }
 
-/* 8. Imágenes y multimedia */
-img, video {
-  max-width: 100%;
-  display: block;
+/* 6. Miniaturas grandes en previsualización y formularios */
+.selector-foto img,
+.resize-image img,
+img.previsualizacion-foto,
+img.previsualizacion-archivo {
+  width: var(--thumbnail-size-lg);
+  height: var(--thumbnail-size-lg);
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1.5px solid #e5e7eb;
+  margin: 0 4px 4px 0;
+  background: var(--file-thumb-bg);
+  box-shadow: 0 2px 8px #6366f133;
+  transition: box-shadow .18s, border-color .18s;
+}
+.selector-foto img:hover,
+.resize-image img:hover,
+img.previsualizacion-foto:hover,
+img.previsualizacion-archivo:hover {
+  box-shadow: 0 0 0 3px var(--primary), 0 2px 12px #6366f144;
+  border-color: var(--primary);
+}
+
+/* 7. Archivos no imagen (PDF, audio, etc) como miniatura */
+.file-thumbnail,
+.tabla-archivo,
+.archivo-miniatura {
+  width: var(--thumbnail-size);
+  height: var(--thumbnail-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-sm);
+  background: var(--file-thumb-bg);
+  border: 1.5px solid #e5e7eb;
   box-shadow: 0 2px 6px #6366f133;
+  font-size: 1.6em;
+  color: var(--file-thumb-icon);
+  transition: box-shadow .18s, border-color .18s;
+}
+.file-thumbnail svg,
+.tabla-archivo svg,
+.archivo-miniatura svg {
+  font-size: 1.3em;
+  color: var(--file-thumb-icon);
+}
+.file-thumbnail:hover,
+.tabla-archivo:hover,
+.archivo-miniatura:hover {
+  box-shadow: 0 0 0 3px var(--accent), 0 2px 12px #6366f144;
+  border-color: var(--accent);
 }
 
-/* 9. Utilidades y helpers */
-.text-center { text-align: center; }
-.mt-4 { margin-top: 1rem; }
-.mb-4 { margin-bottom: 1rem; }
-.rounded-lg { border-radius: var(--radius-lg); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
-
-/* 10. Animaciones de entrada y microinteracciones */
-@keyframes float {
-  0%, 100% { transform: translateY(0);}
-  50% { transform: translateY(-8px);}
+/* 8. Modal y loader */
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: #18181bbf;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
-.float {
-  animation: float 2.5s ease-in-out infinite;
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem;
+  max-width: 480px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+  position: relative;
 }
-
-/* 11. Mobile-first y media queries */
-@media (max-width: 768px) {
-  body, html {
-    font-size: 17px;
-  }
-  .container {
-    padding: 0 0.5rem;
-  }
-  h1 { font-size: 2rem; }
-  .modal-content, .card {
-    padding: 1rem;
-    max-width: 98vw;
-  }
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 6px solid #e0e0e0;
+  border-top: 6px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
 }
-
-/* 12. Modo oscuro automático */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #18181b;
-    --color-surface: #23272f;
-    --color-text: #f3f4f6;
-    --color-text-muted: #a1a1aa;
-    --color-primary: #818cf8;
-    --color-accent: #f472b6;
-    --color-glass: rgba(30, 41, 59, 0.7);
-    --shadow-lg: 0 8px 32px #818cf833;
-    --shadow-md: 0 2px 12px #818cf844;
-  }
+@keyframes spin {
+  0% { transform: rotate(0);}
+  100% { transform: rotate(360deg);}
 }
 
-/* 13. Estado offline */
+/* 9. Utilidades y responsividad */
+.sin-resultados {
+  color: var(--text-muted);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 1.2em 0;
+}
+.error-message {
+  background: #fffbe6;
+  color: var(--danger);
+  border: 1.5px solid #ffe58f;
+  margin-top: 1rem;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-size: 1.06em;
+  font-weight: 600;
+  text-align: center;
+  max-width: 700px;
+  word-wrap: break-word;
+}
+.pt-16 { padding-top: 4rem!important; }
+
+/* 10. Banner offline */
 .offline-banner {
   background: #fff3cd;
   color: #856404;
@@ -5763,31 +6119,23 @@ img, video {
   position: sticky;
   top: 64px;
   z-index: 40;
-  animation: shake 1s cubic-bezier(.36,.07,.19,.97) both;
 }
-@keyframes shake {
-  10%, 90% { transform: translateX(-2px);}
-  20%, 80% { transform: translateX(4px);}
-  30%, 50%, 70% { transform: translateX(-8px);}
-  40%, 60% { transform: translateX(8px);}
-}
-
-/* 14. Disruptivo: píxeles, neón, maximalismo */
-.pixel-border {
-  border: 3px solid #ff6f91;
-  box-shadow: 0 0 8px 2px #ff6f91, 0 0 24px 6px #38bdf8;
-  border-radius: 0;
-  font-family: 'Press Start 2P', monospace;
-  background: repeating-linear-gradient(
-    45deg,
-    #23272f,
-    #23272f 10px,
-    #18181b 10px,
-    #18181b 20px
-  );
-  color: #fff;
-  text-shadow: 0 0 4px #38bdf8;
+@media (forced-colors: active) {
+  .offline-banner {
+    background: Canvas;
+    color: ButtonText;
+    border-bottom: 2px solid ButtonBorder;
+    forced-color-adjust: preserve-parent-color;
+  }
 }
 
-/* 15. Inclusión de fuentes variables y experimentales */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700;900&family=Press+Start+2P&display=swap');
+/* 11. Accesibilidad */
+:focus {
+  outline-color: var(--focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

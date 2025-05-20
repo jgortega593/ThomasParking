@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
-import { UserProvider, useUser } from './context/UserContext'; // Importar el UserContext
+import { UserProvider, useUser } from './context/UserContext';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -26,7 +26,7 @@ import SignUp from './components/SignUp';
 function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
   const hideNavbarRoutes = ['/login', '/', '/registro'];
-  const { user } = useUser(); // Obtener usuario del contexto
+  const { user } = useUser();
 
   return (
     <>
@@ -35,7 +35,10 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
       )}
 
       {!isOnline && (
-        <div className="offline-banner" role="status" aria-live="polite"
+        <div 
+          className="offline-banner" 
+          role="status" 
+          aria-live="polite"
           style={{
             background: '#fff3cd',
             color: '#856404',
@@ -46,7 +49,14 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
             borderBottom: '1.5px solid #ffe58f',
             position: 'sticky',
             top: '64px',
-            zIndex: 40
+            zIndex: 40,
+            // Corrección para Forced Colors Mode
+            '@media (forced-colors: active)': {
+              background: 'Canvas',
+              color: 'ButtonText',
+              borderBottom: '2px solid ButtonBorder',
+              forcedColorAdjust: 'preserve-parent-color'
+            }
           }}
         >
           <span role="img" aria-label="offline">⚡</span>
@@ -79,7 +89,7 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
             <Route
               path="/recaudo"
               element={
-                <AuthGuard requiredRole="registrador">
+                <AuthGuard requiredRole="admin">
                   <Recaudo />
                 </AuthGuard>
               }
@@ -144,8 +154,17 @@ function App() {
 
   return (
     <ThemeProvider>
-      <UserProvider> {/* Envolver con UserProvider */}
-        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+      <UserProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+            v7_fetcherPersist: true,
+            v7_normalizeFormMethod: true,
+            v7_partialHydration: true,
+            v7_skipActionErrorRevalidation: true,
+          }}
+        >
           <ErrorBoundary>
             <AppRoutes
               menuOpen={menuOpen}

@@ -285,181 +285,275 @@ export default function Consultas() {
             </select>
           </div>
         </div>
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-4 mt-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
           >
-            Aplicar Filtros
+            <Emoji symbol="🔎" /> Buscar
           </button>
           <button
             type="button"
             onClick={limpiarFiltros}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
           >
-            Limpiar Filtros
+            Limpiar filtros
           </button>
         </div>
       </form>
 
       {/* Tabla de resultados */}
-      <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white rounded-lg shadow">
+          <thead>
             <tr>
-              <th className="px-4 py-3">ID</th>
-              <th className="px-4 py-3">Fecha/Hora</th>
-              <th className="px-4 py-3">Placa</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Copropietario</th>
-              <th className="px-4 py-3">Propiedad</th>
-              <th className="px-4 py-3">Unidad</th>
-              <th className="px-4 py-3">Observaciones</th>
-              <th className="px-4 py-3">Monto</th>
-              <th className="px-4 py-3">Gratis</th>
-              <th className="px-4 py-3">Recaudado</th>
-              <th className="px-4 py-3">Fecha Recaudo</th>
-              <th className="px-4 py-3">Registrado por</th>
-              <th className="px-4 py-3">Rol usuario</th>
-              <th className="px-4 py-3">Foto</th>
-              <th className="px-4 py-3">Audio</th>
-              <th className="px-4 py-3">Acciones</th>
+              <th className="px-2 py-2">Fecha/Hora</th>
+              <th className="px-2 py-2">Placa</th>
+              <th className="px-2 py-2">Tipo</th>
+              <th className="px-2 py-2">Observaciones</th>
+              <th className="px-2 py-2">Monto</th>
+              <th className="px-2 py-2">Gratis</th>
+              <th className="px-2 py-2">Recaudado</th>
+              <th className="px-2 py-2">Fecha Recaudo</th>
+              <th className="px-2 py-2">Copropietario</th>
+              <th className="px-2 py-2">Registrado por</th>
+              <th className="px-2 py-2">Foto</th>
+              <th className="px-2 py-2">Audio</th>
+              <th className="px-2 py-2">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {resultados.map(registro => (
-              <tr key={registro.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{registro.id}</td>
-                <td className="px-4 py-3">{registro.fecha_hora_ingreso ? dayjs(registro.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-                <td className="px-4 py-3">{registro.placa_vehiculo}</td>
-                <td className="px-4 py-3">
-                  <Emoji symbol={registro.tipo_vehiculo === 'carro' ? '🚗' : '🏍️'} />
-                  {registro.tipo_vehiculo}
-                </td>
-                <td className="px-4 py-3">{registro.copropietarios?.nombre || '-'}</td>
-                <td className="px-4 py-3">{registro.copropietarios?.propiedad || '-'}</td>
-                <td className="px-4 py-3">{registro.copropietarios?.unidad_asignada || '-'}</td>
-                <td className="px-4 py-3">{registro.observaciones || '-'}</td>
-                <td className="px-4 py-3">${Number(registro.monto).toFixed(2)}</td>
-                <td className="px-4 py-3">
-                  {registro.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
-                </td>
-                <td className="px-4 py-3">
-                  {registro.recaudado ? <Emoji symbol="🔗" /> : <Emoji symbol="⏳" />}
-                </td>
-                <td className="px-4 py-3">{registro.fecha_recaudo || '-'}</td>
-                <td className="px-4 py-3">{registro.usuarios_app?.nombre || '-'}</td>
-                <td className="px-4 py-3">{registro.usuarios_app?.rol || '-'}</td>
-                <td className="px-4 py-3">
-                  {registro.foto_url && (
-                    <a href={registro.foto_url} target="_blank" rel="noopener noreferrer">
-                      <img src={registro.foto_url} alt="Evidencia" className="thumbnail" />
-                    </a>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {registro.observacion_audio_url ? (
-                    <audio controls style={{ width: 90 }}>
-                      <source src={registro.observacion_audio_url} type="audio/webm" />
-                      Tu navegador no soporta audio.
-                    </audio>
-                  ) : (
-                    <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 space-x-2">
-                  <button
-                    onClick={() => abrirEdicion(registro)}
-                    className="text-blue-600 hover:text-blue-800"
-                    disabled={!isOnline}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => eliminarRegistro(registro.id)}
-                    className="text-red-600 hover:text-red-800"
-                    disabled={!isOnline}
-                  >
-                    Eliminar
-                  </button>
+          <tbody>
+            {resultados.length > 0 ? (
+              resultados.map(reg => (
+                <tr key={reg.id}>
+                  <td className="px-2 py-1 text-center">
+                    {reg.fecha_hora_ingreso
+                      ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')
+                      : ''}
+                  </td>
+                  <td className="px-2 py-1 text-center">{reg.placa_vehiculo}</td>
+                  <td className="px-2 py-1 text-center">{reg.tipo_vehiculo}</td>
+                  <td className="px-2 py-1">{reg.observaciones || '-'}</td>
+                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.recaudado ? <Emoji symbol="🔗" /> : <Emoji symbol="⏳" />}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.fecha_recaudo || '-'}
+                  </td>
+                  <td className="px-2 py-1">
+                    {reg.copropietarios?.nombre || '-'}
+                    <br />
+                    <small>
+                      {reg.copropietarios?.propiedad || ''} - {reg.copropietarios?.unidad_asignada || ''}
+                    </small>
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.usuarios_app?.nombre || '-'}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.foto_url && (
+                      <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
+                        <img src={reg.foto_url} alt="Evidencia" className="thumbnail" />
+                      </a>
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.observacion_audio_url ? (
+                      <audio controls style={{ width: 90 }}>
+                        <source src={reg.observacion_audio_url} type="audio/webm" />
+                        Tu navegador no soporta audio.
+                      </audio>
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    <button
+                      className="edit-btn"
+                      title="Editar"
+                      onClick={() => abrirEdicion(reg)}
+                      style={{ marginRight: 6 }}
+                      disabled={!isOnline || saving}
+                    >
+                      <Emoji symbol="✏️" /> Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      title="Eliminar"
+                      onClick={() => eliminarRegistro(reg.id)}
+                      disabled={!isOnline || deleting}
+                    >
+                      <Emoji symbol="🗑️" /> Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="13" className="sin-resultados">
+                  No se encontraron registros con los filtros seleccionados
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Modal de edición */}
-      <Modal isOpen={modal.open} onClose={() => setModal({ open: false })}>
-        <div className="p-6">
-          <h3 className="text-xl font-bold mb-4">Editar Registro</h3>
-          <form onSubmit={guardarCambios} className="space-y-4">
-            <div>
-              <label>Placa:</label>
+      {modal.open && (
+        <Modal isOpen={modal.open} onClose={() => setModal({ open: false, registro: null })}>
+          <h3 className="text-lg font-bold mb-4">Editar Registro</h3>
+          <form onSubmit={guardarCambios} className="space-y-3">
+            <label>
+              Placa:
               <input
+                name="placa_vehiculo"
                 value={form.placa_vehiculo}
-                onChange={e => setForm({ ...form, placa_vehiculo: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, placa_vehiculo: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               />
-            </div>
-            <div>
-              <label>Tipo:</label>
+            </label>
+            <label>
+              Tipo:
               <select
+                name="tipo_vehiculo"
                 value={form.tipo_vehiculo}
-                onChange={e => setForm({ ...form, tipo_vehiculo: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, tipo_vehiculo: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               >
                 <option value="carro">Carro</option>
                 <option value="moto">Moto</option>
               </select>
-            </div>
-            <div>
-              <label>Fecha:</label>
+            </label>
+            <label>
+              Fecha ingreso:
               <input
                 type="date"
+                name="fecha_hora_ingreso"
                 value={form.fecha_hora_ingreso}
-                onChange={e => setForm({ ...form, fecha_hora_ingreso: e.target.value })}
-                className="w-full p-2 border rounded"
+                onChange={e => setForm(f => ({ ...f, fecha_hora_ingreso: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               />
-            </div>
-            <div>
-              <label>Copropietario:</label>
-              <select
-                value={form.dependencia_id}
-                onChange={e => setForm({ ...form, dependencia_id: e.target.value })}
+            </label>
+            <label>
+              Observaciones:
+              <input
+                name="observaciones"
+                value={form.observaciones}
+                onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+                disabled={!isOnline}
                 className="w-full p-2 border rounded"
+              />
+            </label>
+            <label>
+              Copropietario:
+              <select
+                name="dependencia_id"
+                value={form.dependencia_id || ''}
+                onChange={e => setForm(f => ({ ...f, dependencia_id: e.target.value }))}
                 required
+                disabled={!isOnline}
+                className="w-full p-2 border rounded"
               >
-                <option value="">Seleccionar...</option>
-                {copropietarios.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre} ({c.propiedad} - {c.unidad_asignada})
+                <option value="">Seleccione...</option>
+                {copropietarios.map(dep => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="flex justify-end gap-2">
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="gratis"
+                checked={!!form.gratis}
+                onChange={e => setForm(f => ({ ...f, gratis: e.target.checked }))}
+                disabled={!isOnline}
+              />
+              <Emoji symbol="🆓" /> Gratis
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="recaudado"
+                checked={!!form.recaudado}
+                onChange={e => setForm(f => ({ ...f, recaudado: e.target.checked }))}
+                disabled={!isOnline}
+              />
+              <Emoji symbol="🔗" /> Recaudado
+            </label>
+            {form.recaudado && (
+              <label>
+                Fecha Recaudo:
+                <input
+                  type="date"
+                  name="fecha_recaudo"
+                  value={form.fecha_recaudo || ''}
+                  onChange={e => setForm(f => ({ ...f, fecha_recaudo: e.target.value }))}
+                  required={!!form.recaudado}
+                  disabled={!isOnline || !form.recaudado}
+                  className="w-full p-2 border rounded"
+                />
+              </label>
+            )}
+            <div className="flex gap-4 mt-4">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                disabled={!isOnline || saving}
+              >
+                Guardar
+              </button>
               <button
                 type="button"
-                onClick={() => setModal({ open: false })}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
+                onClick={() => setModal({ open: false, registro: null })}
+                disabled={saving}
               >
                 Cancelar
               </button>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                disabled={saving}
-              >
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
             </div>
           </form>
-        </div>
-      </Modal>
+        </Modal>
+      )}
+
+      {/* Forced Colors Mode - Accesibilidad */}
+      <style>
+        {`
+        @media (forced-colors: active) {
+          .container, .bg-white, .rounded-lg, .shadow, table, th, td, input, select, button {
+            background: Canvas !important;
+            color: CanvasText !important;
+            border-color: ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+          .edit-btn, .delete-btn {
+            background: ButtonFace !important;
+            color: ButtonText !important;
+            border: 2px solid ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+          .edit-btn:focus, .delete-btn:focus {
+            outline: 2px solid Highlight !important;
+          }
+          .thumbnail {
+            border: 2px solid ButtonBorder !important;
+            forced-color-adjust: none;
+          }
+        }
+        `}
+      </style>
     </div>
   );
 }

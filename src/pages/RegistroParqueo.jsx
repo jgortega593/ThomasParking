@@ -1,298 +1,350 @@
-// src/pages/RegistroParqueo.jsx
 import React, { useState, useEffect } from 'react';
 import supabase from '../supabaseClient';
 import SelectorDeFoto from '../components/SelectorDeFoto';
 import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
 import useOnlineStatus from '../hooks/useOnlineStatus';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-function getLocalDateTimeString() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
-}
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function RegistroParqueo() {
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [form, setForm] = useState({
-    placa_vehiculo: '',
-    tipo_vehiculo: 'carro',
-    fecha_hora_ingreso: getLocalDateTimeString(),
-    observaciones: '',
-    dependencia_id: '',
-    gratis: false,
-    recaudado: false,
-    fecha_recaudo: '',
-    fotos: [],
-    audio: null,
-  });
-  const [loading, setLoading] = useState(false);
-  const [mensaje, setMensaje] = useState('');
-  const [error, setError] = useState('');
   const isOnline = useOnlineStatus();
-  const [user, setUser] = useState(null);
+  const [formData, setFormData] = useState({
+    placa: '',
+    tipoVehiculo: 'carro',
+    fechaHora: '',
+    gratis: false,
+    observaciones: '',
+    propiedad: '',
+    unidadAsignada: '',
+    fotos: []
+  });
+  const [copropietarios, setCopropietarios] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  // Obtener usuario autenticado
-  useEffect(() => {
-    let isMounted = true;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (isMounted) setUser(user);
-    });
-    return () => { isMounted = false; };
-  }, []);
+  // Obtener fecha/hora actual en GMT-5 (Ecuador)
+  const getLocalDateTime = () => {
+    return dayjs().tz('America/Guayaquil').format('YYYY-MM-DDTHH:mm');
+  };
 
-  // Cargar copropietarios
   useEffect(() => {
-    let isMounted = true;
     const fetchCopropietarios = async () => {
       const { data, error } = await supabase
         .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada');
-      if (!error && isMounted) setCopropietarios(data || []);
+        .select('id, nombre, propiedad, unidad_asignada')
+        .order('propiedad', { ascending: true });
+      if (!error) setCopropietarios(data || []);
     };
-    fetchCopropietarios();
-    return () => { isMounted = false; };
-  }, []);
+    if (isOnline) fetchCopropietarios();
+  }, [isOnline]);
 
-  const handleChange = e => {
+  // Opciones para selects
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const unidades = formData.propiedad
+    ? copropietarios
+        .filter(c => c.propiedad === formData.propiedad)
+        .map(c => ({
+          unidad: c.unidad_asignada,
+          copropietarioId: c.id,
+          nombreCopropietario: c.nombre
+        }))
+    : [];
+
+  // Obtener copropietarioId basado en propiedad y unidad seleccionada
+  const getCopropietarioId = () => {
+    if (!formData.propiedad || !formData.unidadAsignada) return null;
+    const copropietario = copropietarios.find(
+      c =>
+        c.propiedad === formData.propiedad &&
+        c.unidad_asignada === formData.unidadAsignada
+    );
+    return copropietario?.id || null;
+  };
+
+  // Manejar cambios en el formulario
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
+      ...(name === 'propiedad' && { unidadAsignada: '' })
     }));
   };
 
-  const handleFotos = archivos => setForm(prev => ({ ...prev, fotos: archivos }));
+  // Subir fotos a Supabase Storage
+  const uploadPhotos = async (files, placa) => {
+    const uploadedUrls = [];
+    for (const file of files) {
+      const fileName = `fotos/${placa}_${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage
+        .from('evidencias-parqueadero')
+        .upload(fileName, file);
+      if (error) throw error;
+      const { data: publicUrl } = supabase.storage
+        .from('evidencias-parqueadero')
+        .getPublicUrl(fileName);
+      uploadedUrls.push(publicUrl.publicUrl);
+    }
+    return uploadedUrls;
+  };
 
-  const handleAudio = archivo => setForm(prev => ({ ...prev, audio: archivo }));
-
-  const handleSubmit = async e => {
+  // Enviar formulario
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setMensaje('');
+    setSubmitting(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     try {
-      if (!form.placa_vehiculo.trim()) throw new Error('La placa es obligatoria');
-      if (!form.dependencia_id) throw new Error('Seleccione un copropietario');
-      if (!form.fecha_hora_ingreso) throw new Error('La fecha/hora es obligatoria');
-      if (!user?.id) throw new Error('No se pudo identificar el usuario. Inicie sesión nuevamente.');
-
-      // Subir fotos (array)
-      let foto_urls = [];
-      for (const file of form.fotos) {
-        const fileName = `foto_${form.placa_vehiculo}_${Date.now()}_${Math.floor(Math.random()*10000)}.jpg`;
-        const { error: uploadError } = await supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .upload(fileName, file, { contentType: 'image/jpeg' });
-        if (uploadError) throw new Error('Error al subir la foto: ' + uploadError.message);
-        const { data: publicUrlData } = supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(fileName);
-        foto_urls.push(publicUrlData.publicUrl);
+      if (!formData.propiedad || !formData.unidadAsignada) {
+        throw new Error('Debe seleccionar una propiedad y unidad');
+      }
+      if (!formData.placa || formData.placa.length < 6) {
+        throw new Error('La placa debe tener al menos 6 caracteres');
       }
 
-      // Subir audio (opcional)
-      let observacion_audio_url = null;
-      if (form.audio) {
-        const fileName = `audio_obs_${form.placa_vehiculo}_${Date.now()}.webm`;
-        const { error: audioError } = await supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .upload(fileName, form.audio, { contentType: 'audio/webm' });
-        if (audioError) throw new Error('Error al subir el audio: ' + audioError.message);
-        const { data: publicUrlData } = supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .getPublicUrl(fileName);
-        observacion_audio_url = publicUrlData.publicUrl;
+      // Obtener usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const copropietarioId = getCopropietarioId();
+      if (!copropietarioId) throw new Error('Unidad no válida');
+
+      // FIX: Si fechaHora es "" (string vacío), enviar null
+      const fechaHoraValida = formData.fechaHora && formData.fechaHora.trim() !== ''
+        ? dayjs.tz(formData.fechaHora, 'America/Guayaquil').toISOString()
+        : null;
+
+      const registro = {
+        placa_vehiculo: formData.placa.toUpperCase().replace(/\s/g, ''),
+        tipo_vehiculo: formData.tipoVehiculo,
+        fecha_hora_ingreso: fechaHoraValida,
+        observaciones: formData.observaciones,
+        dependencia_id: copropietarioId,
+        usuario_id: user.id,
+        monto: formData.gratis ? 0 : (formData.tipoVehiculo === 'carro' ? 1.00 : 0.50),
+        gratis: formData.gratis,
+        foto_url: []
+      };
+
+      // Manejo de fotos
+      if (formData.fotos.length > 0) {
+        if (isOnline) {
+          registro.foto_url = await uploadPhotos(formData.fotos, registro.placa_vehiculo);
+        } else {
+          registro.foto_url = formData.fotos.map(() => 'pendiente-sync');
+        }
       }
 
-      // Monto según tipo y gratis
-      const monto = form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50);
+      if (isOnline) {
+        const { error } = await supabase
+          .from('registros_parqueadero')
+          .insert([registro]);
+        if (error) throw error;
+      } else {
+        const pending = JSON.parse(localStorage.getItem('pendingRegistros') || '[]');
+        localStorage.setItem('pendingRegistros', JSON.stringify([...pending, registro]));
+      }
 
-      // Insertar registro
-      const { error: insertError } = await supabase
-        .from('registros_parqueadero')
-        .insert([{
-          placa_vehiculo: form.placa_vehiculo.trim().toUpperCase(),
-          tipo_vehiculo: form.tipo_vehiculo,
-          fecha_hora_ingreso: form.fecha_hora_ingreso,
-          observaciones: form.observaciones,
-          dependencia_id: form.dependencia_id,
-          gratis: form.gratis,
-          recaudado: form.recaudado,
-          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null,
-          monto,
-          foto_url: foto_urls.length > 0 ? foto_urls : null, // array
-          observacion_audio_url,
-          usuario_id: user.id // Campo obligatorio
-        }]);
-      if (insertError) throw new Error('Error al guardar registro: ' + insertError.message);
-
-      setMensaje('Registro guardado correctamente');
-      setForm({
-        placa_vehiculo: '',
-        tipo_vehiculo: 'carro',
-        fecha_hora_ingreso: getLocalDateTimeString(),
-        observaciones: '',
-        dependencia_id: '',
+      setFormData({
+        placa: '',
+        tipoVehiculo: 'carro',
+        fechaHora: getLocalDateTime(),
         gratis: false,
-        recaudado: false,
-        fecha_recaudo: '',
-        fotos: [],
-        audio: null,
+        observaciones: '',
+        propiedad: '',
+        unidadAsignada: '',
+        fotos: []
       });
+
+      setSuccessMsg(isOnline
+        ? 'Registro exitoso!'
+        : 'Registro guardado localmente. Se sincronizará cuando haya conexión');
     } catch (err) {
-      setError(err.message);
+      setErrorMsg(err.message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="max-w-xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-4 text-center dark:text-white">
         <Emoji symbol="📝" /> Registro de Parqueo
       </h2>
+
       {!isOnline && (
-        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
-          <Emoji symbol="⚡" /> Modo offline: el registro se guardará localmente y se sincronizará al volver la conexión.
+        <div className="offline-banner mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-md">
+          <Emoji symbol="⚡" /> Modo offline: Los datos se guardarán localmente
         </div>
       )}
-      {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">
-          {error}
+
+      {successMsg && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+          {successMsg}
         </div>
       )}
-      {mensaje && (
-        <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">
-          {mensaje}
+
+      {errorMsg && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {errorMsg}
         </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Campo Placa */}
         <div>
-          <label>Placa del vehículo:</label>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Placa del vehículo
+          </label>
           <input
-            name="placa_vehiculo"
-            value={form.placa_vehiculo}
-            onChange={handleChange}
+            type="text"
+            name="placa"
+            value={formData.placa}
+            onChange={e =>
+              setFormData(prev => ({
+                ...prev,
+                placa: e.target.value.toUpperCase()
+              }))
+            }
             required
-            className="w-full p-2 border rounded"
-            autoFocus
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Ej: ABC1234"
+            pattern="[A-Z0-9]{6,8}"
+            title="6-8 caracteres alfanuméricos"
+            style={{ textTransform: 'uppercase' }}
           />
         </div>
+
+        {/* Selector Tipo de Vehículo */}
         <div>
-          <label>Tipo de vehículo:</label>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Tipo de vehículo
+          </label>
           <select
-            name="tipo_vehiculo"
-            value={form.tipo_vehiculo}
+            name="tipoVehiculo"
+            value={formData.tipoVehiculo}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
           >
             <option value="carro">Carro</option>
             <option value="moto">Moto</option>
           </select>
         </div>
+
+        {/* Selector de Fecha y Hora */}
         <div>
-          <label>Fecha y hora de ingreso:</label>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Fecha y Hora (GYE)
+          </label>
           <input
             type="datetime-local"
-            name="fecha_hora_ingreso"
-            value={form.fecha_hora_ingreso}
+            name="fechaHora"
+            value={formData.fechaHora || getLocalDateTime()}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
+
+        {/* Selector de Propiedad */}
         <div>
-          <label>Copropietario:</label>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Propiedad
+          </label>
           <select
-            name="dependencia_id"
-            value={form.dependencia_id}
+            name="propiedad"
+            value={formData.propiedad}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           >
-            <option value="">Seleccione...</option>
-            {copropietarios.map(dep => (
-              <option key={dep.id} value={dep.id}>
-                {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
+            <option value="">Seleccione una propiedad</option>
+            {propiedades.map(prop => (
+              <option key={prop} value={prop}>{prop}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Selector de Unidad */}
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Unidad
+          </label>
+          <select
+            name="unidadAsignada"
+            value={formData.unidadAsignada}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
+            disabled={!formData.propiedad}
+          >
+            <option value="">Seleccione una unidad</option>
+            {unidades.map(u => (
+              <option key={u.copropietarioId} value={u.unidad}>
+                {u.unidad} - {u.nombreCopropietario}
               </option>
             ))}
           </select>
         </div>
+
+        {/* Observaciones */}
         <div>
-          <label>Observaciones:</label>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Observaciones
+          </label>
           <input
+            type="text"
             name="observaciones"
-            value={form.observaciones}
+            value={formData.observaciones}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
-            maxLength={100}
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            maxLength={120}
+            placeholder="Observaciones adicionales"
           />
         </div>
-        <div>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="gratis"
-              checked={form.gratis}
-              onChange={handleChange}
-            />
-            <span><Emoji symbol="🆓" /> Gratis</span>
-          </label>
-        </div>
-        <div>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="recaudado"
-              checked={form.recaudado}
-              onChange={handleChange}
-            />
-            <span><Emoji symbol="🔗" /> Recaudado</span>
-          </label>
-        </div>
-        {form.recaudado && (
-          <div>
-            <label>Fecha de recaudación:</label>
-            <input
-              type="date"
-              name="fecha_recaudo"
-              value={form.fecha_recaudo}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required={form.recaudado}
-            />
-          </div>
-        )}
-        <div>
-          <label>Evidencia fotográfica:</label>
-          <SelectorDeFoto
-            onFilesSelected={handleFotos}
-            maxFiles={1}
-            disabled={loading}
-          />
-        </div>
-        <div>
-          <label>Evidencia auditiva (opcional):</label>
+
+        {/* Checkbox Gratis */}
+        <div className="flex items-center">
           <input
-            type="file"
-            accept="audio/*"
-            onChange={e => handleAudio(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
-            disabled={loading}
+            type="checkbox"
+            name="gratis"
+            checked={formData.gratis}
+            onChange={handleChange}
+            className="mr-2"
+            id="gratis"
+          />
+          <label htmlFor="gratis" className="text-sm dark:text-gray-200">
+            Registro gratuito
+          </label>
+        </div>
+
+        {/* Fotos */}
+        <div>
+          <label className="block text-sm font-medium mb-1 dark:text-gray-200">
+            Evidencia fotográfica (máx. 5)
+          </label>
+          <SelectorDeFoto
+            archivos={formData.fotos}
+            setArchivos={files => setFormData(prev => ({ ...prev, fotos: files }))}
+            maxArchivos={5}
+            disabled={submitting}
           />
         </div>
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
-          disabled={loading}
+          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors"
+          disabled={submitting}
         >
-          {loading ? <Loader text="Guardando..." /> : <>Registrar</>}
+          {submitting ? 'Registrando...' : 'Registrar Parqueo'}
         </button>
       </form>
     </div>

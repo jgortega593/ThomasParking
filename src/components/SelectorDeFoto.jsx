@@ -1,43 +1,55 @@
+// src/components/SelectorDeFoto.jsx
 import React, { useState, useEffect } from 'react';
 import CapturaCamara from './CapturaCamara';
 
+/**
+ * SelectorDeFoto
+ * Componente para seleccionar o capturar fotos, mostrando previsualización en miniatura.
+ * Props:
+ * - onFilesSelected: function(files[]) => void
+ * - maxFiles: número máximo de fotos permitidas (default: 5)
+ * - disabled: boolean (opcional)
+ */
 export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled }) {
   const [previews, setPreviews] = useState([]);
   const [files, setFiles] = useState([]);
   const [modo, setModo] = useState('galeria');
 
+  // Actualiza el listado de archivos y notifica al padre
   const actualizarArchivos = (nuevosArchivos) => {
     const archivosCombinados = [...files, ...nuevosArchivos].slice(0, maxFiles);
     setFiles(archivosCombinados);
-    if(onFilesSelected) onFilesSelected(archivosCombinados);
+    if (onFilesSelected) onFilesSelected(archivosCombinados);
   };
 
+  // Maneja selección desde galería
   const handleFileChange = (e) => {
-    if(disabled) return;
+    if (disabled) return;
     const selectedFiles = Array.from(e.target.files);
     actualizarArchivos(selectedFiles);
   };
 
+  // Maneja captura desde cámara
   const handleCapturaCamara = (file) => {
-    if(disabled) return;
+    if (disabled) return;
     actualizarArchivos([file]);
   };
 
+  // Elimina una foto seleccionada
   const eliminarFoto = (index) => {
     const nuevosArchivos = files.filter((_, i) => i !== index);
     setFiles(nuevosArchivos);
-    if(onFilesSelected) onFilesSelected(nuevosArchivos);
+    if (onFilesSelected) onFilesSelected(nuevosArchivos);
   };
 
+  // Genera y limpia previews de archivos
   useEffect(() => {
     const nuevasPreviews = files.map(file => ({
       url: URL.createObjectURL(file),
       name: file.name,
       type: file.type,
     }));
-    
     setPreviews(nuevasPreviews);
-
     return () => {
       nuevasPreviews.forEach(p => URL.revokeObjectURL(p.url));
     };
