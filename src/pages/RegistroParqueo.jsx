@@ -259,7 +259,7 @@ export default function RegistroParqueo() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block mb-2">
-              <Emoji symbol="⏱️" /> Fecha y Hora de Ingreso (GYE)
+              <Emoji symbol="⏱️" /> Fecha y Hora de Ingreso (UIO)
               <input
                 type="datetime-local"
                 name="fecha_hora_ingreso"
