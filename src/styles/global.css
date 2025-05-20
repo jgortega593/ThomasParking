@@ -1,8 +1,7 @@
-@charset "UTF-8";
-
-/* =======================
-   Variables de Tema
-======================== */
+/* src/styles/global.css */
+/* =========================
+   Variables y temas
+========================= */
 :root {
   --background: #f8fafc;
   --surface: #fff;
@@ -23,8 +22,6 @@
   --transition: .22s cubic-bezier(.4,0,.2,1);
   --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
-  --glass-bg: rgba(255,255,255,0.7);
-  --glass-blur: 12px;
 }
 
 [data-theme=dark] {
@@ -38,12 +35,11 @@
   --accent: #f472b6;
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
-  --glass-bg: rgba(35,39,47,0.7);
 }
 
-/* =======================
-   Reset y Base
-======================== */
+/* =========================
+   Estilos base
+========================= */
 html, body {
   margin: 0;
   padding: 0;
@@ -52,8 +48,6 @@ html, body {
   color: var(--text);
   min-height: 100vh;
   scroll-behavior: smooth;
-  text-align: center;
-  transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -66,364 +60,218 @@ html, body {
   background: var(--background);
 }
 
-/* =======================
-   Tipografía y Enlaces
-======================== */
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color var(--transition);
-}
-a:hover, a:focus {
-  color: var(--accent);
-  text-decoration: underline;
-  outline-offset: 2px;
-  outline: 2px solid var(--accent);
-}
-
-h1, h2, h3, h4 {
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin-top: 0;
-  text-align: center;
-  line-height: 1.2;
-}
-
-/* =======================
-   Formularios y Botones
-======================== */
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: 1rem;
-  border-radius: var(--radius-md);
-  border: 1.5px solid #e5e7eb;
-  padding: 10px 14px;
-  outline-offset: 2px;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
-  margin: .25rem 0;
-  box-sizing: border-box;
-}
-button {
-  cursor: pointer;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  min-width: 120px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  -webkit-user-select: none;
-  user-select: none;
-  transition: background var(--transition), box-shadow var(--transition), transform .12s;
-}
-button:hover, button:focus {
-  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
-  transform: scale(1.04);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  background: #f0f9ff;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-input[type=checkbox], input[type=radio] {
-  width: 1.1em;
-  height: 1.1em;
-  accent-color: var(--primary);
-  margin-right: 7px;
-  cursor: pointer;
-}
-
-/* =======================
-   Scrollbar Moderno
-======================== */
-::-webkit-scrollbar {
-  width: 10px;
-  background: #e0e7ef;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 8px;
-}
-
-/* =======================
-   Tablas y Grids
-======================== */
-table {
+/* =========================
+   Componentes principales
+========================= */
+.navbar {
+  position: fixed;
+  top: 0;
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1.5rem;
+  z-index: 50;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  box-shadow: var(--shadow-lg);
+}
+
+.footer {
+  margin-top: auto;
+  width: 100%;
+  background: var(--surface);
+  border-top: 1px solid var(--primary-light);
+}
+
+/* =========================
+   Tablas responsivas
+========================= */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1rem 0;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  overflow: hidden;
-  font-size: 1rem;
 }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+
 th, td {
-  padding: 10px 8px;
+  padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-  transition: background var(--transition), color var(--transition);
+  border-bottom: 1px solid var(--primary-light);
 }
+
 th {
   background: var(--primary-light);
   color: var(--primary);
   font-weight: 700;
 }
-tr:last-child td {
-  border-bottom: none;
-}
-tr:hover {
-  background: var(--primary-light);
+
+/* Modo tarjeta para móviles */
+@media (max-width: 768px) {
+  table thead {
+    display: none;
+  }
+  
+  table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    background: var(--surface);
+  }
+  
+  table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--primary-light);
+  }
+  
+  table td:before {
+    content: attr(data-title);
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-right: 1rem;
+    min-width: 100px;
+  }
 }
 
-/* =======================
-   Miniaturas y Avatares
-======================== */
-.thumbnail {
-  width: 38px;
-  height: 38px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px #6366f133;
+/* =========================
+   Formularios y controles
+========================= */
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--primary-light);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color var(--transition);
 }
 
-/* =======================
-   Modales y Overlays
-======================== */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-weight: 600;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* =========================
+   Componentes específicos
+========================= */
 .modal-backdrop {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(24,24,27,0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(var(--glass-blur));
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
 }
+
 .modal-content {
   background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   padding: 2rem;
-  max-width: 480px;
-  width: 90vw;
+  width: 90%;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  text-align: left;
-  position: relative;
-  animation: modalIn .38s cubic-bezier(.4,0,.2,1);
-}
-@keyframes modalIn {
-  0% { opacity: 0; transform: translateY(32px) scale(0.97);}
-  100% { opacity: 1; transform: none;}
 }
 
-/* =======================
-   Loader y LoadingOverlay
-======================== */
-.loader-spinner, .loading-spinner {
+.thumbnail {
   width: 48px;
   height: 48px;
-  border: 6px solid #e0e0e0;
-  border-top: 6px solid var(--primary);
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--primary-light);
+}
+
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--primary-light);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
 }
+
 @keyframes spin {
-  0% { transform: rotate(0);}
-  100% { transform: rotate(360deg);}
+  to { transform: rotate(360deg); }
 }
 
-/* =======================
-   Banners y Mensajes
-======================== */
-.offline-banner {
-  background: #fff3cd;
-  color: #856404;
-  padding: 10px 0;
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  border-bottom: 1.5px solid #ffe58f;
-  position: sticky;
-  top: 64px;
-  z-index: 40;
-  letter-spacing: .02em;
-  animation: bannerIn .7s cubic-bezier(.4,0,.2,1);
-}
-[data-theme=dark] .offline-banner {
-  background: #23272f;
-  color: #fbbf24;
-  border-bottom: 1.5px solid #fbbf24;
-}
-@keyframes bannerIn {
-  0% { opacity: 0; transform: translateY(-16px);}
-  100% { opacity: 1; transform: none;}
-}
+/* =========================
+   Utilidades
+========================= */
+.p-4 { padding: 1rem; }
+.mt-4 { margin-top: 1rem; }
+.text-center { text-align: center; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
 
-.error-message,
-.bg-red-50,
-.bg-red-900 {
-  background: #fffbe6;
-  color: var(--danger);
-  border: 1.5px solid #ffe58f;
-  margin-top: 1rem;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  font-size: 1.06em;
-  font-weight: 600;
-  text-align: center;
-  max-width: 700px;
-  word-wrap: break-word;
-  box-shadow: 0 2px 8px #ef444422;
-}
-[data-theme=dark] .error-message,
-[data-theme=dark] .bg-red-50,
-[data-theme=dark] .bg-red-900 {
-  background: #7f1d1d;
-  color: #fde68a;
-  border-color: #b91c1c;
-}
-
-/* =======================
-   Contenedores Disruptivos
-======================== */
-.acerca-de-container,
-.descargos-container {
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
-  padding: 2.2rem 2rem;
-  max-width: 700px;
-  margin: 2.5rem auto;
-  text-align: left;
-  backdrop-filter: blur(var(--glass-blur));
-  transition: background var(--transition), color var(--transition);
-  animation: fadeIn .7s cubic-bezier(.4,0,.2,1);
-}
-@keyframes fadeIn {
-  0% { opacity: 0; transform: scale(.98);}
-  100% { opacity: 1; transform: none;}
-}
-
-/* =======================
-   Utilidades y Helpers
-======================== */
-.pt-16 { padding-top: 4rem !important; }
-.min-h-screen { min-height: 100vh !important; }
-.mx-auto { margin-left: auto !important; margin-right: auto !important; }
-.my-8 { margin-top: 2rem !important; margin-bottom: 2rem !important; }
-.p-6 { padding: 1.5rem !important; }
-.p-8 { padding: 2rem !important; }
-.rounded-lg { border-radius: var(--radius-lg) !important; }
-.shadow { box-shadow: var(--shadow-md) !important; }
-.text-center { text-align: center !important; }
-.text-left { text-align: left !important; }
-.font-bold { font-weight: 700 !important; }
-.font-semibold { font-weight: 600 !important; }
-.text-lg { font-size: 1.125rem !important; }
-.text-2xl { font-size: 1.5rem !important; }
-.text-red-700 { color: #b91c1c !important; }
-.text-red-100 { color: #fee2e2 !important; }
-.text-red-600 { color: #dc2626 !important; }
-.text-red-300 { color: #fca5a5 !important; }
-.sin-resultados {
-  color: var(--text-muted);
-  font-size: 1.1em;
-  text-align: center;
-  padding: 1.2em 0;
-}
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 1rem;
-  margin: 0.5rem 0;
-}
-
-/* =======================
-   Responsive Moderno
-======================== */
-@media (max-width: 900px) {
-  .acerca-de-container,
-  .descargos-container {
-    padding: 1.2rem;
-    margin: 1rem;
-  }
-}
-@media (max-width: 768px) {
-  .filtros-grid {
-    flex-direction: column;
-    align-items: center;
-  }
-  .filtro-item {
-    min-width: 100%;
-  }
-  .resultados-table-container {
-    max-height: 300px;
-  }
-  .acerca-de-container,
-  .descargos-container {
-    padding: 1.1rem;
-    margin: 0.7rem;
-  }
-}
-@media (max-width: 480px) {
-  .acerca-de-container,
-  .descargos-container {
-    padding: 0.7rem;
-    margin: 0.3rem;
-    font-size: 0.98rem;
-  }
-  table, th, td {
-    font-size: 0.97rem;
-  }
-}
-
-/* =======================
-   Microinteracciones
-======================== */
-button, .edit-btn, .delete-btn, .save-btn, .cancel-btn {
-  transition: background var(--transition), color var(--transition), box-shadow var(--transition), transform .11s;
-}
-button:active, .edit-btn:active, .delete-btn:active {
-  transform: scale(.97);
-}
-
-/* =======================
-   Glassmorphism (opcional)
-======================== */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
-}
-
-/* =======================
+/* =========================
    Accesibilidad
-======================== */
-:focus-visible {
-  outline: 2.5px solid var(--focus);
-  outline-offset: 2.5px;
+========================= */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
-[aria-live] {
-  transition: color .18s;
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* =========================
+   Media queries
+========================= */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 0.5rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+  }
+  
+  button {
+    width: 100%;
+    justify-content: center;
+  }
 }
