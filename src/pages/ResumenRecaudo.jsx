@@ -1,354 +1,333 @@
-// src/components/ResumenRecaudo.jsx
-import React, { useState, useEffect } from 'react'
-import supabase from '../supabaseClient'
-import Loader from '../components/Loader'
-import Emoji from '../components/Emoji'
+import React, { useState, useEffect } from 'react';
+import supabase from '../supabaseClient';
+import Loader from '../components/Loader';
+import Emoji from '../components/Emoji';
+import ExportarPDF from '../components/ExportarPDF';
+import ErrorMessage from '../components/ErrorMessage';
+import SelectorDeFoto from '../components/SelectorDeFoto';
+import dayjs from 'dayjs';
 
-export default function ResumenRecaudo({ refreshKey }) {
-  const [registros, setRegistros] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [montoRecaudar, setMontoRecaudar] = useState('')
-  const [procesando, setProcesando] = useState(false)
-  const [filtroPropiedad, setFiltroPropiedad] = useState('')
-  const [filtroUnidad, setFiltroUnidad] = useState('')
-  const [filtroCopropietario, setFiltroCopropietario] = useState('')
-  const [editModal, setEditModal] = useState({ open: false, registro: null })
-  const [editData, setEditData] = useState({})
-  const [propiedades, setPropiedades] = useState([])
-  const [unidades, setUnidades] = useState([])
+export default function ResumenRecaudo() {
+  const [registros, setRegistros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [montoRecaudar, setMontoRecaudar] = useState('');
+  const [procesando, setProcesando] = useState(false);
+  const [registrosModificados, setRegistrosModificados] = useState([]);
+  const [propiedades, setPropiedades] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [filtroPropiedad, setFiltroPropiedad] = useState('');
+  const [filtroUnidad, setFiltroUnidad] = useState('');
+  const [filtroCopropietario, setFiltroCopropietario] = useState('');
+  const [fotosEvidencia, setFotosEvidencia] = useState([]);
 
+  // Columnas para exportar a PDF
+  const columnasPDF = [
+    { header: 'Fecha', key: 'fecha_hora_ingreso', formatter: v => dayjs(v).format('DD/MM/YY HH:mm') },
+    { header: 'Placa', key: 'placa_vehiculo' },
+    { header: 'Tipo', key: 'tipo_vehiculo' },
+    { header: 'Monto', key: 'monto', formatter: v => `$${Number(v).toFixed(2)}` },
+    { header: 'Evidencia', key: 'evidencia_recaudo', formatter: urls => Array.isArray(urls) && urls.length ? 'Sí' : 'No' }
+  ];
+
+  // Cargar datos iniciales
   useEffect(() => {
-    const fetchCopropietarios = async () => {
-      const { data, error } = await supabase
-        .from('copropietarios')
-        .select('propiedad, unidad_asignada')
-      if (!error) {
-        const props = [...new Set(data.map(d => d.propiedad))].sort()
-        setPropiedades(props)
-        setUnidades(data)
+    const cargarDatos = async () => {
+      setLoading(true);
+      try {
+        const [resRegistros, resCopropietarios] = await Promise.all([
+          supabase.from('registros_parqueadero')
+            .select('*, copropietarios:dependencia_id(nombre, propiedad, unidad_asignada)')
+            .order('fecha_hora_ingreso', { ascending: false }),
+          supabase.from('copropietarios').select('propiedad, unidad_asignada')
+        ]);
+        if (resRegistros.error) throw resRegistros.error;
+        if (resCopropietarios.error) throw resCopropietarios.error;
+        setRegistros(resRegistros.data || []);
+        setPropiedades([...new Set(resCopropietarios.data.map(c => c.propiedad))].sort());
+        setUnidades(resCopropietarios.data || []);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
       }
-    }
-    fetchCopropietarios()
-  }, [])
+    };
+    cargarDatos();
+  }, []);
 
+  // Opciones únicas para selects dependientes
   const unidadesFiltradas = filtroPropiedad
     ? [...new Set(unidades.filter(u => u.propiedad === filtroPropiedad).map(u => u.unidad_asignada))]
-    : []
+    : [];
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('registros_parqueadero')
-        .select(`
-          *,
-          copropietarios:dependencia_id(nombre, propiedad, unidad_asignada)
-        `)
-        .order('fecha_hora_ingreso', { ascending: false })
-
-      if (error) throw error
-      setRegistros(data)
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { fetchData() }, [refreshKey])
-
-  const handleRecaudoAutomatico = async () => {
-    if (!filtroPropiedad || !filtroUnidad) {
-      alert('Debe seleccionar propiedad y unidad asignada')
-      return
-    }
-
-    const montoObjetivo = parseFloat(montoRecaudar)
-    if (isNaN(montoObjetivo) || montoObjetivo <= 0) {
-      alert('Ingrese un monto válido')
-      return
-    }
-
-    setProcesando(true)
-    try {
-      const { data: registrosParaRecaudar, error } = await supabase
-        .from('registros_parqueadero')
-        .select(`
-          *,
-          copropietarios:dependencia_id(propiedad, unidad_asignada)
-        `)
-        .eq('copropietarios.propiedad', filtroPropiedad)
-        .eq('copropietarios.unidad_asignada', filtroUnidad)
-        .eq('recaudado', false)
-        .eq('gratis', false)
-        .order('fecha_hora_ingreso', { ascending: true })
-
-      if (error) throw error
-      if (!registrosParaRecaudar?.length) {
-        alert('No hay registros pendientes para esta propiedad/unidad')
-        return
-      }
-
-      let montoAcumulado = 0
-      const registrosAMarcar = registrosParaRecaudar
-        .filter(reg => {
-          if (montoAcumulado >= montoObjetivo) return false
-          montoAcumulado += Number(reg.monto)
-          return true
-        })
-        .map(reg => reg.id)
-
-      const { error: updateError } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          recaudado: true,
-          fecha_recaudo: new Date().toISOString().slice(0, 10)
-        })
-        .in('id', registrosAMarcar)
-
-      if (updateError) throw updateError
-
-      alert(`Recaudado $${montoAcumulado.toFixed(2)} en ${registrosAMarcar.length} registros`)
-      fetchData()
-      setMontoRecaudar('')
-    } catch (error) {
-      alert('Error: ' + error.message)
-    } finally {
-      setProcesando(false)
-    }
-  }
-
+  // Filtrado de registros
   const registrosFiltrados = registros.filter(reg => {
-    const coincidePropiedad = !filtroPropiedad || (reg.copropietarios?.propiedad || '') === filtroPropiedad
-    const coincideUnidad = !filtroUnidad || (reg.copropietarios?.unidad_asignada || '') === filtroUnidad
-    const coincideCopropietario = !filtroCopropietario || (reg.copropietarios?.nombre || '').toLowerCase().includes(filtroCopropietario.toLowerCase())
-    return coincidePropiedad && coincideUnidad && coincideCopropietario
-  })
+    const coincidePropiedad = !filtroPropiedad || reg.copropietarios?.propiedad === filtroPropiedad;
+    const coincideUnidad = !filtroUnidad || reg.copropietarios?.unidad_asignada === filtroUnidad;
+    const coincideNombre = !filtroCopropietario || (reg.copropietarios?.nombre || '').toLowerCase().includes(filtroCopropietario.toLowerCase());
+    return coincidePropiedad && coincideUnidad && coincideNombre;
+  });
 
+  // Resumen estadístico
   const resumen = registrosFiltrados.reduce((acc, reg) => {
-    if (reg.gratis) acc.gratis++
-    else if (reg.recaudado) acc.recaudado += Number(reg.monto)
-    else acc.pendiente += Number(reg.monto)
-    return acc
-  }, { recaudado: 0, pendiente: 0, gratis: 0 })
+    if (reg.gratis) acc.gratis++;
+    else if (reg.recaudado) acc.recaudado += Number(reg.monto);
+    else acc.pendiente += Number(reg.monto);
+    return acc;
+  }, { recaudado: 0, pendiente: 0, gratis: 0 });
 
-  const handleEditSave = async () => {
-    const id = editModal.registro.id
-    const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50)
-
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .update({ ...editData, monto })
-        .eq('id', id)
-
-      if (error) throw error
-      fetchData()
-      setEditModal({ open: false, registro: null })
-    } catch (error) {
-      alert(error.message)
-    }
+  // Algoritmo recursivo para encontrar combinación exacta
+  function encontrarCombinacionExacta(registros, objetivo, index = 0, seleccionados = []) {
+    if (Math.abs(objetivo) < 0.01) return seleccionados;
+    if (objetivo < 0 || index >= registros.length) return null;
+    const montoActual = parseFloat(registros[index].monto);
+    const conActual = encontrarCombinacionExacta(
+      registros, +(objetivo - montoActual).toFixed(2), index + 1, [...seleccionados, registros[index]]
+    );
+    if (conActual) return conActual;
+    return encontrarCombinacionExacta(registros, objetivo, index + 1, seleccionados);
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Seguro que desea eliminar este registro?')) return
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .delete()
-        .eq('id', id)
-      if (error) throw error
-      fetchData()
-    } catch (error) {
-      alert(error.message)
+  // Subida de evidencia a Supabase Storage
+  const subirEvidencia = async () => {
+    const urls = [];
+    for (const foto of fotosEvidencia) {
+      const extension = foto.name.split('.').pop().toLowerCase();
+      const nombreArchivo = `evidencia-recaudo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}.${extension}`;
+      const { error } = await supabase.storage
+        .from('evidencias-recaudo')
+        .upload(nombreArchivo, foto, {
+          contentType: foto.type
+        });
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('evidencias-recaudo')
+          .getPublicUrl(nombreArchivo);
+        urls.push(publicUrl);
+      } else {
+        throw error;
+      }
     }
-  }
+    return urls;
+  };
+
+  // Proceso de recaudación exacta
+  const handleRecaudoExacto = async () => {
+    setError('');
+    setRegistrosModificados([]);
+    if (!filtroPropiedad || !filtroUnidad) {
+      setError('Debe seleccionar propiedad y unidad asignada');
+      return;
+    }
+    const montoObjetivo = parseFloat(montoRecaudar);
+    if (isNaN(montoObjetivo) || montoObjetivo <= 0) {
+      setError('Ingrese un monto válido mayor a 0');
+      return;
+    }
+    if (fotosEvidencia.length === 0) {
+      setError('Debe adjuntar al menos una evidencia fotográfica');
+      return;
+    }
+    setProcesando(true);
+    try {
+      const pendientes = registrosFiltrados
+        .filter(r => !r.recaudado && !r.gratis)
+        .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
+      const seleccion = encontrarCombinacionExacta(pendientes, +montoObjetivo.toFixed(2));
+      if (!seleccion || seleccion.length === 0) {
+        setError('No existe una combinación exacta de registros para el monto ingresado.');
+        setProcesando(false);
+        return;
+      }
+      const sumaSeleccion = seleccion.reduce((acc, r) => acc + parseFloat(r.monto), 0);
+      if (Math.abs(sumaSeleccion - montoObjetivo) > 0.009) {
+        setError('No existe una combinación exacta de registros para el monto ingresado.');
+        setProcesando(false);
+        return;
+      }
+      // Subir evidencia
+      const urlsEvidencia = await subirEvidencia();
+      // Actualizar registros seleccionados
+      const updates = seleccion.map(reg =>
+        supabase
+          .from('registros_parqueadero')
+          .update({
+            recaudado: true,
+            fecha_recaudo: new Date().toISOString(),
+            evidencia_recaudo: urlsEvidencia
+          })
+          .eq('id', reg.id)
+      );
+      const resultados = await Promise.all(updates);
+      const errores = resultados.filter(r => r.error);
+      if (errores.length === 0) {
+        setRegistros(prev =>
+          prev.map(r =>
+            seleccion.some(m => m.id === r.id)
+              ? { ...r, recaudado: true, fecha_recaudo: new Date(), evidencia_recaudo: urlsEvidencia }
+              : r
+          )
+        );
+        setRegistrosModificados(seleccion.map(r => ({ ...r, evidencia_recaudo: urlsEvidencia })));
+        setMontoRecaudar('');
+        setFotosEvidencia([]);
+      } else {
+        setError(`Error al actualizar algunos registros (${errores.length})`);
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  if (loading) return <Loader text="Cargando datos..." />;
 
   return (
-    <div className="resumen-container">
-      <h2><Emoji symbol="📊" label="Resumen" /> Resumen de Recaudación</h2>
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl font-bold">
+          <Emoji symbol="📊" /> Resumen de Recaudación
+        </h2>
+        <ExportarPDF
+          datos={registrosModificados}
+          columnas={columnasPDF}
+          titulo="Registros Recaudados"
+        />
+      </div>
 
-      <div className="resumen-visual">
-        <div className="resumen-item recaudado">
-          <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
-          <span>Recaudado</span>
+      {/* Filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-medium mb-1">Propiedad:</label>
+          <select
+            value={filtroPropiedad}
+            onChange={e => {
+              setFiltroPropiedad(e.target.value);
+              setFiltroUnidad('');
+            }}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Seleccione propiedad...</option>
+            {propiedades.map(prop => (
+              <option key={prop} value={prop}>{prop}</option>
+            ))}
+          </select>
         </div>
-        <div className="resumen-item pendiente">
-          <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
-          <span>Pendiente</span>
-        </div>
-        <div className="resumen-item gratis">
-          <Emoji symbol="🆓" /> {resumen.gratis}
-          <span>Gratis</span>
+        <div>
+          <label className="block text-sm font-medium mb-1">Unidad asignada:</label>
+          <select
+            value={filtroUnidad}
+            onChange={e => setFiltroUnidad(e.target.value)}
+            className="w-full p-2 border rounded-md"
+            disabled={!filtroPropiedad}
+          >
+            <option value="">Seleccione unidad...</option>
+            {unidadesFiltradas.map(unidad => (
+              <option key={unidad} value={unidad}>{unidad}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <section className="recaudo-automatico">
-        <h3><Emoji symbol="⚡" /> Recaudo Automático</h3>
-        <div className="filtros-recaudo">
-          <div className="filtro-group">
-            <label><Emoji symbol="🏠" /> Propiedad:</label>
-            <select
-              value={filtroPropiedad}
-              onChange={e => {
-                setFiltroPropiedad(e.target.value)
-                setFiltroUnidad('')
-              }}
-            >
-              <option value="">Seleccione propiedad</option>
-              {propiedades.map(prop => (
-                <option key={prop} value={prop}>{prop}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filtro-group">
-            <label><Emoji symbol="🔢" /> Unidad:</label>
-            <select
-              value={filtroUnidad}
-              onChange={e => setFiltroUnidad(e.target.value)}
-              disabled={!filtroPropiedad}
-            >
-              <option value="">Seleccione unidad</option>
-              {unidadesFiltradas.map(unidad => (
-                <option key={unidad} value={unidad}>{unidad}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filtro-group">
-            <label><Emoji symbol="💵" /> Monto objetivo:</label>
+      {/* Sección de recaudación exacta y evidencia */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h3 className="text-xl font-semibold mb-4">
+          <Emoji symbol="⚡" /> Recaudo Exacto
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Monto a recaudar ($)</label>
             <input
               type="number"
+              min="0"
               step="0.01"
               value={montoRecaudar}
               onChange={e => setMontoRecaudar(e.target.value)}
-              placeholder="Ej: 50.00"
+              className="w-full p-2 border rounded-md"
+              placeholder="Ej: 25.50"
+              disabled={procesando}
             />
           </div>
-
-          <button
-            className="btn-recaudo"
-            onClick={handleRecaudoAutomatico}
-            disabled={procesando || !filtroPropiedad || !filtroUnidad}
-          >
-            {procesando ? 'Procesando...' : 'Ejecutar Recaudo'}
-          </button>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">Evidencia Fotográfica (Máx. 5 fotos)</label>
+            <SelectorDeFoto
+              onFilesSelected={setFotosEvidencia}
+              maxFiles={5}
+              disabled={procesando}
+            />
+          </div>
         </div>
-      </section>
-
-      <div className="filtros-avanzados">
-        <div className="filtro-group">
-          <label><Emoji symbol="👥" /> Copropietario:</label>
-          <input
-            type="text"
-            value={filtroCopropietario}
-            onChange={e => setFiltroCopropietario(e.target.value)}
-            placeholder="Filtrar por nombre"
-          />
+        <button
+          onClick={handleRecaudoExacto}
+          disabled={!montoRecaudar || procesando}
+          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+        >
+          {procesando ? <Loader text="Procesando..." /> : 'Ejecutar Recaudo'}
+        </button>
+        {error && <ErrorMessage message={error} className="mt-4" />}
+        <div className="mt-2 text-sm text-gray-600">
+          El monto debe coincidir exactamente con la suma de los montos de los registros seleccionados. Si no existe una combinación exacta, la operación no se realizará.
         </div>
       </div>
 
-      <div className="detalle-recaudo">
-        <h3><Emoji symbol="📋" /> Detalle de Registros</h3>
-        <div className="tabla-detalle">
-          <table>
-            <thead>
-              <tr>
-                <th><Emoji symbol="🚗" /> Placa</th>
-                <th><Emoji symbol="🛵" /> Tipo</th>
-                <th><Emoji symbol="💵" /> Monto</th>
-                <th><Emoji symbol="👥" /> Copropietario</th>
-                <th><Emoji symbol="📅" /> Fecha Recaudo</th>
-                <th><Emoji symbol="⚙️" /> Acciones</th>
+      {/* Resumen estadístico */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-green-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-700">
+            <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
+          </div>
+          <span className="text-sm">Total Recaudado</span>
+        </div>
+        <div className="bg-yellow-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-yellow-700">
+            <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
+          </div>
+          <span className="text-sm">Pendiente</span>
+        </div>
+        <div className="bg-purple-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-purple-700">
+            <Emoji symbol="🆓" /> {resumen.gratis}
+          </div>
+          <span className="text-sm">Registros Gratis</span>
+        </div>
+      </div>
+
+      {/* Tabla de registros */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2">Placa</th>
+              <th className="px-4 py-2">Tipo</th>
+              <th className="px-4 py-2">Monto</th>
+              <th className="px-4 py-2">Copropietario</th>
+              <th className="px-4 py-2">Fecha Recaudo</th>
+              <th className="px-4 py-2">Evidencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {registrosFiltrados.map(reg => (
+              <tr key={reg.id} className={reg.recaudado ? 'bg-green-50' : 'bg-white'}>
+                <td className="px-4 py-2">{reg.placa_vehiculo}</td>
+                <td className="px-4 py-2">{reg.tipo_vehiculo}</td>
+                <td className="px-4 py-2">${reg.monto.toFixed(2)}</td>
+                <td className="px-4 py-2">{reg.copropietarios?.nombre || '-'}</td>
+                <td className="px-4 py-2">
+                  {reg.fecha_recaudo ? dayjs(reg.fecha_recaudo).format('DD/MM/YY HH:mm') : '-'}
+                </td>
+                <td className="px-4 py-2">
+                  {reg.evidencia_recaudo?.map(url => (
+                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-2">
+                      <img src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded" />
+                    </a>
+                  ))}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {registrosFiltrados.map(reg => (
-                <tr key={reg.id} className={reg.recaudado ? 'recaudado' : 'pendiente'}>
-                  <td>{reg.placa_vehiculo}</td>
-                  <td>{reg.tipo_vehiculo}</td>
-                  <td>${reg.monto.toFixed(2)}</td>
-                  <td>{reg.copropietarios?.nombre || '-'}</td>
-                  <td>{reg.fecha_recaudo || '-'}</td>
-                  <td>
-                    <button onClick={() => {
-                      setEditModal({ open: true, registro: reg })
-                      setEditData({
-                        placa_vehiculo: reg.placa_vehiculo,
-                        tipo_vehiculo: reg.tipo_vehiculo,
-                        fecha_hora_ingreso: reg.fecha_hora_ingreso?.slice(0, 10) || '',
-                        gratis: reg.gratis
-                      })
-                    }}>
-                      <Emoji symbol="✏️" />
-                    </button>
-                    <button onClick={() => handleDelete(reg.id)}>
-                      <Emoji symbol="🗑️" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-
-      {editModal.open && (
-        <div className="modal-edicion">
-          <h3>Editar Registro</h3>
-          <form onSubmit={e => { e.preventDefault(); handleEditSave() }}>
-            <label>
-              Placa:
-              <input
-                value={editData.placa_vehiculo}
-                onChange={e => setEditData({ ...editData, placa_vehiculo: e.target.value })}
-                required
-              />
-            </label>
-
-            <label>
-              Tipo:
-              <select
-                value={editData.tipo_vehiculo}
-                onChange={e => setEditData({ ...editData, tipo_vehiculo: e.target.value })}
-              >
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-            </label>
-
-            <label>
-              Fecha ingreso:
-              <input
-                type="date"
-                value={editData.fecha_hora_ingreso}
-                onChange={e => setEditData({ ...editData, fecha_hora_ingreso: e.target.value })}
-              />
-            </label>
-
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={editData.gratis}
-                onChange={e => setEditData({ ...editData, gratis: e.target.checked })}
-              />
-              <Emoji symbol="🆓" /> Gratis
-            </label>
-
-            <div className="acciones-modal">
-              <button type="submit">Guardar</button>
-              <button type="button" onClick={() => setEditModal({ open: false, registro: null })}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {loading && <Loader text="Cargando datos..." />}
-      {error && <div className="error-message">{error}</div>}
     </div>
-  )
+  );
 }

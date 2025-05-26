@@ -137,7 +137,7 @@ export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled
           <CapturaCamara 
             onCaptura={handleCapturaCamara}
             onCancelar={() => setModo('galeria')}
-            maxWidth="220px"
+            maxWidth={220}
           />
         </div>
       )}

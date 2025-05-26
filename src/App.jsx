@@ -5,6 +5,7 @@ import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserProvider, useUser } from './context/UserContext';
 
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -16,12 +17,14 @@ import useOnlineStatus from './hooks/useOnlineStatus';
 import RegistroParqueo from './pages/RegistroParqueo';
 import Consultas from './pages/Consultas';
 import Recaudo from './pages/ResumenRecaudo';
+import Compensacion from './pages/Compensacion';
 import Descargos from './pages/DescargoGestion';
 import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import SignUp from './components/SignUp';
+import AuditLog from './components/AuditLog';
 
 function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
   const location = useLocation();
@@ -95,6 +98,15 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
               }
             />
             <Route
+  path="/compensacion"
+  element={
+    <AuthGuard requiredRole="admin">
+      <Compensacion />
+    </AuthGuard>
+  }
+/>
+
+            <Route
               path="/descargos"
               element={
                 <AuthGuard requiredRole="admin">
@@ -123,6 +135,14 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
               element={
                 <AuthGuard requiredRole="admin">
                   <GestionCopropietarios />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/auditoria"
+              element={
+                <AuthGuard requiredRole="admin">
+                  <AuditLog />
                 </AuthGuard>
               }
             />

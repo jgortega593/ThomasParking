@@ -8,6 +8,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@blackbox-vision/ra-audit-log": "^4.1.0",
     "@hookform/resolvers": "^5.0.1",
     "@supabase/supabase-js": "^2.49.4",
     "@types/react-datepicker": "^6.2.0",

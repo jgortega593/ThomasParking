@@ -1,3 +1,4 @@
+
 // src/components/CapturaCamara.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import Emoji from './Emoji'
@@ -87,6 +88,7 @@ export default function CapturaCamara({ onCaptura, onCancelar, maxWidth = 220, d
   const aceptarFoto = () => {
     if (foto && foto.file) {
       onCaptura(foto.file)
+      onCancelar() 
       if (stream) stream.getTracks().forEach(track => track.stop())
       setFoto(null)
     }

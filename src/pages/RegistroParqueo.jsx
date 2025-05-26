@@ -10,6 +10,7 @@ import ResizeImage from '../components/ResizeImage';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import SelectorDeFoto from '../components/SelectorDeFoto';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -45,6 +46,8 @@ const uploadPhotos = async (files, placa) => {
 };
 
 export default function RegistroParqueo() {
+  
+  const [formDisabled, setFormDisabled] = useState(false);
   const [formData, setFormData] = useState({
     placa_vehiculo: '',
     tipo_vehiculo: 'carro',
@@ -67,6 +70,13 @@ export default function RegistroParqueo() {
   const [audioUrl, setAudioUrl] = useState(null);
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
+
+  const onFilesSelected = (files) => {
+    setFormData(prev => ({
+      ...prev,
+      fotos: files
+    }));
+  };
 
   useEffect(() => {
     const fetchCopropietarios = async () => {
@@ -190,6 +200,7 @@ export default function RegistroParqueo() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setFormDisabled(false);
     }
   };
 
@@ -349,10 +360,12 @@ export default function RegistroParqueo() {
           <div>
             <label className="block mb-2">
               <Emoji symbol="📷" /> Evidencia Fotográfica (Máx. 5 fotos)
-              <ResizeImage 
-                onFilesSelected={files => setFormData(prev => ({ ...prev, fotos: files }))}
-                disabled={!isOnline}
-              />
+              <SelectorDeFoto
+  onFilesSelected={onFilesSelected}
+  maxFiles={5}
+  disabled={formDisabled || loading} // <-- Estado combinado
+/>
+
             </label>
           </div>
           <div>

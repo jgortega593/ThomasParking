@@ -68,9 +68,11 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
     { to: '/consultas', label: 'Reportes', emoji: '📊' },
     { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
+    { to: '/compensacion', label: 'Compensación', emoji: '🎁' }, // <-- NUEVO
     { to: '/descargos', label: 'Descargos', emoji: '📤' },
     { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
     { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
+    { to: '/auditoria', label: 'Auditoría', emoji: '🕵️' },
     { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
   ];
 
