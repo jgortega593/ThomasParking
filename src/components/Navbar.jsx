@@ -1,18 +1,55 @@
 // src/components/Navbar.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import supabase from '../supabaseClient';
 import Emoji from './Emoji';
 import ThemeToggle from './ThemeToggle';
 import { useUser } from '../context/UserContext';
 
-function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
+function getNavItemsByRole(rol) {
+  const baseItems = [
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
+    { to: '/consultas', label: 'Reportes', emoji: '📊' },
+    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
+  ];
+  if (rol === 'admin') {
+    return [
+      ...baseItems,
+      { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
+      { to: '/compensacion', label: 'Compensación', emoji: '🎁' },
+      { to: '/descargos', label: 'Descargos', emoji: '📤' },
+      { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
+      { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
+      { to: '/auditoria', label: 'Auditoría', emoji: '🕵️' },
+    ];
+  }
+  return baseItems;
+}
+
+function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
+  const menuRef = useRef();
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [setMenuOpen]);
+
   const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
     <nav
-      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4"
+      ref={menuRef}
+      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4 p-6"
       role="navigation"
       aria-label="Menú principal móvil"
     >
@@ -32,11 +69,16 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
         </NavLink>
       ))}
       {user && (
-        <div className="flex flex-col items-center mt-6 text-center">
-          <span className="text-white font-semibold text-base">{user.email}</span>
-          <span className="text-white text-xs font-normal mt-1 flex items-center justify-center gap-1">
-            <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-            {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+        <div className="flex flex-col items-center mt-6 text-center select-text">
+          <span className="text-white font-semibold text-base">
+            {user.nombre}
+          </span>
+          <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
+            <span>{user.email}</span>
+            <span>
+              <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+              {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+            </span>
           </span>
         </div>
       )}
@@ -47,6 +89,7 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
         onClick={handleLogout}
         className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
         aria-label="Cerrar sesión"
+        type="button"
       >
         <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
       </button>
@@ -56,7 +99,7 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout }) {
 
 export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
-  const { user } = useUser(); // <-- Obtiene usuario del contexto
+  const { user } = useUser();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -64,27 +107,16 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     navigate('/login');
   };
 
-  const navItems = [
-    { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
-    { to: '/consultas', label: 'Reportes', emoji: '📊' },
-    { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
-    { to: '/compensacion', label: 'Compensación', emoji: '🎁' }, // <-- NUEVO
-    { to: '/descargos', label: 'Descargos', emoji: '📤' },
-    { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
-    { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
-    { to: '/auditoria', label: 'Auditoría', emoji: '🕵️' },
-    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
-  ];
+  const rol = (user?.role || user?.user_metadata?.role || 'registrador').toLowerCase();
+  const navItems = getNavItemsByRole(rol);
+  const esAdmin = rol === 'admin';
 
   const handleNavClick = () => setMenuOpen(false);
-
-  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
-  const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center px-4 h-16">
-        {/* Logo y título */}
+        {/* Logo, título y nombre de usuario */}
         <div className="flex-shrink-0 flex items-center">
           <NavLink
             to="/"
@@ -94,17 +126,19 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           >
             <Emoji symbol="🅿️" label="Parking" /> <span>ParkingApp</span>
           </NavLink>
-          {/* Barra divisora y datos de usuario (escritorio) */}
+          {/* Nombre, mail y rol (escritorio) */}
           {user && (
-            <div className="hidden md:flex items-center ml-6 pl-6 border-l border-white/30">
-              <div className="flex flex-col text-white text-right">
-                <span className="font-semibold">{user.email}</span>
-                <span className="text-sm font-normal text-blue-200 flex items-center gap-1 justify-end">
-                  <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-                  {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-                </span>
-              </div>
-            </div>
+<div className="hidden md:flex flex-col items-start ml-6 pl-6 border-l border-white/30 select-text">
+  <span className="font-semibold text-white mb-2">{user.nombre}
+    <Emoji symbol="👨🏼‍🚀" label="User" />
+  </span>
+  <span className="text-xs text-blue-100">{user.email}</span>
+  <span className="text-xs text-blue-100 flex items-center gap-1">
+    <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+    {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+  </span>
+</div>
+
           )}
         </div>
 
@@ -128,7 +162,6 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           </svg>
         </button>
       </div>
-
       {/* Menú móvil */}
       {menuOpen && (
         <NavMenuMobile
@@ -136,6 +169,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           user={user}
           handleNavClick={handleNavClick}
           handleLogout={handleLogout}
+          setMenuOpen={setMenuOpen}
         />
       )}
     </header>

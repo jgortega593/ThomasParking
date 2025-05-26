@@ -36,14 +36,18 @@ export default function AuthGuard({ requiredRole = null, children }) {
     try {
       const { data, error } = await supabase
         .from('usuarios_app')
-        .select('email, rol, activo')
+        .select('email, rol, activo, nombre')
         .eq('email', user.email)
         .single();
 
       if (error) throw new Error('Error de autorización: ' + error.message);
       if (!data) throw new Error('Usuario no registrado');
       if (!data.activo) throw new Error('Cuenta desactivada');
-      return { ...user, role: data.rol };
+
+return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre al usuario del contexto
+
+
+
     } catch (error) {
       await supabase.auth.signOut();
       throw error;
