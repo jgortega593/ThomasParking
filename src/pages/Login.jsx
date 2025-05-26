@@ -1,142 +1,172 @@
 // src/pages/Login.jsx
 import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import supabase from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import Loader from "../components/Loader";
+import Emoji from "../components/Emoji";
 
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [step, setStep] = useState("email"); // "email" o "otp"
   const [otp, setOtp] = useState("");
+  const [step, setStep] = useState("email");
   const [loading, setLoading] = useState(false);
-  const [info, setInfo] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Enviar código OTP al correo
-  const handleSendCode = async (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true, // o false si solo quieres permitir acceso a usuarios existentes
-        // emailRedirectTo: 'https://TU_DOMINIO.com/' // opcional, si quieres redirigir tras login
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // Cambiar a true si se permiten nuevos usuarios
+          emailRedirectTo: window.location.origin
+        }
+      });
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else {
+      if (error) throw error;
+      
       setStep("otp");
-      setInfo("Se ha enviado un código a tu correo electrónico.");
+      setInfo("Código enviado. Revisa tu correo electrónico.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Verificar el código OTP
-  const handleVerifyCode = async (e) => {
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
 
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "email",
-    });
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: "email"
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setInfo("¡Autenticación exitosa! Redirigiendo...");
-      // Espera un momento y redirige
-      setTimeout(() => navigate("/"), 1500);
+      // Redirección post-login
+      const from = location.state?.from?.pathname || "/registros";
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message.includes("token") 
+        ? "Código inválido o expirado" 
+        : err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">
-          Iniciar sesión sin contraseña
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">
+          <Emoji symbol="🔑" /> Acceso al Sistema
+        </h1>
+
         {step === "email" ? (
-          <form onSubmit={handleSendCode} className="space-y-4">
+          <form onSubmit={handleEmailSubmit} className="space-y-6">
             <div>
-              <label className="block mb-1 text-gray-700 dark:text-gray-300">
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Correo electrónico
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="usuario@ejemplo.com"
                 required
-                autoComplete="email"
+                autoFocus
                 disabled={loading}
               />
             </div>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                {info}
-              </div>
-            )}
+
             <button
               type="submit"
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
-              {loading ? "Enviando..." : "Enviar código"}
+              {loading ? (
+                <Loader text="Enviando código..." />
+              ) : (
+                <>
+                  <Emoji symbol="📨" /> Continuar con correo
+                </>
+              )}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
+          <form onSubmit={handleOtpSubmit} className="space-y-6">
             <div>
-              <label className="block mb-1 text-gray-700 dark:text-gray-300">
-                Ingresa el código recibido por email
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Código de verificación
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring"
-                value={otp}
-                onChange={e => setOtp(e.target.value)}
-                required
-                disabled={loading}
-                maxLength={6}
                 inputMode="numeric"
+                pattern="[0-9]{6}"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full px-4 py-3 text-center text-2xl font-mono rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="123456"
+                required
+                autoFocus
+                disabled={loading}
               />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                Ingresa el código de 6 dígitos enviado a {email}
+              </p>
             </div>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                {info}
-              </div>
-            )}
+
             <button
               type="submit"
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
-              {loading ? "Verificando..." : "Verificar código"}
+              {loading ? (
+                <Loader text="Verificando..." />
+              ) : (
+                <>
+                  <Emoji symbol="✅" /> Verificar código
+                </>
+              )}
             </button>
           </form>
         )}
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-lg border border-red-200 dark:border-red-800">
+            <Emoji symbol="⚠️" /> {error}
+          </div>
+        )}
+
+        {info && (
+          <div className="mt-6 p-4 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-100 rounded-lg border border-green-200 dark:border-green-800">
+            <Emoji symbol="ℹ️" /> {info}
+          </div>
+        )}
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setStep("email")}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+            type="button"
+          >
+            <Emoji symbol="↩️" /> Volver a ingresar correo
+          </button>
+        </div>
       </div>
     </div>
   );

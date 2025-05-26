@@ -7,10 +7,8 @@ import ErrorMessage from './ErrorMessage';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-// Configuración de tiempos (ajustable)
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
-
 const ACTIVITY_EVENTS = [
   'mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'
 ];
@@ -26,10 +24,11 @@ export default function AuthGuard({ requiredRole = null, children }) {
   });
   const isOnline = useOnlineStatus();
 
-  // Referencias para timers y estado de actividad
+  // Referencias para timers
   const inactivityTimer = useRef(null);
   const refreshInterval = useRef(null);
   const activityDetected = useRef(false);
+  const isMounted = useRef(true);
 
   // --- Función para chequear autorización y rol ---
   const checkAuthorization = useCallback(async (user) => {
@@ -44,10 +43,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
       if (!data) throw new Error('Usuario no registrado');
       if (!data.activo) throw new Error('Cuenta desactivada');
 
-return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre al usuario del contexto
-
-
-
+      return { ...user, role: data.rol, nombre: data.nombre };
     } catch (error) {
       await supabase.auth.signOut();
       throw error;
@@ -79,17 +75,18 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
 
   // --- Inicialización y listeners ---
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
 
     // Inicializa sesión al montar
     const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (!isMounted) return;
+        // Usa getSession para obtener usuario y sesión válidos
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!isMounted.current) return;
         if (error) throw error;
-        if (!user) throw new Error('No autenticado');
-        const authorizedUser = await checkAuthorization(user);
-        if (isMounted) {
+        if (!session?.user) throw new Error('No autenticado');
+        const authorizedUser = await checkAuthorization(session.user);
+        if (isMounted.current) {
           setAuthState({
             user: authorizedUser,
             loading: false,
@@ -99,7 +96,7 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
           setUser(authorizedUser);
         }
       } catch (error) {
-        if (isMounted) {
+        if (isMounted.current) {
           setAuthState({ user: null, loading: false, error: error.message, role: null });
           setUser(null);
         }
@@ -143,7 +140,7 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
 
     // Cleanup
     return () => {
-      isMounted = false;
+      isMounted.current = false;
       clearTimeout(inactivityTimer.current);
       clearInterval(refreshInterval.current);
       ACTIVITY_EVENTS.forEach(event =>
@@ -157,10 +154,10 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
   const handleRetry = async () => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
-      if (!user) throw new Error('No autenticado');
-      const authorizedUser = await checkAuthorization(user);
+      if (!session?.user) throw new Error('No autenticado');
+      const authorizedUser = await checkAuthorization(session.user);
       setAuthState({
         user: authorizedUser,
         loading: false,
@@ -173,6 +170,11 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
       setUser(null);
     }
   };
+
+  // --- Redirección automática si ya está autenticado y está en /login ---
+  if (authState.user && location.pathname === '/login') {
+    return <Navigate to="/registros" replace />;
+  }
 
   // --- Renderizado según estado ---
   if (authState.loading) return <Loader fullScreen text="Verificando credenciales..." />;

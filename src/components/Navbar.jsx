@@ -5,7 +5,9 @@ import supabase from '../supabaseClient';
 import Emoji from './Emoji';
 import ThemeToggle from './ThemeToggle';
 import { useUser } from '../context/UserContext';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 
+// Utilidad para obtener los ítems de navegación según el rol
 function getNavItemsByRole(rol) {
   const baseItems = [
     { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
@@ -26,8 +28,10 @@ function getNavItemsByRole(rol) {
   return baseItems;
 }
 
+// Menú móvil
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
   const menuRef = useRef();
+
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') setMenuOpen(false);
@@ -97,6 +101,7 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
   );
 }
 
+// Navbar principal con emoji en el indicador de conexión
 export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -113,6 +118,8 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
 
   const handleNavClick = () => setMenuOpen(false);
 
+  const isOnline = useOnlineStatus();
+
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center px-4 h-16">
@@ -128,19 +135,39 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           </NavLink>
           {/* Nombre, mail y rol (escritorio) */}
           {user && (
-<div className="hidden md:flex flex-col items-start ml-6 pl-6 border-l border-white/30 select-text">
-  <span className="font-semibold text-white mb-2">{user.nombre}
-    <Emoji symbol="👨🏼‍🚀" label="User" />
-  </span>
-  <span className="text-xs text-blue-100">{user.email}</span>
-  <span className="text-xs text-blue-100 flex items-center gap-1">
-    <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-    {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-  </span>
-</div>
-
+            <div className="hidden md:flex flex-col items-start ml-6 pl-6 border-l border-white/30 select-text">
+              <span className="font-semibold text-white mb-2">
+                {user.nombre}
+                <Emoji symbol="👨🏼‍🚀" label="User" />
+              </span>
+              <span className="text-xs text-blue-100">{user.email}</span>
+              <span className="text-xs text-blue-100 flex items-center gap-1">
+                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+              </span>
+            </div>
           )}
         </div>
+
+        {/* Indicador de estado de conexión con emoji */}
+        <span
+          className={`ml-4 flex items-center text-xs font-semibold ${
+            isOnline ? 'text-green-500' : 'text-yellow-600'
+          }`}
+          aria-label={isOnline ? "Conectado" : "Desconectado"}
+          title={isOnline ? "Conectado" : "Desconectado"}
+        >
+          <Emoji
+            symbol={isOnline ? '🟢' : '🟡'}
+            label={isOnline ? 'Conectado' : 'Desconectado'}
+          />
+          <span
+            className={`w-2 h-2 rounded-full mx-1 ${
+              isOnline ? 'bg-green-500' : 'bg-yellow-500'
+            } animate-pulse`}
+          ></span>
+          {isOnline ? 'Online' : 'Offline'}
+        </span>
 
         {/* Selector de tema (escritorio) */}
         <div className="hidden md:flex items-center ml-auto">

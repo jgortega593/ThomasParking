@@ -12,6 +12,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import AuthGuard from './components/AuthGuard';
 import Loader from './components/Loader';
 import useOnlineStatus from './hooks/useOnlineStatus';
+import OnlineStatusIndicator from './components/OnlineStatusIndicator';
+
 
 // Páginas
 import RegistroParqueo from './pages/RegistroParqueo';
@@ -36,7 +38,6 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
       {!hideNavbarRoutes.includes(location.pathname) && (
         <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
-
       {!isOnline && (
         <div 
           className="offline-banner" 
