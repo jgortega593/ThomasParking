@@ -50,36 +50,45 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
   const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
-  // Altura del navbar (ajusta si cambias el alto del header)
+  // Altura del navbar (ajusta si tu header cambia de alto)
   const NAVBAR_HEIGHT = 48;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center"
+      className="menu-mobile-overlay"
       style={{
-        background: 'rgba(30, 41, 59, 0.88)',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        background: 'rgba(30,41,59,0.88)',
         paddingTop: NAVBAR_HEIGHT,
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
       }}
       aria-modal="true"
       role="dialog"
     >
       <nav
         ref={menuRef}
-        className="bg-gradient-to-br from-blue-700 to-purple-700 rounded-xl shadow-lg flex flex-col items-center w-full max-w-xs mx-auto"
+        className="menu-mobile-content"
         role="navigation"
         aria-label="Menú principal móvil"
         style={{
-          marginTop: 0,
-          maxHeight: `calc(100vh - ${NAVBAR_HEIGHT + 32}px)`,
-          overflowY: 'auto',
+          background: 'linear-gradient(135deg, #2563eb 60%, #7c3aed 100%)',
+          borderRadius: 20,
+          boxShadow: '0 8px 32px #00e6fb33',
           width: '92vw',
+          maxWidth: 380,
+          margin: '0 auto',
+          padding: '24px 0 24px 0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          maxHeight: 'calc(100vh - 80px)',
+          overflowY: 'auto',
           minWidth: 0,
           boxSizing: 'border-box',
-          padding: '24px 0 24px 0',
         }}
       >
         {navItems.map(item => (
