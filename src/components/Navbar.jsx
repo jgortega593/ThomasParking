@@ -53,58 +53,75 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
   return (
     <nav
       ref={menuRef}
-      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4 p-6"
+      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center"
       role="navigation"
       aria-label="Menú principal móvil"
       style={{
-        paddingTop: '56px', // Ajusta según la altura real de tu navbar
-        boxSizing: 'border-box',
-        overflowY: 'auto',
+        paddingTop: '48px', // igual a la altura de tu navbar
         width: '100vw',
+        minWidth: 0,
+        maxWidth: '100vw',
         left: 0,
         right: 0,
+        boxSizing: 'border-box',
+        overflowY: 'auto',
+        overflowX: 'hidden',
       }}
     >
-      {navItems.map(item => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `flex items-center gap-2 px-6 py-4 rounded-lg font-medium text-2xl transition-colors focus:outline-none ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-          aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
-        >
-          <Emoji symbol={item.emoji} label={item.label} /> {item.label}
-        </NavLink>
-      ))}
-      {user && (
-        <div className="flex flex-col items-center mt-6 text-center select-text">
-          <span className="text-white font-semibold text-base">
-            {user.nombre}
-          </span>
-          <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
-            <span>{user.email}</span>
-            <span>
-              <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-              {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-            </span>
-          </span>
-        </div>
-      )}
-      <div className="mt-6">
-        <ThemeToggle />
-      </div>
-      <button
-        onClick={handleLogout}
-        className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
-        aria-label="Cerrar sesión"
-        type="button"
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          margin: '0 auto',
+          padding: '0 8px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
       >
-        <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
-      </button>
+        {navItems.map(item => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center gap-2 w-full px-4 py-3 rounded-lg font-medium text-xl transition-colors focus:outline-none ${
+                isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+              }`
+            }
+            aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+            style={{ boxSizing: 'border-box' }}
+          >
+            <Emoji symbol={item.emoji} label={item.label} /> {item.label}
+          </NavLink>
+        ))}
+        {user && (
+          <div className="flex flex-col items-center mt-6 text-center select-text">
+            <span className="text-white font-semibold text-base">
+              {user.nombre}
+            </span>
+            <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
+              <span>{user.email}</span>
+              <span>
+                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+              </span>
+            </span>
+          </div>
+        )}
+        <div className="mt-6">
+          <ThemeToggle />
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
+          aria-label="Cerrar sesión"
+          type="button"
+        >
+          <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
+        </button>
+      </div>
     </nav>
   );
 }
@@ -130,7 +147,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center px-4 h-14 sm:h-16">
+      <div className="max-w-7xl mx-auto flex items-center px-4 h-12 sm:h-14">
         {/* Logo, título y nombre de usuario */}
         <div className="flex-shrink-0 flex items-center">
           <NavLink
