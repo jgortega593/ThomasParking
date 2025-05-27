@@ -1,5 +1,5 @@
 // src/pages/Consultas.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import supabase from '../supabaseClient';
 import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import SemaforoResumen from '../components/SemaforoResumen';
+import ListaRegistros from '../components/ListaRegistros';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
@@ -25,10 +26,6 @@ export default function Consultas() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modal, setModal] = useState({ open: false, registro: null });
-  const [form, setForm] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [modalExportar, setModalExportar] = useState(false);
   const [nombrePDF, setNombrePDF] = useState('');
   const isOnline = useOnlineStatus();
@@ -74,22 +71,8 @@ export default function Consultas() {
     cargarDatos();
   }, []);
 
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidadesFiltradas = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFiltros(prev => ({
-      ...prev,
-      [name]: value,
-      ...(name === 'propiedad' && { unidadAsignada: '' })
-    }));
-  };
-
-  const aplicarFiltros = (e) => {
-    if (e) e.preventDefault();
+  // Actualiza resultados cuando cambian los filtros o los registros
+  useEffect(() => {
     let filtrados = [...registros];
     if (filtros.fechaInicio) {
       filtrados = filtrados.filter(r =>
@@ -122,6 +105,20 @@ export default function Consultas() {
       );
     }
     setResultados(filtrados);
+  }, [registros, filtros]);
+
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const unidadesFiltradas = filtros.propiedad
+    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
+    : [];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFiltros(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'propiedad' && { unidadAsignada: '' })
+    }));
   };
 
   const limpiarFiltros = () => {
@@ -218,7 +215,7 @@ export default function Consultas() {
       <h2>
         <Emoji symbol="📊" label="Consultas" /> Consultas y Reportes de Parqueadero
       </h2>
-      <form className="filtros-form" onSubmit={aplicarFiltros} style={{ marginBottom: 18 }}>
+      <form className="filtros-form" style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <label>
@@ -272,9 +269,9 @@ export default function Consultas() {
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
-            <Emoji symbol="🔍" label="Filtrar" /> Filtrar
-          </button>
+          <div className="bg-blue-50 text-blue-700 rounded px-4 py-2 mb-2" style={{ maxWidth: 500 }}>
+            <Emoji symbol="ℹ️" label="info" /> El filtrado es <b>automático</b>.
+          </div>
           <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
             <Emoji symbol="♻️" label="Limpiar" /> Limpiar
           </button>
@@ -299,155 +296,34 @@ export default function Consultas() {
         />
       </div>
 
-      {/* Tabla de resultados */}
+      {/* Tabla de resultados usando ListaRegistros */}
       <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
-        <table className="registros-table">
-          <thead>
-            <tr>
-              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultados.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="sin-resultados">No se encontraron registros</td>
-              </tr>
-            ) : (
-              resultados.map(reg => (
-                <tr key={reg.id}>
-                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-                  <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
-                  <td>
-                    {reg.copropietarios ? (
-                      <>
-                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
-                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
-                        {' '}
-                        {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
-                      </>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'center', maxWidth: 150 }}>
-                    {Array.isArray(reg.foto_url) && (
-                      reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
-                        <span style={{ color: '#ef4444', fontSize: 20 }}>
-                          <Emoji symbol="❌" label="Sin fotos" />
-                        </span>
-                      ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
-                        <div style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 4,
-                          justifyContent: 'center',
-                          position: 'relative'
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            top: -8,
-                            right: -8,
-                            background: '#3b82f6',
-                            color: 'white',
-                            borderRadius: '9999px',
-                            fontSize: 12,
-                            width: 20,
-                            height: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 10
-                          }}>
-                            {reg.foto_url.filter(url => url && url.trim() !== "").length}
-                          </span>
-                          {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
-                            <a
-                              key={index}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                position: 'relative',
-                                transition: 'transform 0.2s',
-                              }}
-                            >
-                              <img
-                                loading="lazy"
-                                src={url}
-                                alt={`Evidencia ${index + 1}`}
-                                width={40}
-                                height={40}
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  objectFit: 'cover',
-                                  borderRadius: 6,
-                                  border: '1px solid #e5e7eb',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                }}
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
-                      )
-                    )}
-                  </td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
-                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
-                  </td>
-                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.gratis
-                      ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
-                      : <><Emoji symbol="❌" label="No gratis" /> No</>
-                    }
-                  </td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.recaudado
-                      ? <><Emoji symbol="✅" label="Sí" /> Sí</>
-                      : <><Emoji symbol="⏳" label="No" /> No</>
-                    }
-                  </td>
-                  <td className="px-2 py-1 text-center">{reg.fecha_recaudo || '-'}</td>
-                  <td>{reg.observaciones || '-'}</td>
-                  <td>{reg.usuarios_app?.nombre || '-'}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <ListaRegistros
+          registros={registros}
+          filtros={filtros}
+          loading={loading}
+          error={error}
+          onRegistrosFiltradosChange={setResultados}
+        />
       </div>
 
       {/* Modal para exportar PDF */}
       {modalExportar && (
         <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <div style={{ padding: 20 }}>
-            <h3>Nombre del archivo PDF</h3>
+          <div style={{ padding: 24 }}>
+            <h3 className="text-lg font-semibold mb-4">Nombre del archivo PDF</h3>
             <input
               type="text"
               value={nombrePDF}
               onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Parqueadero"
-              className="p-2 border rounded w-full mb-4"
+              placeholder="Ej: Reporte Mayo 2025"
+              className="border rounded px-3 py-2 w-full mb-4"
             />
             <button
               className="bg-green-600 text-white px-4 py-2 rounded mr-2"
               onClick={generarPDF}
             >
-              <Emoji symbol="📄" /> Generar PDF
+              Generar PDF
             </button>
             <button
               className="bg-gray-400 text-white px-4 py-2 rounded"
