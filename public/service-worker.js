@@ -1,143 +1,118 @@
-// service-worker.js
+// src/service-worker.js
+import { precacheAndRoute } from 'workbox-precaching';
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, NetworkFirst, CacheFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+
+// 1. Precaché automático generado por Vite
+precacheAndRoute(self.__WB_MANIFEST);
+
+// 2. Configuración base
 const APP_VERSION = '1.0.0';
 const CACHE_NAME = `thomasparking-${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
-const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  OFFLINE_URL
-];
+const API_TIMEOUT = 5000; // 5 segundos
+const MAX_AGE_DAYS = 30;
 
-// ==================== INSTALACIÓN ====================
-self.addEventListener('install', (event) => {
-  console.log(`[SW v${APP_VERSION}] Evento: install`);
-  
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log(`[SW] Iniciando precaché de ${PRECACHE_ASSETS.length} recursos...`);
-        
-        return Promise.all(
-          PRECACHE_ASSETS.map(url => {
-            return fetch(url)
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error(`HTTP ${response.status} - ${url}`);
-                }
-                
-                console.log(`[SW] ✔️ Cacheado: ${url}`);
-                return cache.put(url, response);
-              })
-              .catch(error => {
-                console.error(`[SW] ❌ Error cacheando ${url}: ${error.message}`);
-                // Continuar con otros recursos aunque falle uno
-              });
-          })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Precaché completado. Saltando espera...');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('[SW] Error crítico durante instalación:', error);
-        throw error;
-      })
-  );
-});
+// 3. Estrategias de caché personalizadas
+registerRoute(
+  ({ request }) => request.destination === 'document',
+  new NetworkFirst({
+    cacheName: `${CACHE_NAME}-pages`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 20,
+        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+      }),
+    ],
+  })
+);
 
-// ==================== ACTIVACIÓN ====================
-self.addEventListener('activate', (event) => {
-  console.log(`[SW v${APP_VERSION}] Evento: activate`);
-  
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      const oldCaches = cacheNames.filter(name => name !== CACHE_NAME);
-      console.log(`[SW] Cachés antiguos encontrados: ${oldCaches.join(', ')}`);
-      
-      return Promise.all(
-        oldCaches.map(name => {
-          console.log(`[SW] 🗑️ Eliminando caché: ${name}`);
-          return caches.delete(name);
-        })
-      );
-    })
-    .then(() => {
-      console.log('[SW] ♻️  Tomando control de los clientes...');
-      return self.clients.claim();
-    })
-  );
-});
+registerRoute(
+  ({ request }) => request.destination === 'script' || 
+                   request.destination === 'style',
+  new StaleWhileRevalidate({
+    cacheName: `${CACHE_NAME}-assets`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+      }),
+    ],
+  })
+);
 
-// ==================== ESTRATEGIA FETCH ====================
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: `${CACHE_NAME}-images`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+      }),
+    ],
+  })
+);
+
+// 4. Manejo de API
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api'),
+  new NetworkFirst({
+    cacheName: `${CACHE_NAME}-api`,
+    networkTimeoutSeconds: API_TIMEOUT / 1000,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+      }),
+    ],
+  })
+);
+
+// 5. Manejo offline para navegación
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-  
-  console.log(`[SW] 🔄 Fetch: ${request.url}`);
-  
-  // Ignorar solicitudes no HTTP y métodos no GET
-  if (!url.protocol.startsWith('http') || request.method !== 'GET') {
-    console.log(`[SW] ⚠️  Ignorando solicitud no cacheable: ${request.url}`);
-    return;
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return cache.match(OFFLINE_URL) || Response.error();
+      })
+    );
   }
-
-  event.respondWith(
-    caches.match(request).then(cachedResponse => {
-      // 1. Intentar servir desde caché
-      if (cachedResponse) {
-        console.log(`[SW] 🗄️  Sirviendo desde caché: ${request.url}`);
-        return cachedResponse;
-      }
-      
-      // 2. Si no está en caché, hacer fetch y cachear
-      return fetch(request)
-        .then(networkResponse => {
-          // Verificar respuesta válida para cachear
-          if (!networkResponse.ok || networkResponse.type === 'opaque') {
-            console.log(`[SW] ⚠️  Respuesta no cacheable: ${request.url}`);
-            return networkResponse;
-          }
-          
-          // Clonar ANTES de usar la respuesta
-          const responseToCache = networkResponse.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(request, responseToCache);
-              console.log(`[SW] 💾 Guardado en caché: ${request.url}`);
-            })
-            .catch(error => {
-              console.error(`[SW] ❌ Error guardando en caché: ${request.url}`, error);
-            });
-          
-          return networkResponse;
-        })
-        .catch(async error => {
-          // 3. Manejo de errores de red
-          console.error(`[SW] 🌐 Error de red: ${request.url} - ${error.message}`);
-          
-          // Fallback para navegación
-          if (request.mode === 'navigate') {
-            console.log('[SW] 🚧 Sirviendo página offline');
-            return caches.match(OFFLINE_URL);
-          }
-          
-          // Intentar devolver versión obsoleta si existe
-          const staleResponse = await caches.match(request);
-          return staleResponse || Response.error();
-        });
-    })
-  );
 });
 
-// ==================== MANEJO DE ACTUALIZACIONES ====================
+// 6. Actualizaciones automáticas
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
-    console.log('[SW] ⚡ Recibido SKIP_WAITING - Activando nueva versión');
+    console.log('[SW] ⚡ Activando nueva versión inmediatamente');
     self.skipWaiting();
+    self.clients.claim();
   }
+});
+
+// 7. Limpieza de cachés antiguos
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(name => name !== CACHE_NAME && !name.includes(CACHE_NAME))
+          .map(name => {
+            console.log(`[SW] 🗑️ Eliminando caché obsoleto: ${name}`);
+            return caches.delete(name);
+          })
+      );
+    })
+  );
+});
+
+// 8. Logs para depuración
+self.addEventListener('install', (event) => {
+  console.log(`[SW v${APP_VERSION}] 🛠️ Instalado`);
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('fetch', (event) => {
+  console.log(`[SW] 🔄 Solicitando: ${event.request.url}`);
 });
