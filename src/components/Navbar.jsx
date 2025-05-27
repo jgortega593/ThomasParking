@@ -7,35 +7,98 @@ import ThemeToggle from './ThemeToggle';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-// Utilidad para obtener los ítems de navegación según el rol
-function getNavItemsByRole(rol) {
-  const baseItems = [
-    { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
-    { to: '/consultas', label: 'Reportes', emoji: '📊' },
-    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
+// Ítems de navegación
+function getAllNavItems() {
+  return [
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: null },
+    { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
+    { to: '/recaudo', label: 'Recaudación', emoji: '💰', requiredRole: 'admin' },
+    { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
+    { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️', requiredRole: 'admin' },
+    { to: '/usuarios', label: 'Usuarios', emoji: '👥', requiredRole: 'admin' },
+    { to: '/descargos', label: 'Descargos', emoji: '📤', requiredRole: 'admin' },
+    { to: '/auditoria', label: 'Auditoría', emoji: '🕵️', requiredRole: 'admin' },
+    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️', requiredRole: null },
   ];
-  if (rol === 'admin') {
-    return [
-      ...baseItems,
-      { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
-      { to: '/compensacion', label: 'Compensación', emoji: '🎁' },
-      { to: '/descargos', label: 'Descargos', emoji: '📤' },
-      { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
-      { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
-      { to: '/auditoria', label: 'Auditoría', emoji: '🕵️' },
-    ];
-  }
-  return baseItems;
 }
 
-// Menú móvil centrado bajo el navbar y con scroll vertical
+// AccessDenied (se mantiene igual)
+function AccessDenied({ requiredRole, userRole }) {
+  const politicas = {
+    admin: [
+      '👑 Administradores pueden acceder a todas las funcionalidades',
+      '💰 Gestión de recaudación y compensaciones',
+      '🏘️ Administración de copropietarios y usuarios',
+      '📤 Gestión de descargos y auditoría del sistema',
+      '📊 Acceso completo a reportes y consultas'
+    ],
+    registrador: [
+      '📝 Registradores pueden crear nuevos registros de parqueo',
+      '📊 Consulta de reportes y datos existentes',
+      'ℹ️ Acceso a información general del sistema'
+    ]
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-8 text-center">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+        <Emoji symbol="🚫" />
+        <h2 className="text-2xl font-bold text-yellow-800 mt-2 mb-4">
+          Acceso No Autorizado
+        </h2>
+        <p className="text-yellow-700 mb-4">
+          Esta funcionalidad requiere permisos de <strong>{requiredRole}</strong>.<br />
+          Tu rol actual es: <strong>{userRole}</strong>
+        </p>
+      </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-xl font-semibold text-blue-800 mb-4">
+          <Emoji symbol="📋" /> Políticas de Acceso del Sistema
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="text-left">
+            <h4 className="font-semibold text-blue-700 mb-3">
+              <Emoji symbol="👑" /> Administradores
+            </h4>
+            <ul className="space-y-2 text-sm text-blue-600">
+              {politicas.admin.map((politica, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <span>{politica}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="text-left">
+            <h4 className="font-semibold text-blue-700 mb-3">
+              <Emoji symbol="📝" /> Registradores
+            </h4>
+            <ul className="space-y-2 text-sm text-blue-600">
+              {politicas.registrador.map((politica, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <span>{politica}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-6 p-4 bg-gray-50 rounded border-l-4 border-blue-400">
+          <p className="text-sm text-gray-700">
+            <Emoji symbol="💡" /> <strong>¿Necesitas acceso adicional?</strong><br />
+            Contacta al administrador del sistema para solicitar permisos adicionales.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Menú móvil centrado bajo el navbar y desplegado hacia abajo
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
   const menuRef = useRef();
-
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
+    const handleEsc = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
     };
@@ -47,69 +110,61 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
     };
   }, [setMenuOpen]);
 
-  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'registrador';
   const esAdmin = rol.toLowerCase() === 'admin';
-
-  // Altura del navbar (ajusta si tu header cambia de alto)
-  const NAVBAR_HEIGHT = 48;
 
   return (
     <div
-      className="menu-mobile-overlay"
+      className="fixed left-0 top-0 w-full h-full z-50 flex flex-col items-center"
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
         background: 'rgba(30,41,59,0.88)',
-        paddingTop: NAVBAR_HEIGHT,
+        paddingTop: 56, // altura del navbar
       }}
       aria-modal="true"
       role="dialog"
     >
       <nav
         ref={menuRef}
-        className="menu-mobile-content"
+        className="bg-gradient-to-br from-blue-700 to-purple-700 rounded-b-xl shadow-lg flex flex-col items-center"
         role="navigation"
         aria-label="Menú principal móvil"
         style={{
-          background: 'linear-gradient(135deg, #2563eb 60%, #7c3aed 100%)',
-          borderRadius: 20,
-          boxShadow: '0 8px 32px #00e6fb33',
-          width: '92vw',
-          maxWidth: 380,
-          margin: '0 auto',
-          padding: '24px 0 24px 0',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxHeight: 'calc(100vh - 80px)',
+          margin: 0,
+          maxHeight: 'calc(100vh - 56px - 24px)',
           overflowY: 'auto',
+          width: '96vw',
+          maxWidth: 360,
           minWidth: 0,
           boxSizing: 'border-box',
+          padding: '12px 0 18px 0',
+          position: 'relative',
+          top: 0,
         }}
       >
-        {navItems.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={handleNavClick}
-            className={({ isActive }) =>
-              `flex items-center gap-2 w-11/12 mx-auto px-4 py-3 rounded-lg font-medium text-xl transition-colors focus:outline-none ${
-                isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-              }`
-            }
-            aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
-            style={{ boxSizing: 'border-box', marginBottom: 6 }}
-          >
-            <Emoji symbol={item.emoji} label={item.label} /> {item.label}
-          </NavLink>
-        ))}
+        {navItems.map(item => {
+          const tieneAcceso = !item.requiredRole || rol.toLowerCase() === item.requiredRole;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center gap-3 w-11/12 mx-auto px-4 py-3 rounded-lg font-medium text-base transition-colors focus:outline-none ${
+                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                } ${!tieneAcceso ? 'opacity-70' : ''}`
+              }
+              aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+              style={{ boxSizing: 'border-box', marginBottom: 4 }}
+            >
+              <Emoji symbol={item.emoji} label={item.label} />
+              {item.label}
+              {!tieneAcceso && <Emoji symbol="🔒" label="Bloqueado" />}
+            </NavLink>
+          );
+        })}
         {user && (
           <div className="flex flex-col items-center mt-6 text-center select-text w-11/12 mx-auto">
-            <span className="text-white font-semibold text-base">
+            <span className="text-white font-bold text-base">
               {user.nombre}
             </span>
             <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
@@ -121,23 +176,23 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
             </span>
           </div>
         )}
-        <div className="mt-6">
+        <div className="mt-6 w-11/12 mx-auto">
           <ThemeToggle />
         </div>
         <button
-          onClick={handleLogout}
-          className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
-          aria-label="Cerrar sesión"
-          type="button"
-        >
-          <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
-        </button>
+  className="flex items-center gap-2 mt-6 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-base transition-colors w-11/12 mx-auto shadow-md"
+  type="button"
+>
+  <span className="text-xl mr-2" aria-hidden="true">🚶‍♂️➡️🚪</span>
+  <span></span>
+</button>
+
       </nav>
     </div>
   );
 }
 
-// Navbar principal con emoji en el indicador de conexión
+// Navbar principal
 export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -149,17 +204,15 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
   };
 
   const rol = (user?.role || user?.user_metadata?.role || 'registrador').toLowerCase();
-  const navItems = getNavItemsByRole(rol);
+  const navItems = getAllNavItems();
   const esAdmin = rol === 'admin';
-
   const handleNavClick = () => setMenuOpen(false);
-
   const isOnline = useOnlineStatus();
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center px-4 h-12 sm:h-14">
-        {/* Logo, título y nombre de usuario */}
+      <div className="max-w-7xl mx-auto flex items-center px-4 h-14">
+        {/* Logo y nombre de la app */}
         <div className="flex-shrink-0 flex items-center">
           <NavLink
             to="/"
@@ -167,25 +220,10 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
             onClick={handleNavClick}
             aria-label="Inicio"
           >
-            <Emoji symbol="🅿️" label="Parking" /> <span>ParkingApp</span>
+            <Emoji symbol="🅿️" label="Thomas II Parking" /> <span>Thomas II ParkingApp</span>
           </NavLink>
-          {/* Nombre, mail y rol (escritorio) */}
-          {user && (
-            <div className="hidden md:flex flex-col items-start ml-6 pl-6 border-l border-white/30 select-text">
-              <span className="font-semibold text-white mb-2">
-                {user.nombre}
-                <Emoji symbol="👨🏼‍🚀" label="User" />
-              </span>
-              <span className="text-xs text-blue-100">{user.email}</span>
-              <span className="text-xs text-blue-100 flex items-center gap-1">
-                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-              </span>
-            </div>
-          )}
         </div>
-
-        {/* Indicador de estado de conexión con emoji */}
+        {/* Indicador de estado de conexión */}
         <span
           className={`ml-4 flex items-center text-xs font-semibold ${
             isOnline ? 'text-green-500' : 'text-yellow-600'
@@ -204,15 +242,9 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           ></span>
           {isOnline ? 'Online' : 'Offline'}
         </span>
-
-        {/* Selector de tema (escritorio) */}
-        <div className="hidden md:flex items-center ml-auto">
-          <ThemeToggle />
-        </div>
-
-        {/* Botón hamburguesa */}
+        {/* Botón hamburguesa móvil */}
         <button
-          className="flex items-center justify-center text-white focus:outline-none ml-2 p-1"
+          className="flex items-center justify-center text-white focus:outline-none ml-auto p-1 md:hidden"
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
@@ -224,8 +256,50 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
               d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
           </svg>
         </button>
+        {/* Navegación desktop */}
+        <div className="hidden md:flex items-center ml-auto gap-6">
+          {navItems.slice(0, 4).map(item => {
+            const tieneAcceso = !item.requiredRole || rol === item.requiredRole;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-base transition-colors focus:outline-none ${
+                    isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                  } ${!tieneAcceso ? 'opacity-70' : ''}`
+                }
+                aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+              >
+                <Emoji symbol={item.emoji} label={item.label} /> {item.label}
+                {!tieneAcceso && <Emoji symbol="🔒" label="Bloqueado" />}
+              </NavLink>
+            );
+          })}
+          <ThemeToggle />
+          {user && (
+            <div className="flex flex-col items-end ml-4 select-text">
+              <span className="font-semibold text-white mb-1">
+                {user.nombre}
+                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+              </span>
+              <span className="text-xs text-blue-100">{user.email}</span>
+              <span className="text-xs text-blue-100 flex items-center gap-1">
+                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors"
+                aria-label="Cerrar sesión"
+                type="button"
+              >
+                <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      {/* Menú móvil centrado */}
+      {/* Menú móvil centrado y desplegado bajo el navbar */}
       {menuOpen && (
         <NavMenuMobile
           navItems={navItems}
@@ -238,3 +312,6 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     </header>
   );
 }
+
+// Exporta AccessDenied para AuthGuard
+export { AccessDenied };

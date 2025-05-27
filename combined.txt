@@ -104,10 +104,12 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
 
   return (
     <>
+      {/* Mostrar Navbar solo en rutas permitidas */}
       {!hideNavbarRoutes.includes(location.pathname) && (
         <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
 
+      {/* Banner de modo offline */}
       {!isOnline && (
         <div className="offline-banner" role="status" aria-live="polite">
           <span role="img" aria-label="offline">⚡</span>
@@ -115,68 +117,62 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
         </div>
       )}
 
+      {/* Contenido principal */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             <Route path="/login" element={
               user ? <Navigate to="/registros" replace /> : <Login />
             } />
-            
+
             {/* Rutas protegidas */}
             <Route path="/registros" element={
               <AuthGuard>
                 <RegistroParqueo />
               </AuthGuard>
             } />
-
             <Route path="/consultas" element={
               <AuthGuard>
                 <Consultas />
               </AuthGuard>
             } />
-
             <Route path="/recaudo" element={
               <AuthGuard requiredRole="admin">
                 <ResumenRecaudo />
               </AuthGuard>
             } />
-
             <Route path="/compensacion" element={
               <AuthGuard requiredRole="admin">
                 <Compensacion />
               </AuthGuard>
             } />
-
             <Route path="/descargos" element={
               <AuthGuard requiredRole="admin">
                 <DescargoGestion />
               </AuthGuard>
             } />
-
             <Route path="/acercade" element={
               <AuthGuard>
                 <AcercaDe />
               </AuthGuard>
             } />
-
             <Route path="/usuarios" element={
               <AuthGuard requiredRole="admin">
                 <GestionUsuarios />
               </AuthGuard>
             } />
-
             <Route path="/copropietarios" element={
               <AuthGuard requiredRole="admin">
                 <GestionCopropietarios />
               </AuthGuard>
             } />
-
             <Route path="/auditoria" element={
               <AuthGuard requiredRole="admin">
                 <AuditLog />
               </AuthGuard>
             } />
 
+            {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/registros" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -190,7 +186,43 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
+  // Registrar Service Worker y manejar actualizaciones
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    setUpdateAvailable(true);
+                    newWorker.postMessage('SKIP_WAITING');
+                  }
+                }
+              });
+            });
+          })
+          .catch(error => console.log('Error registrando Service Worker:', error));
+      });
+    }
+  }, []);
+
+  // Forzar recarga para actualizar la app
+  const handleUpdateApp = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.unregister().then(() => {
+          window.location.reload(true);
+        });
+      });
+    }
+  };
+
+  // Control de sesión inicial
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -209,14 +241,20 @@ function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-            v7_fetcherPersist: true
-          }}
-        >
+        <BrowserRouter>
           <ErrorBoundary>
+            {/* Notificación de actualización */}
+            {updateAvailable && (
+              <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg flex items-center gap-4 z-50">
+                <span>¡Nueva versión disponible!</span>
+                <button 
+                  onClick={handleUpdateApp}
+                  className="bg-white text-blue-500 px-4 py-2 rounded hover:bg-blue-50 transition-colors"
+                >
+                  Actualizar ahora
+                </button>
+              </div>
+            )}
             <AppRoutes 
               menuOpen={menuOpen} 
               setMenuOpen={setMenuOpen} 
@@ -368,6 +406,7 @@ import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
+import { AccessDenied } from './Navbar';
 
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
@@ -563,7 +602,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   if (requiredRole && authState.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+    return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
   }
   return children || <Outlet />;
 }
@@ -1435,433 +1474,195 @@ export default function Footer() {
 
 ----- C:\ThomasParking\ThomasParking\src\components\ListaRegistros.jsx -----
 
-// src/components/ListaRegistros.jsx
-import React, { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import supabase from '../supabaseClient'
-import Loader from './Loader'
-import Emoji from './Emoji'
-import dayjs from 'dayjs'
-import useOnlineStatus from '../hooks/useOnlineStatus'
+import React, { useMemo } from 'react';
+import Emoji from './Emoji';
+import Loader from './Loader';
+import dayjs from 'dayjs';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 
-export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange }) {
-  const location = useLocation()
-  const [registros, setRegistros] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [copropietarios, setCopropietarios] = useState([])
-  const [filtros, setFiltros] = useState({ propiedad: '', unidadAsignada: '' })
-  const [editModal, setEditModal] = useState({ open: false, registro: null })
-  const [editData, setEditData] = useState({})
-  const [eliminandoAudio, setEliminandoAudio] = useState(false)
-  const [savingEdit, setSavingEdit] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const isOnline = useOnlineStatus()
+export default function ListaRegistros({ registros = [], filtros = {}, loading, error, onRegistrosFiltradosChange }) {
+  const isOnline = useOnlineStatus();
 
-  // Cargar copropietarios
-  useEffect(() => {
-    let isMounted = true
-    const fetchCopropietarios = async () => {
-      const { data, error } = await supabase
-        .from('copropietarios')
-        .select('id, nombre, propiedad, unidad_asignada')
-      if (!error && isMounted) setCopropietarios(data)
+  // Filtrado memoizado
+  const registrosFiltrados = useMemo(() => {
+    return registros.filter(reg => {
+      const fechaRegistro = dayjs(reg.fecha_hora_ingreso);
+      const cumpleFechaInicio = !filtros.fechaInicio || fechaRegistro.isAfter(dayjs(filtros.fechaInicio).startOf('day'));
+      const cumpleFechaFin = !filtros.fechaFin || fechaRegistro.isBefore(dayjs(filtros.fechaFin).endOf('day'));
+      const cumplePlaca = !filtros.placa || reg.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase());
+      const cumpleTipo = !filtros.tipoVehiculo || reg.tipo_vehiculo === filtros.tipoVehiculo;
+      const cumplePropiedad = !filtros.propiedad || reg.copropietarios?.propiedad === filtros.propiedad;
+      const cumpleUnidad = !filtros.unidadAsignada || reg.copropietarios?.unidad_asignada === filtros.unidadAsignada;
+      return cumpleFechaInicio && cumpleFechaFin && cumplePlaca && cumpleTipo && cumplePropiedad && cumpleUnidad;
+    });
+  }, [registros, filtros]);
+
+  // Notificar cambios al padre solo si cambia el array
+  React.useEffect(() => {
+    if (onRegistrosFiltradosChange) onRegistrosFiltradosChange(registrosFiltrados);
+    // eslint-disable-next-line
+  }, [registrosFiltrados]);
+
+  // Miniaturas de fotos
+  const FotosCell = ({ foto_url }) => {
+    let fotos = [];
+    if (Array.isArray(foto_url)) {
+      fotos = foto_url.filter(url => url && url.trim() !== '');
+    } else if (typeof foto_url === 'string' && foto_url.trim() !== '') {
+      fotos = [foto_url];
     }
-    fetchCopropietarios()
-    return () => { isMounted = false }
-  }, [])
-
-  // Cargar registros (se recarga con refreshKey, estado online, y cambio de ruta)
-  useEffect(() => {
-    let isMounted = true
-    setLoading(true)
-    setError(null)
-    const fetchRegistros = async () => {
-      try {
-        if (isOnline) {
-          const { data, error } = await supabase
-            .from('registros_parqueadero')
-            .select(`
-              id,
-              placa_vehiculo,
-              tipo_vehiculo,
-              fecha_hora_ingreso,
-              observaciones,
-              foto_url,
-              monto,
-              gratis,
-              recaudado,
-              fecha_recaudo,
-              dependencia_id,
-              observacion_audio_url,
-              copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
-              usuario:usuario_id!inner(id, nombre)
-            `)
-            .order('fecha_hora_ingreso', { ascending: false })
-          if (error) throw error
-          if (isMounted) {
-            setRegistros(data)
-            localStorage.setItem('registros_offline', JSON.stringify(data || []))
-          }
-        } else {
-          const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
-          if (isMounted) setRegistros(localData)
-        }
-      } catch (error) {
-        if (isMounted) setError(error.message)
-      } finally {
-        if (isMounted) setLoading(false)
-      }
+    if (fotos.length === 0) {
+      return <span style={{ color: '#ef4444', fontSize: 22 }}><Emoji symbol="❌" label="Sin fotos" /></span>;
     }
-    fetchRegistros()
-    return () => { isMounted = false; setLoading(true) }
-  }, [refreshKey, isOnline, location.pathname])
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', minWidth: 44 }}>
+        <span style={{
+          position: 'absolute',
+          top: -8,
+          right: -8,
+          background: '#2563eb',
+          color: 'white',
+          borderRadius: '9999px',
+          fontSize: 12,
+          width: 20,
+          height: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          boxShadow: '0 1px 4px #0003'
+        }}>
+          {fotos.length}
+        </span>
+        {fotos.slice(0, 3).map((url, idx) => (
+          <a
+            key={idx}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              marginRight: 2,
+              marginLeft: idx === 0 ? 0 : -8,
+              zIndex: 3 - idx,
+              borderRadius: 6,
+              border: '1.5px solid #e5e7eb',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.13)',
+              overflow: 'hidden'
+            }}
+            title={`Evidencia ${idx + 1}`}
+          >
+            <img
+              loading="lazy"
+              src={url}
+              alt={`Evidencia ${idx + 1}`}
+              width={38}
+              height={38}
+              style={{
+                width: 38,
+                height: 38,
+                objectFit: 'cover',
+                borderRadius: 6,
+                display: 'block'
+              }}
+            />
+          </a>
+        ))}
+        {fotos.length > 3 && (
+          <span style={{ marginLeft: 4, fontSize: 13, fontWeight: 600, color: '#2563eb' }}>
+            +{fotos.length - 3}
+          </span>
+        )}
+      </div>
+    );
+  };
 
-  // Opciones para selects
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort()
-  const unidadesFiltradas = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : []
-
-  // Filtros
-  const handleFiltroChange = (e) => {
-    const { name, value } = e.target
-    setFiltros(prev => ({
-      ...prev,
-      [name]: value,
-      ...(name === 'propiedad' && { unidadAsignada: '' })
-    }))
-  }
-
-  const registrosFiltrados = registros.filter(reg => {
-    const coincideProp = !filtros.propiedad || (reg.copropietarios?.propiedad || '') === filtros.propiedad
-    const coincideUnidad = !filtros.unidadAsignada || (reg.copropietarios?.unidad_asignada || '') === filtros.unidadAsignada
-    return coincideProp && coincideUnidad
-  })
-
-  useEffect(() => {
-    if (onRegistrosFiltradosChange) {
-      onRegistrosFiltradosChange(registrosFiltrados)
-    }
-  }, [registrosFiltrados, onRegistrosFiltradosChange])
-
-  const totalMonto = registrosFiltrados.reduce(
-    (acc, reg) => acc + Number(reg.monto || 0),
-    0
-  )
-
-  // Edición
-  const handleEdit = (registro) => {
-    setEditModal({ open: true, registro })
-    setEditData({
-      placa_vehiculo: registro.placa_vehiculo,
-      tipo_vehiculo: registro.tipo_vehiculo,
-      fecha_hora_ingreso: registro.fecha_hora_ingreso ? registro.fecha_hora_ingreso.slice(0, 10) : '',
-      gratis: !!registro.gratis,
-      observaciones: registro.observaciones || '',
-      dependencia_id: registro.dependencia_id,
-      recaudado: !!registro.recaudado,
-      fecha_recaudo: registro.fecha_recaudo || '',
-      observacion_audio_url: registro.observacion_audio_url || '',
-      nuevoAudio: null
-    })
-  }
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setEditData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
-    }))
-  }
-
-  const handleEditSave = async (e) => {
-    e.preventDefault()
-    setSavingEdit(true)
-    const id = editModal.registro.id
-    const monto = editData.gratis ? 0 : (editData.tipo_vehiculo === 'carro' ? 1.00 : 0.50)
-    let audioUrlFinal = editData.observacion_audio_url
-
-    // Subida de nuevo audio
-    if (editData.nuevoAudio) {
-      const fileName = `audio_obs_edit_${editData.placa_vehiculo}_${Date.now()}.webm`
-      const { error: uploadError } = await supabase
-        .storage
-        .from('evidencias-parqueadero')
-        .upload(fileName, editData.nuevoAudio, { contentType: 'audio/webm' })
-      if (uploadError) {
-        setError('Error al subir el audio: ' + uploadError.message)
-        setSavingEdit(false)
-        return
-      }
-      const { data: publicUrlData } = supabase
-        .storage
-        .from('evidencias-parqueadero')
-        .getPublicUrl(fileName)
-      audioUrlFinal = publicUrlData.publicUrl
-    }
-
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          ...editData,
-          monto,
-          fecha_recaudo: editData.recaudado ? editData.fecha_recaudo : null,
-          observacion_audio_url: audioUrlFinal
-        })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setRegistros(registros.map(r =>
-        r.id === id ? { ...r, ...editData, monto, observacion_audio_url: audioUrlFinal } : r
-      ))
-
-      if (!isOnline) {
-        const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
-        const updatedData = localData.map(item =>
-          item.id === id ? { ...item, ...editData, monto, observacion_audio_url: audioUrlFinal } : item
-        )
-        localStorage.setItem('registros_offline', JSON.stringify(updatedData))
-      }
-
-      setEditModal({ open: false, registro: null })
-      setEditData({})
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setSavingEdit(false)
-    }
-  }
-
-  // Eliminar audio
-  const handleEliminarAudio = async () => {
-    if (!editData.observacion_audio_url) return
-    if (!window.confirm('¿Eliminar esta evidencia auditiva?')) return
-    setEliminandoAudio(true)
-    try {
-      if (editData.observacion_audio_url && editData.observacion_audio_url !== 'pendiente-sync') {
-        const urlParts = editData.observacion_audio_url.split('/')
-        const fileName = urlParts[urlParts.length - 1]
-        const { error: deleteError } = await supabase
-          .storage
-          .from('evidencias-parqueadero')
-          .remove([fileName])
-        if (deleteError) throw deleteError
-      }
-      setEditData(prev => ({ ...prev, observacion_audio_url: '', nuevoAudio: null }))
-      const id = editModal.registro.id
-      await supabase
-        .from('registros_parqueadero')
-        .update({ observacion_audio_url: null })
-        .eq('id', id)
-      setRegistros(registros.map(r =>
-        r.id === id ? { ...r, observacion_audio_url: null } : r
-      ))
-    } catch (error) {
-      setError('Error eliminando audio: ' + error.message)
-    }
-    setEliminandoAudio(false)
-  }
-
-  const handleDelete = async (registro) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return
-    setDeleting(true)
-    try {
-      if (isOnline) {
-        const { error } = await supabase
-          .from('registros_parqueadero')
-          .delete()
-          .eq('id', registro.id)
-        if (error) throw error
-      }
-
-      const updatedRegistros = registros.filter(r => r.id !== registro.id)
-      setRegistros(updatedRegistros)
-      if (!isOnline) {
-        const localData = JSON.parse(localStorage.getItem('registros_offline') || '[]')
-        const filteredData = localData.filter(item => item.id !== registro.id)
-        localStorage.setItem('registros_offline', JSON.stringify(filteredData))
-      }
-    } catch (err) {
-      setError('Error eliminando registro: ' + err.message)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  if (loading) return <Loader text="Cargando registros..." />
-  if (error) return <div className="error-message">{error}</div>
+  if (loading) return <Loader text="Cargando registros..." />;
+  if (error) return <div className="error-message" role="alert">{error}</div>;
 
   return (
     <div className="lista-registros-container">
-      <div className="offline-banner" style={{
-        display: !isOnline ? 'flex' : 'none',
-        background: '#fff3cd',
-        color: '#856404',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        marginBottom: '16px',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <Emoji symbol="⚡" /> Modo offline - Mostrando datos almacenados localmente
-      </div>
-
-      <h2>
-        <Emoji symbol="📝" label="Últimos Registros" /> Últimos Registros
-      </h2>
-
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-        <div>
-          <label>Propiedad:</label>
-          <select
-            name="propiedad"
-            value={filtros.propiedad}
-            onChange={handleFiltroChange}
-          >
-            <option value="">Todas</option>
-            {propiedades.map(prop => (
-              <option key={prop} value={prop}>{prop}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Unidad asignada:</label>
-          <select
-            name="unidadAsignada"
-            value={filtros.unidadAsignada}
-            onChange={handleFiltroChange}
-            disabled={!filtros.propiedad}
-          >
-            <option value="">Todas</option>
-            {unidadesFiltradas.map(unidad => (
-              <option key={unidad} value={unidad}>{unidad}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="registros-table-wrapper">
-        <table className="registros-table">
+      <div style={{ overflowX: 'auto' }}>
+        <table className="registros-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha/Hora</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🚗" /> Placa</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🏍️" /> Tipo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🔗" /> Recaudado</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Foto</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🔊" /> Audio</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="⚙️" /> Acciones</th>
+              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
+              <th><Emoji symbol="📷" /> Fotos</th>
+              <th><Emoji symbol="🚘" /> Placa</th>
+              <th><Emoji symbol="🚦" /> Tipo</th>
+              <th><Emoji symbol="📝" /> Observaciones</th>
+              <th><Emoji symbol="🆓" /> Gratis</th>
+              <th><Emoji symbol="🔗" /> Recaudado</th>
+              <th><Emoji symbol="🏠" /> Copropietario</th>
+              <th><Emoji symbol="🔊" /> Audio</th>
+              <th><Emoji symbol="👤" /> Registrado por</th>
+              <th><Emoji symbol="⚙️" /> Acciones</th>
             </tr>
           </thead>
           <tbody>
             {registrosFiltrados.length > 0 ? (
-              <>
-                {registrosFiltrados.map(reg => (
-                  <tr key={reg.id}>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.fecha_hora_ingreso
-                        ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')
-                        : ''}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.tipo_vehiculo?.toLowerCase() === 'carro' && (
-                        <Emoji symbol="🚗" label="Carro" />
-                      )}
-                      {reg.tipo_vehiculo?.toLowerCase() === 'moto' && (
-                        <Emoji symbol="🏍️" label="Moto" />
-                      )}
-                      <span style={{ marginLeft: 6, textTransform: 'capitalize' }}>
-                        {reg.tipo_vehiculo}
-                      </span>
-                    </td>
-                    <td>{reg.observaciones || '-'}</td>
-                    <td style={{ textAlign: 'center' }}>${Number(reg.monto).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.gratis
-                        ? <Emoji symbol="🆓" label="Gratis" />
-                        : <Emoji symbol="❌" label="No Gratis" />}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.recaudado
-                        ? <Emoji symbol="🔗" label="Recaudado" />
-                        : <Emoji symbol="⏳" label="Pendiente" />}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.fecha_recaudo || '-'}
-                    </td>
-                    <td>
-                      <Emoji symbol="🏠" label="Casa" />{' '}
-                      {reg.copropietarios?.nombre || '-'}
-                      <br />
-                      <small>
-                        {reg.copropietarios?.propiedad || ''} - {reg.copropietarios?.unidad_asignada || ''}
-                      </small>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.usuario?.nombre || '-'}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.foto_url && (
-                        <a href={reg.foto_url} target="_blank" rel="noopener noreferrer">
-                          <img src={reg.foto_url} alt="Evidencia" className="thumbnail" />
-                        </a>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {reg.observacion_audio_url && reg.observacion_audio_url !== 'pendiente-sync' ? (
-                        <audio controls style={{ width: 90 }}>
-                          <source src={reg.observacion_audio_url} type="audio/webm" />
-                          Tu navegador no soporta audio.
-                        </audio>
-                      ) : (
-                        <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className="edit-btn"
-                        title="Editar"
-                        onClick={() => handleEdit(reg)}
-                        style={{ marginRight: 6 }}
-                        disabled={!isOnline || savingEdit}
-                      >
-                        <Emoji symbol="✏️" label="Editar" />
-                      </button>
-                      <button
-                        className="delete-btn"
-                        title="Eliminar"
-                        onClick={() => handleDelete(reg)}
-                        disabled={!isOnline || deleting}
-                      >
-                        <Emoji symbol="🗑️" label="Eliminar" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                <tr style={{ fontWeight: 'bold', background: '#f6f8fc' }}>
-                  <td colSpan={4} style={{ textAlign: 'right' }}>
-                    Total
+              registrosFiltrados.map(reg => (
+                <tr key={reg.id}>
+                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
+                  <td><FotosCell foto_url={reg.foto_url} /></td>
+                  <td>{reg.placa_vehiculo}</td>
+                  <td>
+                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> </>}
+                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> </>}
+                  </td>
+                  <td>{reg.observaciones || '-'}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    {reg.gratis ? <Emoji symbol="🆓" label="Gratis" /> : <Emoji symbol="❌" label="No gratis" />}
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    ${totalMonto.toFixed(2)}
+                    {reg.recaudado ? <Emoji symbol="✅" label="Sí" /> : <Emoji symbol="⏳" label="No" />}
                   </td>
-                  <td colSpan={9}></td>
+                  <td>
+                    {reg.copropietarios ? (
+                      <>
+                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
+                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
+                        {' '}
+                         - {reg.copropietarios.unidad_asignada}
+                      </>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    {reg.observacion_audio_url && reg.observacion_audio_url !== 'pendiente-sync' ? (
+                      <audio controls style={{ width: 90 }}>
+                        <source src={reg.observacion_audio_url} type="audio/webm" />
+                        Tu navegador no soporta audio.
+                      </audio>
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
+                    )}
+                  </td>
+                  <td>{reg.usuario?.nombre || reg.usuarios_app?.nombre || '-'}</td>
+                  <td>
+                    <button
+                      title="Editar"
+                      disabled={!isOnline}
+                      style={{ marginRight: 6, cursor: isOnline ? 'pointer' : 'not-allowed' }}
+                      onClick={() => alert('Función editar no implementada')}
+                    >
+                      <Emoji symbol="✏️" label="Editar" />
+                    </button>
+                    <button
+                      title="Eliminar"
+                      disabled={!isOnline}
+                      style={{ cursor: isOnline ? 'pointer' : 'not-allowed' }}
+                      onClick={() => alert('Función eliminar no implementada')}
+                    >
+                      <Emoji symbol="🗑️" label="Eliminar" />
+                    </button>
+                  </td>
                 </tr>
-              </>
+              ))
             ) : (
               <tr>
-                <td colSpan="13" className="sin-resultados">
+                <td colSpan={11} className="sin-resultados">
                   No se encontraron registros con los filtros seleccionados
                 </td>
               </tr>
@@ -1869,164 +1670,8 @@ export default function ListaRegistros({ refreshKey, onRegistrosFiltradosChange 
           </tbody>
         </table>
       </div>
-
-      {/* Modal de edición */}
-      {editModal.open && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3>Editar Registro</h3>
-            <form className="modal-form" onSubmit={handleEditSave}>
-              <label>
-                Placa:
-                <input
-                  name="placa_vehiculo"
-                  value={editData.placa_vehiculo}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Tipo:
-                <select
-                  name="tipo_vehiculo"
-                  value={editData.tipo_vehiculo}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                >
-                  <option value="carro">Carro</option>
-                  <option value="moto">Moto</option>
-                </select>
-              </label>
-              <label>
-                Fecha ingreso:
-                <input
-                  type="date"
-                  name="fecha_hora_ingreso"
-                  value={editData.fecha_hora_ingreso}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Observaciones:
-                <input
-                  name="observaciones"
-                  value={editData.observaciones}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-              </label>
-              <label>
-                Copropietario:
-                <select
-                  name="dependencia_id"
-                  value={editData.dependencia_id || ''}
-                  onChange={handleEditChange}
-                  required
-                  disabled={!isOnline}
-                >
-                  <option value="">Seleccione...</option>
-                  {copropietarios.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                      {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="gratis"
-                  checked={!!editData.gratis}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-                <Emoji symbol="🆓" label="Gratis" /> Gratis
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="recaudado"
-                  checked={!!editData.recaudado}
-                  onChange={handleEditChange}
-                  disabled={!isOnline}
-                />
-                <Emoji symbol="🔗" label="Recaudado" /> Recaudado
-              </label>
-              {editData.recaudado && (
-                <label>
-                  Fecha Recaudo:
-                  <input
-                    type="date"
-                    name="fecha_recaudo"
-                    value={editData.fecha_recaudo || ''}
-                    onChange={handleEditChange}
-                    required={!!editData.recaudado}
-                    disabled={!isOnline || !editData.recaudado}
-                  />
-                </label>
-              )}
-              <label>
-                Evidencia auditiva:
-                {editData.observacion_audio_url && editData.observacion_audio_url !== 'pendiente-sync' ? (
-                  <>
-                    <audio controls style={{ width: '100%', margin: '8px 0' }}>
-                      <source src={editData.observacion_audio_url} type="audio/webm" />
-                      Tu navegador no soporta audio.
-                    </audio>
-                    <button
-                      type="button"
-                      onClick={handleEliminarAudio}
-                      className="delete-btn"
-                      style={{ marginTop: 8 }}
-                      disabled={eliminandoAudio || !isOnline}
-                    >
-                      {eliminandoAudio ? 'Eliminando...' : <><Emoji symbol="🗑️" /> Eliminar audio</>}
-                    </button>
-                  </>
-                ) : (
-                  <span style={{ color: '#aaa', fontSize: 14 }}>No hay audio guardado.</span>
-                )}
-                <input
-                  type="file"
-                  accept="audio/*"
-                  onChange={e => setEditData(prev => ({
-                    ...prev,
-                    nuevoAudio: e.target.files && e.target.files[0] ? e.target.files[0] : null
-                  }))}
-                  disabled={!isOnline}
-                  style={{ marginTop: 8 }}
-                />
-                <span style={{ fontSize: 12, color: '#888' }}>
-                  Puedes subir un nuevo archivo de audio para reemplazar el actual.
-                </span>
-              </label>
-              <div style={{ marginTop: 18 }}>
-                <button
-                  type="submit"
-                  className="save-btn"
-                  disabled={!isOnline || savingEdit}
-                >
-                  Guardar
-                </button>
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setEditModal({ open: false, registro: null })}
-                  disabled={savingEdit}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }
 
 
@@ -2281,35 +1926,98 @@ import ThemeToggle from './ThemeToggle';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-// Utilidad para obtener los ítems de navegación según el rol
-function getNavItemsByRole(rol) {
-  const baseItems = [
-    { to: '/registros', label: 'Registro Parqueo', emoji: '📝' },
-    { to: '/consultas', label: 'Reportes', emoji: '📊' },
-    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️' },
+// Ítems de navegación
+function getAllNavItems() {
+  return [
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: null },
+    { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
+    { to: '/recaudo', label: 'Recaudación', emoji: '💰', requiredRole: 'admin' },
+    { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
+    { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️', requiredRole: 'admin' },
+    { to: '/usuarios', label: 'Usuarios', emoji: '👥', requiredRole: 'admin' },
+    { to: '/descargos', label: 'Descargos', emoji: '📤', requiredRole: 'admin' },
+    { to: '/auditoria', label: 'Auditoría', emoji: '🕵️', requiredRole: 'admin' },
+    { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️', requiredRole: null },
   ];
-  if (rol === 'admin') {
-    return [
-      ...baseItems,
-      { to: '/recaudo', label: 'Recaudación', emoji: '💰' },
-      { to: '/compensacion', label: 'Compensación', emoji: '🎁' },
-      { to: '/descargos', label: 'Descargos', emoji: '📤' },
-      { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️' },
-      { to: '/usuarios', label: 'Usuarios', emoji: '👥' },
-      { to: '/auditoria', label: 'Auditoría', emoji: '🕵️' },
-    ];
-  }
-  return baseItems;
 }
 
-// Menú móvil
+// AccessDenied (se mantiene igual)
+function AccessDenied({ requiredRole, userRole }) {
+  const politicas = {
+    admin: [
+      '👑 Administradores pueden acceder a todas las funcionalidades',
+      '💰 Gestión de recaudación y compensaciones',
+      '🏘️ Administración de copropietarios y usuarios',
+      '📤 Gestión de descargos y auditoría del sistema',
+      '📊 Acceso completo a reportes y consultas'
+    ],
+    registrador: [
+      '📝 Registradores pueden crear nuevos registros de parqueo',
+      '📊 Consulta de reportes y datos existentes',
+      'ℹ️ Acceso a información general del sistema'
+    ]
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-8 text-center">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+        <Emoji symbol="🚫" />
+        <h2 className="text-2xl font-bold text-yellow-800 mt-2 mb-4">
+          Acceso No Autorizado
+        </h2>
+        <p className="text-yellow-700 mb-4">
+          Esta funcionalidad requiere permisos de <strong>{requiredRole}</strong>.<br />
+          Tu rol actual es: <strong>{userRole}</strong>
+        </p>
+      </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-xl font-semibold text-blue-800 mb-4">
+          <Emoji symbol="📋" /> Políticas de Acceso del Sistema
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="text-left">
+            <h4 className="font-semibold text-blue-700 mb-3">
+              <Emoji symbol="👑" /> Administradores
+            </h4>
+            <ul className="space-y-2 text-sm text-blue-600">
+              {politicas.admin.map((politica, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <span>{politica}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="text-left">
+            <h4 className="font-semibold text-blue-700 mb-3">
+              <Emoji symbol="📝" /> Registradores
+            </h4>
+            <ul className="space-y-2 text-sm text-blue-600">
+              {politicas.registrador.map((politica, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <span>{politica}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-6 p-4 bg-gray-50 rounded border-l-4 border-blue-400">
+          <p className="text-sm text-gray-700">
+            <Emoji symbol="💡" /> <strong>¿Necesitas acceso adicional?</strong><br />
+            Contacta al administrador del sistema para solicitar permisos adicionales.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Menú móvil centrado bajo el navbar y desplegado hacia abajo
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
   const menuRef = useRef();
-
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
+    const handleEsc = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
     };
@@ -2321,61 +2029,89 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
     };
   }, [setMenuOpen]);
 
-  const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
+  const rol = user?.role || user?.user_metadata?.role || 'registrador';
   const esAdmin = rol.toLowerCase() === 'admin';
 
   return (
-    <nav
-      ref={menuRef}
-      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4 p-6"
-      role="navigation"
-      aria-label="Menú principal móvil"
+    <div
+      className="fixed left-0 top-0 w-full h-full z-50 flex flex-col items-center"
+      style={{
+        background: 'rgba(30,41,59,0.88)',
+        paddingTop: 56, // altura del navbar
+      }}
+      aria-modal="true"
+      role="dialog"
     >
-      {navItems.map(item => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `flex items-center gap-2 px-6 py-4 rounded-lg font-medium text-2xl transition-colors focus:outline-none ${
-              isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
-            }`
-          }
-          aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
-        >
-          <Emoji symbol={item.emoji} label={item.label} /> {item.label}
-        </NavLink>
-      ))}
-      {user && (
-        <div className="flex flex-col items-center mt-6 text-center select-text">
-          <span className="text-white font-semibold text-base">
-            {user.nombre}
-          </span>
-          <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
-            <span>{user.email}</span>
-            <span>
-              <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-              {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-            </span>
-          </span>
-        </div>
-      )}
-      <div className="mt-6">
-        <ThemeToggle />
-      </div>
-      <button
-        onClick={handleLogout}
-        className="flex items-center mt-4 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-lg transition-colors"
-        aria-label="Cerrar sesión"
-        type="button"
+      <nav
+        ref={menuRef}
+        className="bg-gradient-to-br from-blue-700 to-purple-700 rounded-b-xl shadow-lg flex flex-col items-center"
+        role="navigation"
+        aria-label="Menú principal móvil"
+        style={{
+          margin: 0,
+          maxHeight: 'calc(100vh - 56px - 24px)',
+          overflowY: 'auto',
+          width: '96vw',
+          maxWidth: 360,
+          minWidth: 0,
+          boxSizing: 'border-box',
+          padding: '12px 0 18px 0',
+          position: 'relative',
+          top: 0,
+        }}
       >
-        <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
-      </button>
-    </nav>
+        {navItems.map(item => {
+          const tieneAcceso = !item.requiredRole || rol.toLowerCase() === item.requiredRole;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center gap-3 w-11/12 mx-auto px-4 py-3 rounded-lg font-medium text-base transition-colors focus:outline-none ${
+                  isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                } ${!tieneAcceso ? 'opacity-70' : ''}`
+              }
+              aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+              style={{ boxSizing: 'border-box', marginBottom: 4 }}
+            >
+              <Emoji symbol={item.emoji} label={item.label} />
+              {item.label}
+              {!tieneAcceso && <Emoji symbol="🔒" label="Bloqueado" />}
+            </NavLink>
+          );
+        })}
+        {user && (
+          <div className="flex flex-col items-center mt-6 text-center select-text w-11/12 mx-auto">
+            <span className="text-white font-bold text-base">
+              {user.nombre}
+            </span>
+            <span className="text-white text-xs font-normal mt-1 flex flex-col items-center gap-1">
+              <span>{user.email}</span>
+              <span>
+                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+              </span>
+            </span>
+          </div>
+        )}
+        <div className="mt-6 w-11/12 mx-auto">
+          <ThemeToggle />
+        </div>
+        <button
+  className="flex items-center gap-2 mt-6 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-base transition-colors w-11/12 mx-auto shadow-md"
+  type="button"
+>
+  <span className="text-xl mr-2" aria-hidden="true">🚶‍♂️➡️🚪</span>
+  <span></span>
+</button>
+
+      </nav>
+    </div>
   );
 }
 
-// Navbar principal con emoji en el indicador de conexión
+// Navbar principal
 export default function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -2387,17 +2123,15 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
   };
 
   const rol = (user?.role || user?.user_metadata?.role || 'registrador').toLowerCase();
-  const navItems = getNavItemsByRole(rol);
+  const navItems = getAllNavItems();
   const esAdmin = rol === 'admin';
-
   const handleNavClick = () => setMenuOpen(false);
-
   const isOnline = useOnlineStatus();
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center px-4 h-16">
-        {/* Logo, título y nombre de usuario */}
+      <div className="max-w-7xl mx-auto flex items-center px-4 h-14">
+        {/* Logo y nombre de la app */}
         <div className="flex-shrink-0 flex items-center">
           <NavLink
             to="/"
@@ -2405,25 +2139,10 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
             onClick={handleNavClick}
             aria-label="Inicio"
           >
-            <Emoji symbol="🅿️" label="Parking" /> <span>ParkingApp</span>
+            <Emoji symbol="🅿️" label="Thomas II Parking" /> <span>Thomas II ParkingApp</span>
           </NavLink>
-          {/* Nombre, mail y rol (escritorio) */}
-          {user && (
-            <div className="hidden md:flex flex-col items-start ml-6 pl-6 border-l border-white/30 select-text">
-              <span className="font-semibold text-white mb-2">
-                {user.nombre}
-                <Emoji symbol="👨🏼‍🚀" label="User" />
-              </span>
-              <span className="text-xs text-blue-100">{user.email}</span>
-              <span className="text-xs text-blue-100 flex items-center gap-1">
-                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
-                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
-              </span>
-            </div>
-          )}
         </div>
-
-        {/* Indicador de estado de conexión con emoji */}
+        {/* Indicador de estado de conexión */}
         <span
           className={`ml-4 flex items-center text-xs font-semibold ${
             isOnline ? 'text-green-500' : 'text-yellow-600'
@@ -2442,15 +2161,9 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           ></span>
           {isOnline ? 'Online' : 'Offline'}
         </span>
-
-        {/* Selector de tema (escritorio) */}
-        <div className="hidden md:flex items-center ml-auto">
-          <ThemeToggle />
-        </div>
-
-        {/* Botón hamburguesa */}
+        {/* Botón hamburguesa móvil */}
         <button
-          className="flex items-center justify-center text-white focus:outline-none ml-2 p-1"
+          className="flex items-center justify-center text-white focus:outline-none ml-auto p-1 md:hidden"
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
@@ -2462,8 +2175,50 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
               d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
           </svg>
         </button>
+        {/* Navegación desktop */}
+        <div className="hidden md:flex items-center ml-auto gap-6">
+          {navItems.slice(0, 4).map(item => {
+            const tieneAcceso = !item.requiredRole || rol === item.requiredRole;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-base transition-colors focus:outline-none ${
+                    isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
+                  } ${!tieneAcceso ? 'opacity-70' : ''}`
+                }
+                aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+              >
+                <Emoji symbol={item.emoji} label={item.label} /> {item.label}
+                {!tieneAcceso && <Emoji symbol="🔒" label="Bloqueado" />}
+              </NavLink>
+            );
+          })}
+          <ThemeToggle />
+          {user && (
+            <div className="flex flex-col items-end ml-4 select-text">
+              <span className="font-semibold text-white mb-1">
+                {user.nombre}
+                {esAdmin && <Emoji symbol="👑" label="Administrador" />}
+              </span>
+              <span className="text-xs text-blue-100">{user.email}</span>
+              <span className="text-xs text-blue-100 flex items-center gap-1">
+                <Emoji symbol="🔑" label="Rol" /> {rol.toUpperCase()}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors"
+                aria-label="Cerrar sesión"
+                type="button"
+              >
+                <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      {/* Menú móvil */}
+      {/* Menú móvil centrado y desplegado bajo el navbar */}
       {menuOpen && (
         <NavMenuMobile
           navItems={navItems}
@@ -2476,6 +2231,9 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     </header>
   );
 }
+
+// Exporta AccessDenied para AuthGuard
+export { AccessDenied };
 
 
 ----- C:\ThomasParking\ThomasParking\src\components\OnlineStatusIndicator.jsx -----
@@ -3936,7 +3694,7 @@ export default function Compensacion() {
 ----- C:\ThomasParking\ThomasParking\src\pages\Consultas.jsx -----
 
 // src/pages/Consultas.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import supabase from '../supabaseClient';
 import Loader from '../components/Loader';
 import Emoji from '../components/Emoji';
@@ -3947,6 +3705,7 @@ import dayjs from 'dayjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import SemaforoResumen from '../components/SemaforoResumen';
+import ListaRegistros from '../components/ListaRegistros';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
@@ -3962,10 +3721,6 @@ export default function Consultas() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modal, setModal] = useState({ open: false, registro: null });
-  const [form, setForm] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [modalExportar, setModalExportar] = useState(false);
   const [nombrePDF, setNombrePDF] = useState('');
   const isOnline = useOnlineStatus();
@@ -4011,22 +3766,8 @@ export default function Consultas() {
     cargarDatos();
   }, []);
 
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidadesFiltradas = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFiltros(prev => ({
-      ...prev,
-      [name]: value,
-      ...(name === 'propiedad' && { unidadAsignada: '' })
-    }));
-  };
-
-  const aplicarFiltros = (e) => {
-    if (e) e.preventDefault();
+  // Actualiza resultados cuando cambian los filtros o los registros
+  useEffect(() => {
     let filtrados = [...registros];
     if (filtros.fechaInicio) {
       filtrados = filtrados.filter(r =>
@@ -4059,6 +3800,20 @@ export default function Consultas() {
       );
     }
     setResultados(filtrados);
+  }, [registros, filtros]);
+
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const unidadesFiltradas = filtros.propiedad
+    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
+    : [];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFiltros(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'propiedad' && { unidadAsignada: '' })
+    }));
   };
 
   const limpiarFiltros = () => {
@@ -4155,7 +3910,7 @@ export default function Consultas() {
       <h2>
         <Emoji symbol="📊" label="Consultas" /> Consultas y Reportes de Parqueadero
       </h2>
-      <form className="filtros-form" onSubmit={aplicarFiltros} style={{ marginBottom: 18 }}>
+      <form className="filtros-form" style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <label>
@@ -4209,9 +3964,9 @@ export default function Consultas() {
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
-            <Emoji symbol="🔍" label="Filtrar" /> Filtrar
-          </button>
+          <div className="bg-blue-50 text-blue-700 rounded px-4 py-2 mb-2" style={{ maxWidth: 500 }}>
+            <Emoji symbol="ℹ️" label="info" /> El filtrado es <b>automático</b>.
+          </div>
           <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
             <Emoji symbol="♻️" label="Limpiar" /> Limpiar
           </button>
@@ -4236,155 +3991,34 @@ export default function Consultas() {
         />
       </div>
 
-      {/* Tabla de resultados */}
+      {/* Tabla de resultados usando ListaRegistros */}
       <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
-        <table className="registros-table">
-          <thead>
-            <tr>
-              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
-              <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultados.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="sin-resultados">No se encontraron registros</td>
-              </tr>
-            ) : (
-              resultados.map(reg => (
-                <tr key={reg.id}>
-                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-                  <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
-                  <td>
-                    {reg.copropietarios ? (
-                      <>
-                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
-                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
-                        {' '}
-                        {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
-                      </>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'center', maxWidth: 150 }}>
-                    {Array.isArray(reg.foto_url) && (
-                      reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
-                        <span style={{ color: '#ef4444', fontSize: 20 }}>
-                          <Emoji symbol="❌" label="Sin fotos" />
-                        </span>
-                      ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
-                        <div style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 4,
-                          justifyContent: 'center',
-                          position: 'relative'
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            top: -8,
-                            right: -8,
-                            background: '#3b82f6',
-                            color: 'white',
-                            borderRadius: '9999px',
-                            fontSize: 12,
-                            width: 20,
-                            height: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 10
-                          }}>
-                            {reg.foto_url.filter(url => url && url.trim() !== "").length}
-                          </span>
-                          {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
-                            <a
-                              key={index}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                position: 'relative',
-                                transition: 'transform 0.2s',
-                              }}
-                            >
-                              <img
-                                loading="lazy"
-                                src={url}
-                                alt={`Evidencia ${index + 1}`}
-                                width={40}
-                                height={40}
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  objectFit: 'cover',
-                                  borderRadius: 6,
-                                  border: '1px solid #e5e7eb',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                }}
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
-                      )
-                    )}
-                  </td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
-                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
-                  </td>
-                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.gratis
-                      ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
-                      : <><Emoji symbol="❌" label="No gratis" /> No</>
-                    }
-                  </td>
-                  <td className="px-2 py-1 text-center">
-                    {reg.recaudado
-                      ? <><Emoji symbol="✅" label="Sí" /> Sí</>
-                      : <><Emoji symbol="⏳" label="No" /> No</>
-                    }
-                  </td>
-                  <td className="px-2 py-1 text-center">{reg.fecha_recaudo || '-'}</td>
-                  <td>{reg.observaciones || '-'}</td>
-                  <td>{reg.usuarios_app?.nombre || '-'}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <ListaRegistros
+          registros={registros}
+          filtros={filtros}
+          loading={loading}
+          error={error}
+          onRegistrosFiltradosChange={setResultados}
+        />
       </div>
 
       {/* Modal para exportar PDF */}
       {modalExportar && (
         <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <div style={{ padding: 20 }}>
-            <h3>Nombre del archivo PDF</h3>
+          <div style={{ padding: 24 }}>
+            <h3 className="text-lg font-semibold mb-4">Nombre del archivo PDF</h3>
             <input
               type="text"
               value={nombrePDF}
               onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Parqueadero"
-              className="p-2 border rounded w-full mb-4"
+              placeholder="Ej: Reporte Mayo 2025"
+              className="border rounded px-3 py-2 w-full mb-4"
             />
             <button
               className="bg-green-600 text-white px-4 py-2 rounded mr-2"
               onClick={generarPDF}
             >
-              <Emoji symbol="📄" /> Generar PDF
+              Generar PDF
             </button>
             <button
               className="bg-gray-400 text-white px-4 py-2 rounded"
@@ -5805,11 +5439,10 @@ import Emoji from '../components/Emoji';
 import Loader from '../components/Loader';
 import ErrorMessage from '../components/ErrorMessage';
 import useOnlineStatus from '../hooks/useOnlineStatus';
-import ResizeImage from '../components/ResizeImage';
+import SelectorDeFoto from '../components/SelectorDeFoto';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import SelectorDeFoto from '../components/SelectorDeFoto';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -5828,24 +5461,20 @@ const uploadPhotos = async (files, placa) => {
   const uploadedUrls = [];
   for (const file of files || []) {
     const fileName = `fotos/${placa}_${Date.now()}_${file.name}`;
-    // 1. Subir archivo al bucket
     const { error } = await supabase.storage
       .from('evidencias-parqueadero')
       .upload(fileName, file);
     if (error) throw error;
-    // 2. Obtener URL pública
     const { data } = supabase
       .storage
       .from('evidencias-parqueadero')
       .getPublicUrl(fileName);
-    // 3. Guardar la URL pública en el array
     uploadedUrls.push(data.publicUrl);
   }
   return uploadedUrls;
 };
 
 export default function RegistroParqueo() {
-  
   const [formDisabled, setFormDisabled] = useState(false);
   const [formData, setFormData] = useState({
     placa_vehiculo: '',
@@ -5864,6 +5493,7 @@ export default function RegistroParqueo() {
   const [copropietarios, setCopropietarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mensajeExito, setMensajeExito] = useState('');
   const [grabandoAudio, setGrabandoAudio] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -5909,7 +5539,7 @@ export default function RegistroParqueo() {
   const iniciarGrabacion = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const recorder = new window.MediaRecorder(stream);
       const audioChunks = [];
 
       recorder.ondataavailable = (e) => audioChunks.push(e.data);
@@ -5938,29 +5568,21 @@ export default function RegistroParqueo() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+    setMensajeExito('');
     try {
-      // Validación básica
       if (!formData.placa_vehiculo.match(/^[A-Za-z0-9]{6,8}$/)) {
         throw new Error('Formato de placa inválido (6-8 caracteres alfanuméricos)');
       }
       if (!formData.dependencia_id) {
         throw new Error('Debe seleccionar un copropietario');
       }
-
-      // Obtener usuario autenticado
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Usuario no autenticado");
-
-      // Convertir fecha a ISO en zona Quito o null
       const fechaHoraIngreso = formData.fecha_hora_ingreso
         ? dayjs(formData.fecha_hora_ingreso).tz('America/Guayaquil').toISOString()
         : null;
-
-      // Subir fotos y obtener URLs públicas
       const fotosUrls = await uploadPhotos(formData.fotos || [], formData.placa_vehiculo);
 
-      // Subir audio si existe
       let audioPath = null;
       if (formData.audioObservacion) {
         const fileName = `audios/${formData.placa_vehiculo}_${Date.now()}.webm`;
@@ -5975,7 +5597,6 @@ export default function RegistroParqueo() {
         audioPath = audioUrlData.publicUrl;
       }
 
-      // Construir objeto registro
       const registro = {
         placa_vehiculo: formData.placa_vehiculo.toUpperCase(),
         tipo_vehiculo: formData.tipo_vehiculo,
@@ -5991,10 +5612,25 @@ export default function RegistroParqueo() {
         foto_url: fotosUrls
       };
 
-      // Insertar registro
       const { error } = await supabase.from('registros_parqueadero').insert([registro]);
       if (error) throw error;
-      navigate('/registros');
+
+      setMensajeExito('Registro guardado exitosamente.');
+      setTimeout(() => setMensajeExito(''), 3500);
+      setFormData({
+        placa_vehiculo: '',
+        tipo_vehiculo: 'carro',
+        fecha_hora_ingreso: getQuitoDateTimeLocal(),
+        observaciones: '',
+        monto: 1.0,
+        gratis: false,
+        recaudado: false,
+        fecha_recaudo: null,
+        dependencia_id: '',
+        fotos: [],
+        audioObservacion: null
+      });
+      setAudioUrl(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -6011,207 +5647,192 @@ export default function RegistroParqueo() {
         <Emoji symbol="📝" /> Registro de Parqueo
       </h1>
 
+      {mensajeExito && (
+        <div
+          className="bg-green-600 text-white px-4 py-3 rounded shadow mb-4 text-center fade-in-up"
+          style={{ fontWeight: 'bold', fontSize: '1.1em', letterSpacing: '0.5px' }}
+          role="status"
+          aria-live="polite"
+        >
+          <Emoji symbol="✅" label="Éxito" /> {mensajeExito}
+        </div>
+      )}
+
       {error && <ErrorMessage message={error} />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="🚗" /> Placa del Vehículo
-              <input
-                type="text"
-                name="placa_vehiculo"
-                value={formData.placa_vehiculo}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-                pattern="[A-Za-z0-9]{6,8}"
-                title="Formato de placa inválido (6-8 caracteres alfanuméricos)"
-                style={{ textTransform: 'uppercase' }}
-              />
-            </label>
-          </div>
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="🏍️" /> Tipo de Vehículo
-              <select
-                name="tipo_vehiculo"
-                value={formData.tipo_vehiculo}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              >
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-            </label>
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
         <div>
-          <label className="block mb-2">
-            <Emoji symbol="🏠" /> Copropietario
-            <select
-              name="dependencia_id"
-              value={formData.dependencia_id}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            >
-              <option value="">Seleccione un copropietario</option>
-              {copropietarios.map(copropietario => (
-                <option key={copropietario.id} value={copropietario.id}>
-                  {copropietario.nombre} ({copropietario.propiedad} - {copropietario.unidad_asignada})
-                </option>
-              ))}
-            </select>
+          <label className="block font-semibold mb-1">
+            Placa del vehículo:
           </label>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="⏱️" /> Fecha y Hora de Ingreso (UIO)
-              <input
-                type="datetime-local"
-                name="fecha_hora_ingreso"
-                value={formData.fecha_hora_ingreso || ''}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                <Emoji symbol="🌎" /> Hora mostrada corresponde a la zona horaria de <b>Quito (GMT-5)</b>
-              </div>
-            </label>
-          </div>
-          {formData.recaudado && (
-            <div>
-              <label className="block mb-2">
-                <Emoji symbol="💰" /> Fecha de Recaudo
-                <input
-                  type="date"
-                  name="fecha_recaudo"
-                  value={formData.fecha_recaudo || ''}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required={formData.recaudado}
-                />
-              </label>
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="gratis"
-              checked={formData.gratis}
-              onChange={handleChange}
-              id="gratis"
-            />
-            <label htmlFor="gratis" className="flex items-center">
-              <Emoji symbol="🆓" /> Registro Gratuito
-            </label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="recaudado"
-              checked={formData.recaudado}
-              onChange={handleChange}
-              id="recaudado"
-            />
-            <label htmlFor="recaudado" className="flex items-center">
-              <Emoji symbol="✅" /> Pago Recaudado
-            </label>
-          </div>
-        </div>
-        {!formData.gratis && (
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="💲" /> Monto (USD)
-              <input
-                type="number"
-                name="monto"
-                value={formData.monto}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                step="0.01"
-                min="0"
-                required
-                disabled={formData.gratis}
-              />
-            </label>
-          </div>
-        )}
-        <div>
-          <label className="block mb-2">
-            <Emoji symbol="📝" /> Observaciones
-            <textarea
-              name="observaciones"
-              value={formData.observaciones}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              rows="3"
-            />
-          </label>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="📷" /> Evidencia Fotográfica (Máx. 5 fotos)
-              <SelectorDeFoto
-  onFilesSelected={onFilesSelected}
-  maxFiles={5}
-  disabled={formDisabled || loading} // <-- Estado combinado
+          <input
+  name="placa_vehiculo"
+  value={formData.placa_vehiculo}
+  onChange={e => {
+    // Solo mayúsculas y números
+    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setFormData(prev => ({
+      ...prev,
+      placa_vehiculo: val
+    }));
+  }}
+  required
+  className="w-full p-2 border rounded"
+  placeholder="Ej: PBA1234"
+  autoFocus
+  maxLength={8}
+  pattern="[A-Z0-9]{6,8}"
+  title="Solo letras mayúsculas y números (6 a 8 caracteres)"
 />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Tipo de vehículo:
+          </label>
+          <select
+            name="tipo_vehiculo"
+            value={formData.tipo_vehiculo}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            disabled={formDisabled}
+          >
+            <option value="carro">Carro</option>
+            <option value="moto">Moto</option>
+          </select>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Fecha y hora de ingreso:
+          </label>
+          <input
+            name="fecha_hora_ingreso"
+            type="datetime-local"
+            value={formData.fecha_hora_ingreso}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            disabled={formDisabled}
+          />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Observaciones:
+          </label>
+          <input
+            name="observaciones"
+            value={formData.observaciones}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            placeholder="Observaciones (opcional)"
+            disabled={formDisabled}
+          />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Copropietario:
+          </label>
+          <select
+  name="dependencia_id"
+  value={formData.dependencia_id}
+  onChange={handleChange}
+  className="w-full p-2 border rounded"
+  required
+>
+  <option value="">Seleccione un copropietario</option>
+  {[...copropietarios]
+    .sort((a, b) => {
+      // Ordena primero Casa, luego Departamento, y luego por unidad asignada
+      if (a.propiedad === b.propiedad) {
+        return String(a.unidad_asignada).localeCompare(String(b.unidad_asignada), 'es', { numeric: true });
+      }
+      if (a.propiedad === 'Casa') return -1;
+      if (b.propiedad === 'Casa') return 1;
+      return a.propiedad.localeCompare(b.propiedad, 'es');
+    })
+    .map(copropietario => (
+      <option key={copropietario.id} value={copropietario.id}>
+        {copropietario.propiedad === 'Casa' && '🏡'}
+        {copropietario.propiedad === 'Departamento' && '🌆'}
+        {' '}
+         - {copropietario.unidad_asignada}
+      </option>
+    ))}
+</select>
 
-            </label>
-          </div>
-          <div>
-            <label className="block mb-2">
-              <Emoji symbol="🎤" /> Observación por Audio
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={grabandoAudio ? detenerGrabacion : iniciarGrabacion}
-                  className={`px-4 py-2 rounded ${
-                    grabandoAudio ? 'bg-red-500' : 'bg-blue-500'
-                  } text-white`}
-                  disabled={!isOnline}
-                >
-                  {grabandoAudio ? 'Detener' : 'Iniciar'} Grabación
-                </button>
-                {audioUrl && (
-                  <audio controls>
-                    <source src={audioUrl} type="audio/webm" />
-                  </audio>
-                )}
-              </div>
-            </label>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Monto:
+          </label>
+          <input
+            name="monto"
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.monto}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            placeholder="Monto"
+            disabled={formDisabled || formData.gratis}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="gratis"
+            checked={formData.gratis}
+            onChange={handleChange}
+            id="gratis"
+            disabled={formDisabled}
+          />
+          <label htmlFor="gratis" className="font-semibold">
+            <Emoji symbol="🆓" /> Gratis
+          </label>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Foto (opcional):
+          </label>
+          <SelectorDeFoto onFilesSelected={onFilesSelected} maxFiles={3} disabled={formDisabled} />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">
+            Audio (opcional):
+          </label>
+          <div className="flex items-center gap-2">
+            {!grabandoAudio && (
+              <button
+                type="button"
+                onClick={iniciarGrabacion}
+                className="bg-blue-500 text-white px-3 py-1 rounded"
+                disabled={formDisabled}
+              >
+                <Emoji symbol="🎤" /> Grabar audio
+              </button>
+            )}
+            {grabandoAudio && (
+              <button
+                type="button"
+                onClick={detenerGrabacion}
+                className="bg-red-500 text-white px-3 py-1 rounded"
+              >
+                <Emoji symbol="⏹️" /> Detener
+              </button>
+            )}
+            {audioUrl && (
+              <audio src={audioUrl} controls style={{ height: 36 }} />
+            )}
           </div>
         </div>
-        <div className="flex justify-end gap-4 mt-6">
-          <button
-            type="button"
-            onClick={() => navigate('/registros')}
-            className="px-4 py-2 bg-gray-500 text-white rounded"
-          >
-            <Emoji symbol="❌" /> Cancelar
-          </button>
+        <div>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            disabled={loading || !isOnline}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors font-semibold"
+            disabled={loading || formDisabled || !isOnline}
           >
-            {loading ? <><Emoji symbol="⏳" /> Registrando...</> : <><Emoji symbol="✅" /> Registrar Parqueo</>}
+            {loading ? <Loader text="Guardando..." /> : 'Guardar Registro'}
           </button>
         </div>
       </form>
-      {!isOnline && (
-        <div className="mt-4 p-3 bg-yellow-100 rounded">
-          <Emoji symbol="⚠️" /> Modo offline: Los datos se guardarán localmente y se sincronizarán cuando se recupere la conexión.
-        </div>
-      )}
     </div>
   );
 }
@@ -6615,8 +6236,207 @@ export default function MyQueryClientProvider({ children }) {
 @charset "UTF-8";
 
 /* =========================
-   Variables y modo oscuro
+   Variables Blue Neon Theme
    ========================= */
+:root {
+  --background: #181f2a;
+  --surface: #232b3e;
+  --text: #eaf6fb;
+  --text-muted: #7dd3fc;
+  --primary: #00e6fb;
+  --primary-dark: #2563eb;
+  --primary-light: #38bdf8;
+  --secondary: #1e40af;
+  --accent: #7c3aed;
+  --success: #22d3ee;
+  --warning: #fbbf24;
+  --danger: #ef4444;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 6px;
+  --shadow-lg: 0 8px 32px #00e6fb33;
+  --shadow-md: 0 2px 12px #00e6fb44;
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --font-main: 'Inter', 'Segoe UI', Arial, sans-serif;
+  --focus: #00e6fb;
+  --table-header: linear-gradient(90deg, #0ff 0%, #38bdf8 100%);
+  --table-header-text: #18181b;
+  --table-row-hover: #1e293b;
+  --banner-bg: #0ff6;
+  --banner-text: #18181b;
+}
+
+[data-theme="light"] {
+  --background: #f6fbff;
+  --surface: #fff;
+  --text: #18181b;
+  --text-muted: #38bdf8;
+  --primary: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #38bdf8;
+  --secondary: #1e40af;
+  --accent: #7c3aed;
+  --success: #10b981;
+  --warning: #fbbf24;
+  --danger: #ef4444;
+  --shadow-lg: 0 8px 32px #2563eb33;
+  --shadow-md: 0 2px 12px #2563eb44;
+  --focus: #2563eb;
+  --table-header: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+  --table-header-text: #fff;
+  --table-row-hover: #e0f2fe;
+  --banner-bg: #e0f2fe;
+  --banner-text: #2563eb;
+}
+
+/* =========================
+   Base & Typography
+   ========================= */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-main);
+  background: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+}
+
+#root, .app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--background);
+}
+
+h1, h2, h3, h4 {
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin-top: 0;
+  text-align: center;
+  line-height: 1.15;
+  color: var(--primary);
+  text-shadow: 0 2px 16px #00e6fb44;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition);
+}
+a:hover, a:focus {
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--primary-light);
+  outline: none;
+}
+
+/* === NAVBAR FIJO Y RESPONSIVO === */
+header, .navbar {
+  width: 100vw;
+  min-width: 0;
+  max-width: 100vw;
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px #6366f144;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 50;
+  height: 48px;
+  .menu-mobile-fullscreen {
+  position: fixed;         /* O absolute, según el contexto */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;           /* O el alto deseado */
+  display: flex;
+  justify-content: center; /* Centra horizontalmente */
+  align-items: center;     /* Centra verticalmente */
+  background: #18181b;     /* Opcional: fondo para destacar el menú */
+  z-index: 100;
+}
+
+  padding: 0 4px;
+  font-size: 1rem;
+}
+
+header .max-w-7xl,
+.navbar .max-w-7xl {
+  max-width: 100vw !important;
+  padding: 0 !important;
+}
+header .flex,
+.navbar .flex {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+header .font-bold,
+.navbar .font-bold {
+  font-size: 1rem !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+header .hidden.md\:flex,
+.navbar .hidden.md\:flex {
+  display: none !important;
+}
+header .ml-4,
+.navbar .ml-4 {
+  margin-left: 0.5rem !important;
+}
+header .ml-auto,
+.navbar .ml-auto {
+  margin-left: auto !important;
+}
+header .text-xs,
+.navbar .text-xs {
+  font-size: 0.9em !important;
+}
+header button,
+.navbar button {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 4px !important;
+  font-size: 1.2em;
+  background: transparent;
+  box-shadow: none;
+}
+header svg,
+.navbar svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+
+
+/* === BANNER OFFLINE === */
+.offline-banner {
+  width: 100vw;
+  background: #f59e42;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px 0;
+  position: fixed;
+  top: 48px;
+  left: 0;
+  z-index: 100;
+  letter-spacing: 0.5px;
+}
+
+/* === PADDING PARA QUE EL CONTENIDO NO QUEDE DETRÁS DEL NAVBAR === */
+.pt-16 { padding-top: 4rem !important; }
+
+/* === OTROS ESTILOS BASE Y UTILIDADES === */
 :root {
   --background: #f8fafc;
   --surface: #fff;
@@ -6638,8 +6458,7 @@ export default function MyQueryClientProvider({ children }) {
   --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
 }
-
-[data-theme="dark"] {
+[data-theme=dark] {
   --background: #18181b;
   --surface: #23272f;
   --text: #f3f4f6;
@@ -6651,7 +6470,6 @@ export default function MyQueryClientProvider({ children }) {
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
 }
-
 html, body {
   margin: 0;
   padding: 0;
@@ -6660,11 +6478,11 @@ html, body {
   color: var(--text);
   min-height: 100vh;
   scroll-behavior: smooth;
+  text-align: center;
   transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 #root, .app-root {
   min-height: 100vh;
   display: flex;
@@ -6672,7 +6490,6 @@ html, body {
   align-items: center;
   background: var(--background);
 }
-
 a {
   color: var(--primary);
   text-decoration: none;
@@ -6684,10 +6501,6 @@ a:hover, a:focus {
   outline-offset: 2px;
   outline: 2px solid var(--accent);
 }
-
-/* =========================
-   Tipografía y encabezados
-   ========================= */
 h1, h2, h3, h4 {
   font-weight: 800;
   letter-spacing: -1px;
@@ -6695,10 +6508,6 @@ h1, h2, h3, h4 {
   text-align: center;
   line-height: 1.2;
 }
-
-/* =========================
-   Botones y formularios
-   ========================= */
 button, input, select, textarea {
   font-family: inherit;
   font-size: 1rem;
@@ -6710,7 +6519,6 @@ button, input, select, textarea {
   margin: .25rem 0;
   box-sizing: border-box;
 }
-
 button {
   cursor: pointer;
   background: var(--primary);
@@ -6724,8 +6532,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  -webkit-user-select: none;
   user-select: none;
-  transition: background var(--transition), box-shadow var(--transition);
 }
 button:hover, button:focus {
   background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
@@ -6736,19 +6544,6 @@ button:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
-button[aria-label], .btn-hamburguesa {
-  min-width: 0 !important;
-  min-height: 0 !important;
-  width: 32px !important;
-  height: 32px !important;
-  padding: 4px !important;
-  box-shadow: none !important;
-  background: none !important;
-}
-
-/* =========================
-   Inputs y selects
-   ========================= */
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary);
   background: #f0f9ff;
@@ -6761,10 +6556,6 @@ input[type=checkbox], input[type=radio] {
   margin-right: 7px;
   cursor: pointer;
 }
-
-/* =========================
-   Scrollbar moderno
-   ========================= */
 ::-webkit-scrollbar {
   width: 10px;
   background: #e0e7ef;
@@ -6773,87 +6564,171 @@ input[type=checkbox], input[type=radio] {
   background: var(--primary);
   border-radius: 8px;
 }
+.thumbnail {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px #6366f133;
+}
+.pt-16 { padding-top: 4rem !important; }
+:focus-visible {
+  outline: 2.5px solid var(--focus);
+  outline-offset: 2px;
+}
 
 /* =========================
-   Tablas y listas
+   Banners & Messages
+   ========================= */
+.offline-banner {
+  background: var(--banner-bg);
+  color: var(--banner-text);
+  padding: 8px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+  border-bottom: 2px solid var(--primary);
+  position: sticky;
+  top: 48px;
+  z-index: 40;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 8px #00e6fb88;
+}
+
+.error-message {
+  background: #23272f;
+  color: var(--danger);
+  border: 1.5px solid var(--primary);
+  margin-top: 1rem;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-size: 1.06em;
+  font-weight: 600;
+  text-align: center;
+  max-width: 700px;
+  word-wrap: break-word;
+  box-shadow: 0 2px 12px #00e6fb33;
+}
+[data-theme="light"] .error-message {
+  background: #fffbe6;
+  color: #ef4444;
+  border-color: #2563eb;
+}
+
+/* =========================
+   Tables
    ========================= */
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   margin-bottom: 2rem;
   overflow: hidden;
+  font-size: 0.92em;
 }
 th, td {
-  padding: 12px 16px;
+  padding: 10px 6px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #1e293b;
 }
 th {
-  background: var(--primary-light);
-  color: var(--primary);
-  font-weight: 700;
+  background: var(--table-header);
+  color: var(--table-header-text);
+  font-weight: 800;
+  text-shadow: 0 1px 6px #00e6fb88;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--primary);
+  font-size: 0.93em;
 }
 tr:last-child td {
   border-bottom: none;
 }
 tbody tr:hover {
-  background: #f1f5f9;
-  transition: background var(--transition);
-}
-[data-theme="dark"] table {
-  background: var(--surface);
-}
-[data-theme="dark"] th {
-  background: #23272f;
+  background: var(--table-row-hover);
   color: var(--primary);
-}
-[data-theme="dark"] td {
-  border-bottom: 1px solid #2d3748;
-}
-[data-theme="dark"] tbody tr:hover {
-  background: #23272f;
+  transition: background var(--transition), color var(--transition);
 }
 
 /* =========================
-   Loader y overlays
+   Inputs y botones
+   ========================= */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 1em;
+  border-radius: var(--radius-md);
+  border: 1.5px solid #e5e7eb;
+  padding: 8px 10px;
+  outline-offset: 2px;
+  margin: .18rem 0;
+  box-sizing: border-box;
+  background: #232b3e;
+  color: var(--text);
+  min-width: 0;
+  max-width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  background: #1e293b;
+  box-shadow: 0 0 0 2px var(--focus);
+  color: var(--primary);
+}
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  min-width: 100px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1em;
+  border-radius: var(--radius-md);
+  transition: background var(--transition), box-shadow var(--transition), color var(--transition);
+}
+button:hover, button:focus {
+  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+button:active {
+  transform: scale(0.97);
+  filter: brightness(1.1);
+}
+input[type=checkbox], input[type=radio] {
+  width: 1em;
+  height: 1em;
+  accent-color: var(--primary);
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+/* =========================
+   Loader
    ========================= */
 .loader-spinner {
-  width: 48px;
-  height: 48px;
-  border: 6px solid #e0e0e0;
-  border-top: 6px solid var(--primary);
+  width: 32px;
+  height: 32px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  margin-bottom: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 @keyframes spin {
   0% { transform: rotate(0);}
   100% { transform: rotate(360deg);}
-}
-
-.loading-overlay,
-.loading-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(255,255,255,0.85);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-[data-theme="dark"] .loading-overlay,
-[data-theme="dark"] .loading-screen {
-  background: rgba(24,24,27,0.85);
 }
 
 /* =========================
@@ -6880,206 +6755,105 @@ tbody tr:hover {
   overflow-y: auto;
   text-align: left;
   position: relative;
-}
-.modal-content button[aria-label="Cerrar modal"] {
-  position: absolute;
-  top: 12px; right: 12px;
-  background: transparent;
-  border: none;
-  font-size: 28px;
-  color: #888;
-  cursor: pointer;
+  font-size: 0.97em;
 }
 
 /* =========================
-   Navbar y Footer
+   Responsive y iPhone 4 específico
    ========================= */
-header, .navbar {
-  width: 100%;
-  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-  color: #fff;
-  box-shadow: var(--shadow-md);
-  position: fixed;
-  top: 0; left: 0;
-  z-index: 50;
-}
-footer {
-  width: 100%;
-  padding: 1.5rem 0;
-  background: #f3f4f6;
-  color: #6b7280;
-  border-top: 1px solid #e5e7eb;
-  text-align: center;
-  font-size: 1rem;
-}
-[data-theme="dark"] footer {
-  background: #23272f;
-  color: #a1a1aa;
-  border-top: 1px solid #2d3748;
+@media (max-width: 400px), (max-device-width: 400px) {
+  html, body {
+    font-size: 14px !important;
+    min-width: 320px;
+    max-width: 100vw;
+    overflow-x: hidden !important;
+  }
+  header, .navbar {
+    height: 38px !important;
+    font-size: 0.95rem !important;
+    padding: 0 1px !important;
+  }
+  .offline-banner {
+    font-size: 0.92em;
+    padding: 6px 0;
+    top: 38px;
+  }
+  table, th, td {
+    font-size: 0.89em !important;
+    padding: 6px 3px !important;
+  }
+  .modal-content {
+    padding: 0.7rem !important;
+    max-width: 99vw !important;
+    width: 99vw !important;
+  }
+  input, select, textarea, button {
+    font-size: 0.97em !important;
+    padding: 7px 8px !important;
+  }
+  .registros-table-wrapper, .resultados-table-container {
+    max-width: 100vw !important;
+    overflow-x: auto !important;
+  }
+  .sin-resultados, .error-message {
+    font-size: 0.98em !important;
+    padding: 0.7em 0 !important;
+  }
+  .menu-mobile-content, .navbar-mobile-content {
+    width: 98vw;
+    max-width: 98vw;
+    padding: 14px 0 14px 0;
+  }
 }
 
 /* =========================
-   Banners y mensajes
+   Utilidades
    ========================= */
-.offline-banner {
-  background: #fff3cd;
-  color: #856404;
-  padding: 10px 0;
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  border-bottom: 1.5px solid #ffe58f;
-  position: sticky;
-  top: 64px;
-  z-index: 40;
-}
-[data-theme="dark"] .offline-banner {
-  background: #23272f;
-  color: #fbbf24;
-  border-bottom: 1.5px solid #fbbf24;
-}
-.error-message {
-  background: #fffbe6;
-  color: var(--danger);
-  border: 1.5px solid #ffe58f;
-  margin-top: 1rem;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  font-size: 1.06em;
-  font-weight: 600;
-  text-align: center;
-  max-width: 700px;
-  word-wrap: break-word;
-}
-[data-theme="dark"] .error-message {
-  background: #2d3748;
-  color: #f87171;
-  border-color: #fbbf24;
-}
-
-/* =========================
-   Utilidades y detalles
-   ========================= */
-.pt-16 { padding-top: 4rem !important; }
-.mt-10 { margin-top: 2.5rem !important; }
-.rounded-lg { border-radius: var(--radius-lg) !important; }
-.rounded-md { border-radius: var(--radius-md) !important; }
-.rounded { border-radius: var(--radius-sm) !important; }
-.shadow { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
 .text-center { text-align: center !important; }
 .text-right { text-align: right !important; }
 .font-bold { font-weight: 700 !important; }
 .font-semibold { font-weight: 600 !important; }
-.select-text { user-select: text !important; }
 .flex { display: flex !important; }
 .flex-col { flex-direction: column !important; }
 .items-center { align-items: center !important; }
 .gap-1 { gap: 0.25rem !important; }
 .gap-2 { gap: 0.5rem !important; }
 .gap-4 { gap: 1rem !important; }
-.space-y-4 > :not(:last-child) { margin-bottom: 1rem !important; }
-
-/* =========================
-   Disruptivo: microinteracciones
-   ========================= */
-button, .btn, .edit-btn, .delete-btn, .save-btn, .cancel-btn {
-  transition: transform 0.12s cubic-bezier(.4,0,.2,1), box-shadow var(--transition);
-}
-button:active, .btn:active, .edit-btn:active, .delete-btn:active, .save-btn:active, .cancel-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 2px 6px #6366f133;
-}
-
-/* =========================
-   Responsivo
-   ========================= */
-@media (max-width: 768px) {
-  .filtros-grid { flex-direction: column; align-items: center; }
-  .filtro-item { min-width: 100%; }
-  .resultados-table-container { max-height: 300px; }
-  header, .navbar { font-size: 1rem; }
-  .modal-content { padding: 1rem; }
-  table, th, td { font-size: 0.95em; }
-}
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+.rounded-md { border-radius: var(--radius-md) !important; }
+.rounded { border-radius: var(--radius-sm) !important; }
+.shadow { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+.pt-16 { padding-top: 3.1rem !important; }
+.mt-10 { margin-top: 2.5rem !important; }
 
 /* =========================
    Accesibilidad
    ========================= */
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-[aria-live], [role="status"] {
-  outline: none !important;
-}
 
 /* =========================
-   Otros detalles visuales
+   Sin resultados
    ========================= */
-.thumbnail {
-  width: 38px;
-  height: 38px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px #6366f133;
-}
 .sin-resultados {
   color: var(--text-muted);
-  font-size: 1.1em;
+  font-size: 1.05em;
   text-align: center;
-  padding: 1.2em 0;
-}
-pre {
-  background: #f3f4f6;
-  color: #374151;
-  padding: 0.7em 1em;
-  border-radius: var(--radius-md);
-  overflow-x: auto;
-  font-size: 0.95em;
-}
-[data-theme="dark"] pre {
-  background: #23272f;
-  color: #f3f4f6;
+  padding: 0.9em 0;
+  letter-spacing: 1px;
 }
 
 /* =========================
-   Tooltips
+   Miniaturas
    ========================= */
-[data-tooltip] {
-  position: relative;
-  cursor: pointer;
-}
-[data-tooltip]:hover::after, [data-tooltip]:focus::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 120%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: var(--surface);
-  padding: 6px 12px;
+.thumbnail {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
   border-radius: var(--radius-sm);
-  white-space: nowrap;
-  font-size: 0.9em;
-  box-shadow: var(--shadow-md);
-  z-index: 100;
-  opacity: 1;
-  pointer-events: none;
-  transition: opacity 0.18s;
-}
-[data-tooltip]::after {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* =========================
-   Disruptivo: animación de entrada
-   ========================= */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(24px);}
-  to { opacity: 1; transform: none;}
-}
-.fade-in-up {
-  animation: fadeInUp 0.6s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 2px 6px #00e6fb88;
+  border: 2px solid #00e6fb;
 }

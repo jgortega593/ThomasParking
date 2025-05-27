@@ -6,6 +6,7 @@ import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
+import { AccessDenied } from './Navbar';
 
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
@@ -201,7 +202,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   if (requiredRole && authState.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+    return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
   }
   return children || <Outlet />;
 }

@@ -101,22 +101,31 @@ a:hover, a:focus {
   outline: none;
 }
 
-/* =========================
-   Navbar & Menú Móvil
-   ========================= */
+/* === NAVBAR FIJO Y RESPONSIVO === */
 header, .navbar {
   width: 100vw;
   min-width: 0;
   max-width: 100vw;
   background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
   color: #fff;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 2px 12px #6366f144;
   position: fixed;
   top: 0; left: 0;
   z-index: 50;
   height: 48px;
+  .menu-mobile-fullscreen {
+  position: fixed;         /* O absolute, según el contexto */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;           /* O el alto deseado */
   display: flex;
-  align-items: center;
+  justify-content: center; /* Centra horizontalmente */
+  align-items: center;     /* Centra verticalmente */
+  background: #18181b;     /* Opcional: fondo para destacar el menú */
+  z-index: 100;
+}
+
   padding: 0 4px;
   font-size: 1rem;
 }
@@ -126,14 +135,12 @@ header .max-w-7xl,
   max-width: 100vw !important;
   padding: 0 !important;
 }
-
 header .flex,
 .navbar .flex {
   flex-wrap: nowrap;
   gap: 0.5rem;
   min-width: 0;
 }
-
 header .font-bold,
 .navbar .font-bold {
   font-size: 1rem !important;
@@ -141,27 +148,22 @@ header .font-bold,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 header .hidden.md\:flex,
 .navbar .hidden.md\:flex {
   display: none !important;
 }
-
 header .ml-4,
 .navbar .ml-4 {
   margin-left: 0.5rem !important;
 }
-
 header .ml-auto,
 .navbar .ml-auto {
   margin-left: auto !important;
 }
-
 header .text-xs,
 .navbar .text-xs {
   font-size: 0.9em !important;
 }
-
 header button,
 .navbar button {
   min-width: 0 !important;
@@ -173,39 +175,171 @@ header button,
   background: transparent;
   box-shadow: none;
 }
-
 header svg,
 .navbar svg {
   width: 20px !important;
   height: 20px !important;
 }
 
-/* Menú móvil centrado bajo el navbar */
-.menu-mobile-overlay, .navbar-mobile-overlay {
+
+
+/* === BANNER OFFLINE === */
+.offline-banner {
+  width: 100vw;
+  background: #f59e42;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px 0;
   position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: rgba(30,41,59,0.85);
-  padding-top: 48px;
+  top: 48px;
+  left: 0;
+  z-index: 100;
+  letter-spacing: 0.5px;
 }
-.menu-mobile-content, .navbar-mobile-content {
-  background: linear-gradient(135deg, #2563eb 60%, #7c3aed 100%);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px #00e6fb33;
-  width: 92vw;
-  max-width: 380px;
-  margin: 0 auto;
-  padding: 24px 0 24px 0;
+
+/* === PADDING PARA QUE EL CONTENIDO NO QUEDE DETRÁS DEL NAVBAR === */
+.pt-16 { padding-top: 4rem !important; }
+
+/* === OTROS ESTILOS BASE Y UTILIDADES === */
+:root {
+  --background: #f8fafc;
+  --surface: #fff;
+  --text: #18181b;
+  --text-muted: #6b7280;
+  --primary: #6366f1;
+  --primary-light: #e0e7ff;
+  --secondary: #38bdf8;
+  --accent: #ff6f91;
+  --success: #10b981;
+  --warning: #f59e42;
+  --danger: #ef4444;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 6px;
+  --shadow-lg: 0 8px 32px #6366f133;
+  --shadow-md: 0 2px 12px #6366f144;
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --font-main: "Inter", "Segoe UI", Arial, sans-serif;
+  --focus: #ff6f91;
+}
+[data-theme=dark] {
+  --background: #18181b;
+  --surface: #23272f;
+  --text: #f3f4f6;
+  --text-muted: #a1a1aa;
+  --primary: #818cf8;
+  --primary-light: #23272f;
+  --secondary: #38bdf8;
+  --accent: #f472b6;
+  --shadow-lg: 0 8px 32px #818cf833;
+  --shadow-md: 0 2px 12px #818cf844;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-main);
+  background: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  text-align: center;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#root, .app-root {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-height: calc(100vh - 80px);
-  overflow-y: auto;
-  min-width: 0;
+  background: var(--background);
+}
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+a:hover, a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+}
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-top: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid #e5e7eb;
+  padding: 10px 14px;
+  outline-offset: 2px;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  margin: .25rem 0;
   box-sizing: border-box;
+}
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  min-width: 120px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+button:hover, button:focus {
+  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  background: #f0f9ff;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+input[type=checkbox], input[type=radio] {
+  width: 1.1em;
+  height: 1.1em;
+  accent-color: var(--primary);
+  margin-right: 7px;
+  cursor: pointer;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  background: #e0e7ef;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 8px;
+}
+.thumbnail {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px #6366f133;
+}
+.pt-16 { padding-top: 4rem !important; }
+:focus-visible {
+  outline: 2.5px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* =========================
