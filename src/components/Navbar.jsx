@@ -28,7 +28,7 @@ function getNavItemsByRole(rol) {
   return baseItems;
 }
 
-// Menú móvil con scroll vertical y sin pérdida de contenido en bordes
+// Menú móvil centrado bajo el navbar y con scroll vertical
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
   const menuRef = useRef();
 
@@ -50,35 +50,36 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
   const rol = user?.role || user?.user_metadata?.role || 'Rol no disponible';
   const esAdmin = rol.toLowerCase() === 'admin';
 
+  // Altura del navbar (ajusta si cambias el alto del header)
+  const NAVBAR_HEIGHT = 48;
+
   return (
-    <nav
-      ref={menuRef}
-      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-start"
-      role="navigation"
-      aria-label="Menú principal móvil"
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center"
       style={{
-        paddingTop: '48px', // igual a la altura del navbar
-        width: '100vw',
-        minWidth: 0,
-        maxWidth: '100vw',
+        background: 'rgba(30, 41, 59, 0.88)',
+        paddingTop: NAVBAR_HEIGHT,
         left: 0,
         right: 0,
-        boxSizing: 'border-box',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        maxHeight: '100vh',
+        top: 0,
+        bottom: 0,
       }}
+      aria-modal="true"
+      role="dialog"
     >
-      <div
+      <nav
+        ref={menuRef}
+        className="bg-gradient-to-br from-blue-700 to-purple-700 rounded-xl shadow-lg flex flex-col items-center w-full max-w-xs mx-auto"
+        role="navigation"
+        aria-label="Menú principal móvil"
         style={{
-          width: '100%',
-          maxWidth: 400,
-          margin: '0 auto',
-          padding: '0 8px',
+          marginTop: 0,
+          maxHeight: `calc(100vh - ${NAVBAR_HEIGHT + 32}px)`,
+          overflowY: 'auto',
+          width: '92vw',
+          minWidth: 0,
           boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
+          padding: '24px 0 24px 0',
         }}
       >
         {navItems.map(item => (
@@ -87,18 +88,18 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
             to={item.to}
             onClick={handleNavClick}
             className={({ isActive }) =>
-              `flex items-center gap-2 w-full px-4 py-3 rounded-lg font-medium text-xl transition-colors focus:outline-none ${
+              `flex items-center gap-2 w-11/12 mx-auto px-4 py-3 rounded-lg font-medium text-xl transition-colors focus:outline-none ${
                 isActive ? 'bg-white text-blue-700' : 'text-white hover:bg-white/20'
               }`
             }
             aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
-            style={{ boxSizing: 'border-box' }}
+            style={{ boxSizing: 'border-box', marginBottom: 6 }}
           >
             <Emoji symbol={item.emoji} label={item.label} /> {item.label}
           </NavLink>
         ))}
         {user && (
-          <div className="flex flex-col items-center mt-6 text-center select-text">
+          <div className="flex flex-col items-center mt-6 text-center select-text w-11/12 mx-auto">
             <span className="text-white font-semibold text-base">
               {user.nombre}
             </span>
@@ -122,8 +123,8 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
         >
           <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
         </button>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }
 
@@ -215,7 +216,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
           </svg>
         </button>
       </div>
-      {/* Menú móvil */}
+      {/* Menú móvil centrado */}
       {menuOpen && (
         <NavMenuMobile
           navItems={navItems}
