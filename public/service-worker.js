@@ -1,4 +1,6 @@
-const CACHE_NAME = 'thomasparking-v1';
+// service-worker.js
+const APP_VERSION = '1.0.0';
+const CACHE_NAME = `thomasparking-${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE_ASSETS = [
   '/',
@@ -9,102 +11,133 @@ const PRECACHE_ASSETS = [
   OFFLINE_URL
 ];
 
-// 1. Instalación: Precaché de recursos críticos con logs
+// ==================== INSTALACIÓN ====================
 self.addEventListener('install', (event) => {
-  console.log('[SW] Evento: install');
+  console.log(`[SW v${APP_VERSION}] Evento: install`);
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[SW] Intentando cachear recursos:', PRECACHE_ASSETS);
+        console.log(`[SW] Iniciando precaché de ${PRECACHE_ASSETS.length} recursos...`);
+        
         return Promise.all(
           PRECACHE_ASSETS.map(url => {
             return fetch(url)
               .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status} - ${url}`);
-                console.log(`[SW] [OK] Cacheado: ${url}`);
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status} - ${url}`);
+                }
+                
+                console.log(`[SW] ✔️ Cacheado: ${url}`);
                 return cache.put(url, response);
               })
               .catch(error => {
-                console.error(`[SW] [ERROR] Falló cacheo de: ${url} | Razón: ${error.message}`);
-                // No lanzar error para que otros archivos sigan cacheándose
+                console.error(`[SW] ❌ Error cacheando ${url}: ${error.message}`);
+                // Continuar con otros recursos aunque falle uno
               });
           })
         );
       })
       .then(() => {
-        console.log('[SW] Precaché completado. Activando SW...');
+        console.log('[SW] Precaché completado. Saltando espera...');
         return self.skipWaiting();
       })
       .catch(error => {
-        console.error('[SW] Error durante la precaché:', error);
+        console.error('[SW] Error crítico durante instalación:', error);
+        throw error;
       })
   );
 });
 
-// 2. Activación: Limpieza de cachés antiguos
+// ==================== ACTIVACIÓN ====================
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Evento: activate');
+  console.log(`[SW v${APP_VERSION}] Evento: activate`);
+  
   event.waitUntil(
     caches.keys().then(cacheNames => {
+      const oldCaches = cacheNames.filter(name => name !== CACHE_NAME);
+      console.log(`[SW] Cachés antiguos encontrados: ${oldCaches.join(', ')}`);
+      
       return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
-          .map(name => {
-            console.log(`[SW] Eliminando caché antiguo: ${name}`);
-            return caches.delete(name);
-          })
+        oldCaches.map(name => {
+          console.log(`[SW] 🗑️ Eliminando caché: ${name}`);
+          return caches.delete(name);
+        })
       );
-    }).then(() => {
-      console.log('[SW] Cachés antiguos eliminados. Tomando control de los clientes.');
+    })
+    .then(() => {
+      console.log('[SW] ♻️  Tomando control de los clientes...');
       return self.clients.claim();
     })
   );
 });
 
-// 3. Fetch: Estrategia Cache First + Network fallback + logs
+// ==================== ESTRATEGIA FETCH ====================
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // Ignorar solicitudes no HTTP/HTTPS y métodos no GET
+  
+  console.log(`[SW] 🔄 Fetch: ${request.url}`);
+  
+  // Ignorar solicitudes no HTTP y métodos no GET
   if (!url.protocol.startsWith('http') || request.method !== 'GET') {
+    console.log(`[SW] ⚠️  Ignorando solicitud no cacheable: ${request.url}`);
     return;
   }
 
   event.respondWith(
     caches.match(request).then(cachedResponse => {
+      // 1. Intentar servir desde caché
       if (cachedResponse) {
-        console.log(`[SW] [CACHE] Sirviendo desde caché: ${request.url}`);
+        console.log(`[SW] 🗄️  Sirviendo desde caché: ${request.url}`);
         return cachedResponse;
       }
-      // No está en caché, intentar red
+      
+      // 2. Si no está en caché, hacer fetch y cachear
       return fetch(request)
         .then(networkResponse => {
-          if (networkResponse && networkResponse.ok) {
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(request, networkResponse.clone());
-                console.log(`[SW] [NETWORK] Cacheado nuevo recurso: ${request.url}`);
-              });
+          // Verificar respuesta válida para cachear
+          if (!networkResponse.ok || networkResponse.type === 'opaque') {
+            console.log(`[SW] ⚠️  Respuesta no cacheable: ${request.url}`);
+            return networkResponse;
           }
+          
+          // Clonar ANTES de usar la respuesta
+          const responseToCache = networkResponse.clone();
+          
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(request, responseToCache);
+              console.log(`[SW] 💾 Guardado en caché: ${request.url}`);
+            })
+            .catch(error => {
+              console.error(`[SW] ❌ Error guardando en caché: ${request.url}`, error);
+            });
+          
           return networkResponse;
         })
-        .catch(error => {
-          console.warn(`[SW] [OFFLINE] No se pudo obtener ${request.url}: ${error.message}`);
-          // Si es navegación, mostrar offline.html
+        .catch(async error => {
+          // 3. Manejo de errores de red
+          console.error(`[SW] 🌐 Error de red: ${request.url} - ${error.message}`);
+          
+          // Fallback para navegación
           if (request.mode === 'navigate') {
+            console.log('[SW] 🚧 Sirviendo página offline');
             return caches.match(OFFLINE_URL);
           }
-          return Response.error();
+          
+          // Intentar devolver versión obsoleta si existe
+          const staleResponse = await caches.match(request);
+          return staleResponse || Response.error();
         });
     })
   );
 });
 
-// 4. Manejo de mensajes (actualización inmediata)
+// ==================== MANEJO DE ACTUALIZACIONES ====================
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
-    console.log('[SW] Recibido mensaje SKIP_WAITING. Activando nueva versión...');
+    console.log('[SW] ⚡ Recibido SKIP_WAITING - Activando nueva versión');
     self.skipWaiting();
   }
 });
