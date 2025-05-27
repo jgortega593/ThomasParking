@@ -23,6 +23,7 @@ C:\ThomasParking\ThomasParking\src\components\OnlineStatusIndicator.jsx
 C:\ThomasParking\ThomasParking\src\components\ResizeImage.jsx
 C:\ThomasParking\ThomasParking\src\components\ResumenRegistros.jsx
 C:\ThomasParking\ThomasParking\src\components\SelectorDeFoto.jsx
+C:\ThomasParking\ThomasParking\src\components\SemaforoResumen.jsx
 C:\ThomasParking\ThomasParking\src\components\SignUp.jsx
 C:\ThomasParking\ThomasParking\src\components\SyncIndicator.jsx
 C:\ThomasParking\ThomasParking\src\components\TablaResultados.jsx
@@ -57,158 +58,126 @@ C:\ThomasParking\ThomasParking\src\styles\global.css
 ----- C:\ThomasParking\ThomasParking\src\App.jsx -----
 
 // src/App.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserProvider, useUser } from './context/UserContext';
 
-
+// Componentes principales
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthGuard from './components/AuthGuard';
 import Loader from './components/Loader';
 import useOnlineStatus from './hooks/useOnlineStatus';
-import OnlineStatusIndicator from './components/OnlineStatusIndicator';
 
-
-// Páginas
+// Páginas y componentes
 import RegistroParqueo from './pages/RegistroParqueo';
 import Consultas from './pages/Consultas';
-import Recaudo from './pages/ResumenRecaudo';
+import ResumenRecaudo from './pages/ResumenRecaudo';
 import Compensacion from './pages/Compensacion';
-import Descargos from './pages/DescargoGestion';
+import DescargoGestion from './pages/DescargoGestion';
 import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
-import SignUp from './components/SignUp';
 import AuditLog from './components/AuditLog';
 
-function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
+function AppRoutes({ menuOpen, setMenuOpen }) {
   const location = useLocation();
-  const hideNavbarRoutes = ['/login', '/', '/registro'];
   const { user } = useUser();
+  const isOnline = useOnlineStatus();
+  const hideNavbarRoutes = ['/login', '/', '/registro'];
+
+  // Sincronizar token con localStorage
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      } else {
+        localStorage.removeItem('sb-access-token');
+      }
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
 
   return (
     <>
       {!hideNavbarRoutes.includes(location.pathname) && (
         <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
+
       {!isOnline && (
-        <div 
-          className="offline-banner" 
-          role="status" 
-          aria-live="polite"
-          style={{
-            background: '#fff3cd',
-            color: '#856404',
-            padding: '10px 0',
-            textAlign: 'center',
-            fontWeight: 600,
-            fontSize: '1rem',
-            borderBottom: '1.5px solid #ffe58f',
-            position: 'sticky',
-            top: '64px',
-            zIndex: 40,
-            // Corrección para Forced Colors Mode
-            '@media (forced-colors: active)': {
-              background: 'Canvas',
-              color: 'ButtonText',
-              borderBottom: '2px solid ButtonBorder',
-              forcedColorAdjust: 'preserve-parent-color'
-            }
-          }}
-        >
+        <div className="offline-banner" role="status" aria-live="polite">
           <span role="img" aria-label="offline">⚡</span>
-          &nbsp;Modo offline: solo lectura. Edición y borrado deshabilitados.
+          Modo offline: solo lectura. Edición y borrado deshabilitados.
         </div>
       )}
 
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<SignUp />} />
+            <Route path="/login" element={
+              user ? <Navigate to="/registros" replace /> : <Login />
+            } />
+            
+            {/* Rutas protegidas */}
+            <Route path="/registros" element={
+              <AuthGuard>
+                <RegistroParqueo />
+              </AuthGuard>
+            } />
 
-            <Route
-              path="/registros"
-              element={
-                <AuthGuard>
-                  <RegistroParqueo />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/consultas"
-              element={
-                <AuthGuard>
-                  <Consultas />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/recaudo"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <Recaudo />
-                </AuthGuard>
-              }
-            />
-            <Route
-  path="/compensacion"
-  element={
-    <AuthGuard requiredRole="admin">
-      <Compensacion />
-    </AuthGuard>
-  }
-/>
+            <Route path="/consultas" element={
+              <AuthGuard>
+                <Consultas />
+              </AuthGuard>
+            } />
 
-            <Route
-              path="/descargos"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <Descargos />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/acercade"
-              element={
-                <AuthGuard>
-                  <AcercaDe />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/usuarios"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <GestionUsuarios />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/copropietarios"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <GestionCopropietarios />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/auditoria"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <AuditLog />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/"
-              element={<Navigate to="/registros" replace />}
-            />
+            <Route path="/recaudo" element={
+              <AuthGuard requiredRole="admin">
+                <ResumenRecaudo />
+              </AuthGuard>
+            } />
+
+            <Route path="/compensacion" element={
+              <AuthGuard requiredRole="admin">
+                <Compensacion />
+              </AuthGuard>
+            } />
+
+            <Route path="/descargos" element={
+              <AuthGuard requiredRole="admin">
+                <DescargoGestion />
+              </AuthGuard>
+            } />
+
+            <Route path="/acercade" element={
+              <AuthGuard>
+                <AcercaDe />
+              </AuthGuard>
+            } />
+
+            <Route path="/usuarios" element={
+              <AuthGuard requiredRole="admin">
+                <GestionUsuarios />
+              </AuthGuard>
+            } />
+
+            <Route path="/copropietarios" element={
+              <AuthGuard requiredRole="admin">
+                <GestionCopropietarios />
+              </AuthGuard>
+            } />
+
+            <Route path="/auditoria" element={
+              <AuthGuard requiredRole="admin">
+                <AuditLog />
+              </AuthGuard>
+            } />
+
+            <Route path="/" element={<Navigate to="/registros" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
@@ -221,10 +190,16 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const isOnline = useOnlineStatus();
 
   useEffect(() => {
-    setLoading(false);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      }
+      setLoading(false);
+    };
+    checkSession();
   }, []);
 
   if (loading) {
@@ -238,17 +213,13 @@ function App() {
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
-            v7_fetcherPersist: true,
-            v7_normalizeFormMethod: true,
-            v7_partialHydration: true,
-            v7_skipActionErrorRevalidation: true,
+            v7_fetcherPersist: true
           }}
         >
           <ErrorBoundary>
-            <AppRoutes
-              menuOpen={menuOpen}
-              setMenuOpen={setMenuOpen}
-              isOnline={isOnline}
+            <AppRoutes 
+              menuOpen={menuOpen} 
+              setMenuOpen={setMenuOpen} 
             />
           </ErrorBoundary>
         </BrowserRouter>
@@ -398,10 +369,8 @@ import ErrorMessage from './ErrorMessage';
 import { useUser } from '../context/UserContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-// Configuración de tiempos (ajustable)
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
-
 const ACTIVITY_EVENTS = [
   'mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'
 ];
@@ -417,10 +386,11 @@ export default function AuthGuard({ requiredRole = null, children }) {
   });
   const isOnline = useOnlineStatus();
 
-  // Referencias para timers y estado de actividad
+  // Referencias para timers
   const inactivityTimer = useRef(null);
   const refreshInterval = useRef(null);
   const activityDetected = useRef(false);
+  const isMounted = useRef(true);
 
   // --- Función para chequear autorización y rol ---
   const checkAuthorization = useCallback(async (user) => {
@@ -435,10 +405,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
       if (!data) throw new Error('Usuario no registrado');
       if (!data.activo) throw new Error('Cuenta desactivada');
 
-return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre al usuario del contexto
-
-
-
+      return { ...user, role: data.rol, nombre: data.nombre };
     } catch (error) {
       await supabase.auth.signOut();
       throw error;
@@ -470,17 +437,18 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
 
   // --- Inicialización y listeners ---
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
 
     // Inicializa sesión al montar
     const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (!isMounted) return;
+        // Usa getSession para obtener usuario y sesión válidos
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!isMounted.current) return;
         if (error) throw error;
-        if (!user) throw new Error('No autenticado');
-        const authorizedUser = await checkAuthorization(user);
-        if (isMounted) {
+        if (!session?.user) throw new Error('No autenticado');
+        const authorizedUser = await checkAuthorization(session.user);
+        if (isMounted.current) {
           setAuthState({
             user: authorizedUser,
             loading: false,
@@ -490,7 +458,7 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
           setUser(authorizedUser);
         }
       } catch (error) {
-        if (isMounted) {
+        if (isMounted.current) {
           setAuthState({ user: null, loading: false, error: error.message, role: null });
           setUser(null);
         }
@@ -534,7 +502,7 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
 
     // Cleanup
     return () => {
-      isMounted = false;
+      isMounted.current = false;
       clearTimeout(inactivityTimer.current);
       clearInterval(refreshInterval.current);
       ACTIVITY_EVENTS.forEach(event =>
@@ -548,10 +516,10 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
   const handleRetry = async () => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
-      if (!user) throw new Error('No autenticado');
-      const authorizedUser = await checkAuthorization(user);
+      if (!session?.user) throw new Error('No autenticado');
+      const authorizedUser = await checkAuthorization(session.user);
       setAuthState({
         user: authorizedUser,
         loading: false,
@@ -564,6 +532,11 @@ return { ...user, role: data.rol, nombre: data.nombre }; // <--- agrega nombre a
       setUser(null);
     }
   };
+
+  // --- Redirección automática si ya está autenticado y está en /login ---
+  if (authState.user && location.pathname === '/login') {
+    return <Navigate to="/registros" replace />;
+  }
 
   // --- Renderizado según estado ---
   if (authState.loading) return <Loader fullScreen text="Verificando credenciales..." />;
@@ -2937,6 +2910,89 @@ export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled
 }
 
 
+----- C:\ThomasParking\ThomasParking\src\components\SemaforoResumen.jsx -----
+
+// src/components/SemaforoResumen.jsx
+import React from 'react';
+import Emoji from './Emoji';
+
+/**
+ * SemaforoResumen
+ * Muestra un resumen estadístico tipo "semaforo" sobre los registros recibidos.
+ * Props:
+ * - registros: array de objetos de registros (filtrados por el padre)
+ * - customLabels: objeto opcional para personalizar los textos de cada métrica
+ * - colorFondo: string opcional para personalizar el fondo
+ */
+export default function SemaforoResumen({
+  registros = [],
+  customLabels = {},
+  colorFondo = 'rgba(255,255,255,0.1)'
+}) {
+  // Lógica de negocio igual a Compensación
+  const resumen = registros.reduce((acc, reg) => {
+    if (reg.gratis) acc.gratis++;
+    else if (reg.recaudado) acc.recaudado += Number(reg.monto || 0);
+    else acc.pendiente += Number(reg.monto || 0);
+    acc.total += Number(reg.monto || 0);
+    acc.cantidad++;
+    return acc;
+  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0 });
+
+  // Permite personalizar los textos
+  const labels = {
+    recaudado: customLabels.recaudado || 'Recaudado',
+    pendiente: customLabels.pendiente || 'Pendiente',
+    gratis: customLabels.gratis || 'Gratis',
+    cantidad: customLabels.cantidad || 'Registros',
+    total: customLabels.total || 'Total'
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+      gap: '1rem',
+      padding: '1rem',
+      background: colorFondo,
+      borderRadius: '12px',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem', color: '#10B981' }}>
+          <Emoji symbol="💰" label="Recaudado" /> ${resumen.recaudado.toFixed(2)}
+        </div>
+        <small style={{ color: '#666' }}>{labels.recaudado}</small>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem', color: '#F59E0B' }}>
+          <Emoji symbol="⏳" label="Pendiente" /> ${resumen.pendiente.toFixed(2)}
+        </div>
+        <small style={{ color: '#666' }}>{labels.pendiente}</small>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem', color: '#3B82F6' }}>
+          <Emoji symbol="🆓" label="Gratis" /> {resumen.gratis}
+        </div>
+        <small style={{ color: '#666' }}>{labels.gratis}</small>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem', color: '#6366F1' }}>
+          <Emoji symbol="📋" label="Registros" /> {resumen.cantidad}
+        </div>
+        <small style={{ color: '#666' }}>{labels.cantidad}</small>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem', color: '#8B5CF6' }}>
+          <Emoji symbol="🧾" label="Total" /> ${resumen.total.toFixed(2)}
+        </div>
+        <small style={{ color: '#666' }}>{labels.total}</small>
+      </div>
+    </div>
+  );
+}
+
+
 ----- C:\ThomasParking\ThomasParking\src\components\SignUp.jsx -----
 
 // src/components/SignUp.jsx
@@ -3890,6 +3946,7 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import dayjs from 'dayjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import SemaforoResumen from '../components/SemaforoResumen';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
@@ -4090,78 +4147,6 @@ export default function Consultas() {
     setModalExportar(false);
   };
 
-  // --- Edición (se mantiene igual) ---
-  const abrirEdicion = (registro) => {
-    setModal({ open: true, registro });
-    setForm({
-      placa_vehiculo: registro.placa_vehiculo,
-      tipo_vehiculo: registro.tipo_vehiculo,
-      fecha_hora_ingreso: dayjs(registro.fecha_hora_ingreso).format('YYYY-MM-DD'),
-      dependencia_id: registro.dependencia_id,
-      observaciones: registro.observaciones || '',
-      monto: registro.monto,
-      gratis: registro.gratis,
-      recaudado: registro.recaudado,
-      fecha_recaudo: registro.fecha_recaudo || ''
-    });
-  };
-
-  const guardarCambios = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          ...form,
-          monto: form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null
-        })
-        .eq('id', modal.registro.id);
-      if (error) throw error;
-      const actualizados = registros.map(r =>
-        r.id === modal.registro.id
-          ? { ...r, ...form, monto: form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50) }
-          : r
-      );
-      setRegistros(actualizados);
-      setResultados(actualizados);
-      setModal({ open: false, registro: null });
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
-    }));
-  };
-
-  const handleDelete = async (registro) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return;
-    setDeleting(true);
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .delete()
-        .eq('id', registro.id);
-      if (error) throw error;
-      const actualizados = registros.filter(r => r.id !== registro.id);
-      setRegistros(actualizados);
-      setResultados(actualizados);
-    } catch (err) {
-      alert('Error eliminando registro: ' + err.message);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   if (loading) return <Loader text="Cargando registros..." />;
   if (error) return <ErrorMessage message={error} />;
 
@@ -4172,323 +4157,242 @@ export default function Consultas() {
       </h2>
       <form className="filtros-form" onSubmit={aplicarFiltros} style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-  <div>
-    <label>
-      <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
-    </label>
-    <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
-    </label>
-    <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🚘" label="Placa" /> Placa:
-    </label>
-    <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
-    </label>
-    <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
-      <option value="">Todos</option>
-      <option value="carro">Carro</option>
-      <option value="moto">Moto</option>
-    </select>
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
-    </label>
-    <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
-      <option value="">Todas</option>
-      {propiedades.map(prop => (
-        <option key={prop} value={prop}>{prop}</option>
-      ))}
-    </select>
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🔢" label="Unidad" /> Unidad:
-    </label>
-    <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
-      <option value="">Todas</option>
-      {unidadesFiltradas.map(u => (
-        <option key={u} value={u}>{u}</option>
-      ))}
-    </select>
-  </div>
-</div>
-<div style={{ marginTop: 10 }}>
-  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
-    <Emoji symbol="🔍" label="Filtrar" /> Filtrar
-  </button>
-  <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
-    <Emoji symbol="♻️" label="Limpiar" /> Limpiar
-  </button>
-  <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
-    <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
-  </button>
-</div>
-
+          <div>
+            <label>
+              <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
+            </label>
+            <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
+            </label>
+            <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🚘" label="Placa" /> Placa:
+            </label>
+            <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
+            </label>
+            <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
+              <option value="">Todos</option>
+              <option value="carro">Carro</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
+            </label>
+            <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
+              <option value="">Todas</option>
+              {propiedades.map(prop => (
+                <option key={prop} value={prop}>{prop}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🔢" label="Unidad" /> Unidad:
+            </label>
+            <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
+              <option value="">Todas</option>
+              {unidadesFiltradas.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
+            <Emoji symbol="🔍" label="Filtrar" /> Filtrar
+          </button>
+          <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
+            <Emoji symbol="♻️" label="Limpiar" /> Limpiar
+          </button>
+          <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
+            <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
+          </button>
+        </div>
       </form>
+
+      {/* Semáforo de resumen */}
+      <div style={{ marginBottom: 24 }}>
+        <SemaforoResumen
+          registros={resultados}
+          customLabels={{
+            recaudado: 'Recaudado',
+            pendiente: 'Pendiente',
+            gratis: 'Gratis',
+            cantidad: 'Registros',
+            total: 'Total'
+          }}
+          colorFondo="rgba(243, 244, 246, 0.5)"
+        />
+      </div>
 
       {/* Tabla de resultados */}
       <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
-  <table className="registros-table">
-    <thead>
-      <tr>
-        <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="⚙️" /> Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {resultados.length === 0 ? (
-        <tr>
-          <td colSpan={12} className="sin-resultados">No se encontraron registros</td>
-        </tr>
-      ) : (
-        resultados.map(reg => (
-          <tr key={reg.id}>
-            {/* Fecha/Hora */}
-            <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-            {/* Placa */}
-            <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
-            {/* Copropietario */}
-            <td>
-              {reg.copropietarios ? (
-                <>
-                  {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
-                  {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
-                  {' '}
-                  {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
-                </>
-              ) : (
-                '-'
-              )}
-            </td>
-            {/* Fotos */}
-            <td style={{ textAlign: 'center', maxWidth: 150 }}>
-              {Array.isArray(reg.foto_url) && (
-                reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
-                  <span style={{ color: '#ef4444', fontSize: 20 }}>
-                    <Emoji symbol="❌" label="Sin fotos" />
-                  </span>
-                ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 4,
-                    justifyContent: 'center',
-                    position: 'relative'
-                  }}>
-                    {/* Badge con cantidad de fotos */}
-                    <span style={{
-                      position: 'absolute',
-                      top: -8,
-                      right: -8,
-                      background: '#3b82f6',
-                      color: 'white',
-                      borderRadius: '9999px',
-                      fontSize: 12,
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 10
-                    }}>
-                      {reg.foto_url.filter(url => url && url.trim() !== "").length}
-                    </span>
-                    {/* Miniaturas con lazy loading */}
-                    {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
-                      <a
-                        key={index}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          position: 'relative',
-                          transition: 'transform 0.2s',
-                        }}
-                      >
-                        <img
-                          loading="lazy"
-                          src={url}
-                          alt={`Evidencia ${index + 1}`}
-                          width={40}
-                          height={40}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            objectFit: 'cover',
-                            borderRadius: 6,
-                            border: '1px solid #e5e7eb',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                          }}
-                        />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
-                )
-              )}
-            </td>
-            {/* Tipo */}
-            <td className="px-2 py-1 text-center">
-              {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
-              {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
-            </td>
-            {/* Monto */}
-            <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
-            {/* Gratis */}
-            <td className="px-2 py-1 text-center">
-              {reg.gratis
-                ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
-                : <><Emoji symbol="❌" label="No gratis" /> No</>
-              }
-            </td>
-            {/* Recaudado */}
-            <td className="px-2 py-1 text-center">
-              {reg.recaudado
-                ? <><Emoji symbol="✅" label="Sí" /> Sí</>
-                : <><Emoji symbol="⏳" label="No" /> No</>
-              }
-            </td>
-            {/* Fecha Recaudo */}
-            <td className="px-2 py-1 text-center">{reg.fecha_recaudo || <Emoji symbol="⏳" label="Pendiente" />}</td>
-            {/* Observaciones */}
-            <td className="px-2 py-1 text-center">{reg.observaciones || '-'}</td>
-            {/* Registrado por */}
-            <td>{reg.usuarios_app?.nombre || '-'}</td>
-            {/* Acciones */}
-            <td>
-              <button
-                className="edit-btn"
-                title="Editar"
-                onClick={() => abrirEdicion(reg)}
-                style={{ marginRight: 6 }}
-                disabled={!isOnline || saving}
-              >
-                <Emoji symbol="✏️" label="Editar" />
-              </button>
-              <button
-                className="delete-btn"
-                title="Eliminar"
-                onClick={() => handleDelete(reg)}
-                disabled={!isOnline || deleting}
-              >
-                <Emoji symbol="🗑️" label="Eliminar" />
-              </button>
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div>
-
-
-      {/* Modal de edición */}
-      {modal.open && (
-        <Modal isOpen={modal.open} onClose={() => setModal({ open: false, registro: null })}>
-          <h3>Editar Registro</h3>
-          <form onSubmit={guardarCambios}>
-            <label>
-              Placa:
-              <input name="placa_vehiculo" value={form.placa_vehiculo} onChange={handleFormChange} required disabled={saving} />
-            </label>
-            <label>
-              Tipo:
-              <select name="tipo_vehiculo" value={form.tipo_vehiculo} onChange={handleFormChange} required disabled={saving}>
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-            </label>
-            <label>
-              Fecha ingreso:
-              <input type="date" name="fecha_hora_ingreso" value={form.fecha_hora_ingreso} onChange={handleFormChange} required disabled={saving} />
-            </label>
-            <label>
-              Observaciones:
-              <input name="observaciones" value={form.observaciones} onChange={handleFormChange} disabled={saving} />
-            </label>
-            <label>
-              Copropietario:
-              <select name="dependencia_id" value={form.dependencia_id || ''} onChange={handleFormChange} required disabled={saving}>
-                <option value="">Seleccione...</option>
-                {copropietarios.map(dep => (
-                  <option key={dep.id} value={dep.id}>
-                    {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" name="gratis" checked={!!form.gratis} onChange={handleFormChange} disabled={saving} />
-              <Emoji symbol="🆓" label="Gratis" /> Gratis
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" name="recaudado" checked={!!form.recaudado} onChange={handleFormChange} disabled={saving} />
-              <Emoji symbol="🔗" label="Recaudado" /> Recaudado
-            </label>
-            {form.recaudado && (
-              <label>
-                Fecha Recaudo:
-                <input type="date" name="fecha_recaudo" value={form.fecha_recaudo || ''} onChange={handleFormChange} required={!!form.recaudado} disabled={saving} />
-              </label>
+        <table className="registros-table">
+          <thead>
+            <tr>
+              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resultados.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="sin-resultados">No se encontraron registros</td>
+              </tr>
+            ) : (
+              resultados.map(reg => (
+                <tr key={reg.id}>
+                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
+                  <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
+                  <td>
+                    {reg.copropietarios ? (
+                      <>
+                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
+                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
+                        {' '}
+                        {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
+                      </>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center', maxWidth: 150 }}>
+                    {Array.isArray(reg.foto_url) && (
+                      reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
+                        <span style={{ color: '#ef4444', fontSize: 20 }}>
+                          <Emoji symbol="❌" label="Sin fotos" />
+                        </span>
+                      ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 4,
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            background: '#3b82f6',
+                            color: 'white',
+                            borderRadius: '9999px',
+                            fontSize: 12,
+                            width: 20,
+                            height: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 10
+                          }}>
+                            {reg.foto_url.filter(url => url && url.trim() !== "").length}
+                          </span>
+                          {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                position: 'relative',
+                                transition: 'transform 0.2s',
+                              }}
+                            >
+                              <img
+                                loading="lazy"
+                                src={url}
+                                alt={`Evidencia ${index + 1}`}
+                                width={40}
+                                height={40}
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  objectFit: 'cover',
+                                  borderRadius: 6,
+                                  border: '1px solid #e5e7eb',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
+                      )
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
+                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
+                  </td>
+                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.gratis
+                      ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
+                      : <><Emoji symbol="❌" label="No gratis" /> No</>
+                    }
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.recaudado
+                      ? <><Emoji symbol="✅" label="Sí" /> Sí</>
+                      : <><Emoji symbol="⏳" label="No" /> No</>
+                    }
+                  </td>
+                  <td className="px-2 py-1 text-center">{reg.fecha_recaudo || '-'}</td>
+                  <td>{reg.observaciones || '-'}</td>
+                  <td>{reg.usuarios_app?.nombre || '-'}</td>
+                </tr>
+              ))
             )}
-            <div style={{ marginTop: 18 }}>
-              <button type="submit" className="save-btn" disabled={saving}>Guardar</button>
-              <button type="button" className="cancel-btn" onClick={() => setModal({ open: false, registro: null })} disabled={saving}>Cancelar</button>
-            </div>
-          </form>
-        </Modal>
-      )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Modal para nombre de PDF */}
+      {/* Modal para exportar PDF */}
       {modalExportar && (
         <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <h3>Exportar a PDF</h3>
-          <label>
-            Nombre del archivo:
+          <div style={{ padding: 20 }}>
+            <h3>Nombre del archivo PDF</h3>
             <input
               type="text"
               value={nombrePDF}
               onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Mayo 2025"
-              style={{ width: '100%', marginTop: 8, marginBottom: 18 }}
-              autoFocus
+              placeholder="Ej: Reporte Parqueadero"
+              className="p-2 border rounded w-full mb-4"
             />
-          </label>
-          <button
-            className="bg-green-600 text-white px-4 py-2 rounded"
-            onClick={generarPDF}
-            style={{ marginRight: 10 }}
-          >
-            Exportar
-          </button>
-          <button
-            className="bg-gray-400 text-white px-4 py-2 rounded"
-            onClick={() => setModalExportar(false)}
-          >
-            Cancelar
-          </button>
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded mr-2"
+              onClick={generarPDF}
+            >
+              <Emoji symbol="📄" /> Generar PDF
+            </button>
+            <button
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+              onClick={() => setModalExportar(false)}
+            >
+              Cancelar
+            </button>
+          </div>
         </Modal>
       )}
     </div>
@@ -5718,143 +5622,173 @@ export default function GestionUsuarios() {
 
 // src/pages/Login.jsx
 import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import supabase from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import Loader from "../components/Loader";
+import Emoji from "../components/Emoji";
 
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [step, setStep] = useState("email"); // "email" o "otp"
   const [otp, setOtp] = useState("");
+  const [step, setStep] = useState("email");
   const [loading, setLoading] = useState(false);
-  const [info, setInfo] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Enviar código OTP al correo
-  const handleSendCode = async (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true, // o false si solo quieres permitir acceso a usuarios existentes
-        // emailRedirectTo: 'https://TU_DOMINIO.com/' // opcional, si quieres redirigir tras login
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // Cambiar a true si se permiten nuevos usuarios
+          emailRedirectTo: window.location.origin
+        }
+      });
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else {
+      if (error) throw error;
+      
       setStep("otp");
-      setInfo("Se ha enviado un código a tu correo electrónico.");
+      setInfo("Código enviado. Revisa tu correo electrónico.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Verificar el código OTP
-  const handleVerifyCode = async (e) => {
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
 
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "email",
-    });
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: "email"
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setInfo("¡Autenticación exitosa! Redirigiendo...");
-      // Espera un momento y redirige
-      setTimeout(() => navigate("/"), 1500);
+      // Redirección post-login
+      const from = location.state?.from?.pathname || "/registros";
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message.includes("token") 
+        ? "Código inválido o expirado" 
+        : err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">
-          Iniciar sesión sin contraseña
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">
+          <Emoji symbol="🔑" /> Acceso al Sistema
+        </h1>
+
         {step === "email" ? (
-          <form onSubmit={handleSendCode} className="space-y-4">
+          <form onSubmit={handleEmailSubmit} className="space-y-6">
             <div>
-              <label className="block mb-1 text-gray-700 dark:text-gray-300">
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                 Correo electrónico
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="usuario@ejemplo.com"
                 required
-                autoComplete="email"
+                autoFocus
                 disabled={loading}
               />
             </div>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                {info}
-              </div>
-            )}
+
             <button
               type="submit"
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
-              {loading ? "Enviando..." : "Enviar código"}
+              {loading ? (
+                <Loader text="Enviando código..." />
+              ) : (
+                <>
+                  <Emoji symbol="📨" /> Continuar con correo
+                </>
+              )}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
+          <form onSubmit={handleOtpSubmit} className="space-y-6">
             <div>
-              <label className="block mb-1 text-gray-700 dark:text-gray-300">
-                Ingresa el código recibido por email
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Código de verificación
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring"
-                value={otp}
-                onChange={e => setOtp(e.target.value)}
-                required
-                disabled={loading}
-                maxLength={6}
                 inputMode="numeric"
+                pattern="[0-9]{6}"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full px-4 py-3 text-center text-2xl font-mono rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="123456"
+                required
+                autoFocus
+                disabled={loading}
               />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                Ingresa el código de 6 dígitos enviado a {email}
+              </p>
             </div>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                {info}
-              </div>
-            )}
+
             <button
               type="submit"
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
-              {loading ? "Verificando..." : "Verificar código"}
+              {loading ? (
+                <Loader text="Verificando..." />
+              ) : (
+                <>
+                  <Emoji symbol="✅" /> Verificar código
+                </>
+              )}
             </button>
           </form>
         )}
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-lg border border-red-200 dark:border-red-800">
+            <Emoji symbol="⚠️" /> {error}
+          </div>
+        )}
+
+        {info && (
+          <div className="mt-6 p-4 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-100 rounded-lg border border-green-200 dark:border-green-800">
+            <Emoji symbol="ℹ️" /> {info}
+          </div>
+        )}
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setStep("email")}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+            type="button"
+          >
+            <Emoji symbol="↩️" /> Volver a ingresar correo
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -6293,6 +6227,7 @@ import ExportarPDF from '../components/ExportarPDF';
 import ErrorMessage from '../components/ErrorMessage';
 import SelectorDeFoto from '../components/SelectorDeFoto';
 import dayjs from 'dayjs';
+import SemaforoResumen from '../components/SemaforoResumen';
 
 export default function ResumenRecaudo() {
   const [registros, setRegistros] = useState([]);
@@ -6308,7 +6243,7 @@ export default function ResumenRecaudo() {
   const [filtroCopropietario, setFiltroCopropietario] = useState('');
   const [fotosEvidencia, setFotosEvidencia] = useState([]);
 
-  // Columnas para exportar a PDF
+  // Configuración de columnas para PDF
   const columnasPDF = [
     { header: 'Fecha', key: 'fecha_hora_ingreso', formatter: v => dayjs(v).format('DD/MM/YY HH:mm') },
     { header: 'Placa', key: 'placa_vehiculo' },
@@ -6328,8 +6263,10 @@ export default function ResumenRecaudo() {
             .order('fecha_hora_ingreso', { ascending: false }),
           supabase.from('copropietarios').select('propiedad, unidad_asignada')
         ]);
+        
         if (resRegistros.error) throw resRegistros.error;
         if (resCopropietarios.error) throw resCopropietarios.error;
+        
         setRegistros(resRegistros.data || []);
         setPropiedades([...new Set(resCopropietarios.data.map(c => c.propiedad))].sort());
         setUnidades(resCopropietarios.data || []);
@@ -6355,25 +6292,23 @@ export default function ResumenRecaudo() {
     return coincidePropiedad && coincideUnidad && coincideNombre;
   });
 
-  // Resumen estadístico
-  const resumen = registrosFiltrados.reduce((acc, reg) => {
-    if (reg.gratis) acc.gratis++;
-    else if (reg.recaudado) acc.recaudado += Number(reg.monto);
-    else acc.pendiente += Number(reg.monto);
-    return acc;
-  }, { recaudado: 0, pendiente: 0, gratis: 0 });
+  // Algoritmo optimizado para encontrar combinación exacta
+  const encontrarCombinacionExacta = (registros, objetivo) => {
+    const dp = Array(Math.floor(objetivo * 100) + 1).fill(null).map(() => []);
+    dp[0] = [[]];
 
-  // Algoritmo recursivo para encontrar combinación exacta
-  function encontrarCombinacionExacta(registros, objetivo, index = 0, seleccionados = []) {
-    if (Math.abs(objetivo) < 0.01) return seleccionados;
-    if (objetivo < 0 || index >= registros.length) return null;
-    const montoActual = parseFloat(registros[index].monto);
-    const conActual = encontrarCombinacionExacta(
-      registros, +(objetivo - montoActual).toFixed(2), index + 1, [...seleccionados, registros[index]]
-    );
-    if (conActual) return conActual;
-    return encontrarCombinacionExacta(registros, objetivo, index + 1, seleccionados);
-  }
+    for (const reg of registros) {
+      const monto = Math.round(reg.monto * 100);
+      for (let j = Math.floor(objetivo * 100); j >= monto; j--) {
+        if (dp[j - monto].length > 0) {
+          dp[j] = [...dp[j], ...dp[j - monto].map(combo => [...combo, reg])];
+        }
+      }
+    }
+
+    const resultados = dp[Math.floor(objetivo * 100)];
+    return resultados?.[0] || null;
+  };
 
   // Subida de evidencia a Supabase Storage
   const subirEvidencia = async () => {
@@ -6383,9 +6318,8 @@ export default function ResumenRecaudo() {
       const nombreArchivo = `evidencia-recaudo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}.${extension}`;
       const { error } = await supabase.storage
         .from('evidencias-recaudo')
-        .upload(nombreArchivo, foto, {
-          contentType: foto.type
-        });
+        .upload(nombreArchivo, foto, { contentType: foto.type });
+      
       if (!error) {
         const { data: { publicUrl } } = supabase.storage
           .from('evidencias-recaudo')
@@ -6402,40 +6336,30 @@ export default function ResumenRecaudo() {
   const handleRecaudoExacto = async () => {
     setError('');
     setRegistrosModificados([]);
-    if (!filtroPropiedad || !filtroUnidad) {
-      setError('Debe seleccionar propiedad y unidad asignada');
-      return;
-    }
-    const montoObjetivo = parseFloat(montoRecaudar);
-    if (isNaN(montoObjetivo) || montoObjetivo <= 0) {
-      setError('Ingrese un monto válido mayor a 0');
-      return;
-    }
-    if (fotosEvidencia.length === 0) {
-      setError('Debe adjuntar al menos una evidencia fotográfica');
-      return;
-    }
-    setProcesando(true);
+    
     try {
+      // Validaciones
+      if (!filtroPropiedad || !filtroUnidad) throw new Error('Debe seleccionar propiedad y unidad');
+      const montoObjetivo = parseFloat(montoRecaudar);
+      if (isNaN(montoObjetivo) || montoObjetivo <= 0) throw new Error('Monto inválido');
+      if (fotosEvidencia.length === 0) throw new Error('Debe adjuntar evidencia fotográfica');
+
+      setProcesando(true);
+      
+      // Filtrar y ordenar registros
       const pendientes = registrosFiltrados
         .filter(r => !r.recaudado && !r.gratis)
         .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
-      const seleccion = encontrarCombinacionExacta(pendientes, +montoObjetivo.toFixed(2));
-      if (!seleccion || seleccion.length === 0) {
-        setError('No existe una combinación exacta de registros para el monto ingresado.');
-        setProcesando(false);
-        return;
-      }
-      const sumaSeleccion = seleccion.reduce((acc, r) => acc + parseFloat(r.monto), 0);
-      if (Math.abs(sumaSeleccion - montoObjetivo) > 0.009) {
-        setError('No existe una combinación exacta de registros para el monto ingresado.');
-        setProcesando(false);
-        return;
-      }
+
+      // Buscar combinación exacta
+      const seleccion = encontrarCombinacionExacta(pendientes, montoObjetivo);
+      if (!seleccion) throw new Error('No existe combinación exacta para el monto ingresado');
+
       // Subir evidencia
       const urlsEvidencia = await subirEvidencia();
-      // Actualizar registros seleccionados
-      const updates = seleccion.map(reg =>
+
+      // Actualizar registros
+      const updates = seleccion.map(reg => 
         supabase
           .from('registros_parqueadero')
           .update({
@@ -6445,22 +6369,24 @@ export default function ResumenRecaudo() {
           })
           .eq('id', reg.id)
       );
+
       const resultados = await Promise.all(updates);
       const errores = resultados.filter(r => r.error);
-      if (errores.length === 0) {
-        setRegistros(prev =>
-          prev.map(r =>
-            seleccion.some(m => m.id === r.id)
-              ? { ...r, recaudado: true, fecha_recaudo: new Date(), evidencia_recaudo: urlsEvidencia }
-              : r
-          )
-        );
-        setRegistrosModificados(seleccion.map(r => ({ ...r, evidencia_recaudo: urlsEvidencia })));
-        setMontoRecaudar('');
-        setFotosEvidencia([]);
-      } else {
-        setError(`Error al actualizar algunos registros (${errores.length})`);
-      }
+      if (errores.length > 0) throw new Error(`Error en ${errores.length} registros`);
+
+      // Actualizar estado local
+      setRegistros(prev => 
+        prev.map(r => 
+          seleccion.some(s => s.id === r.id) 
+            ? { ...r, recaudado: true, fecha_recaudo: new Date(), evidencia_recaudo: urlsEvidencia } 
+            : r
+        )
+      );
+      
+      setRegistrosModificados(seleccion);
+      setMontoRecaudar('');
+      setFotosEvidencia([]);
+      
     } catch (e) {
       setError(e.message);
     } finally {
@@ -6472,9 +6398,9 @@ export default function ResumenRecaudo() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold">
-          <Emoji symbol="📊" /> Resumen de Recaudación
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <Emoji symbol="📊" /> Gestión de Recaudación
         </h2>
         <ExportarPDF
           datos={registrosModificados}
@@ -6493,9 +6419,9 @@ export default function ResumenRecaudo() {
               setFiltroPropiedad(e.target.value);
               setFiltroUnidad('');
             }}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
           >
-            <option value="">Seleccione propiedad...</option>
+            <option value="">Todas las propiedades</option>
             {propiedades.map(prop => (
               <option key={prop} value={prop}>{prop}</option>
             ))}
@@ -6506,10 +6432,10 @@ export default function ResumenRecaudo() {
           <select
             value={filtroUnidad}
             onChange={e => setFiltroUnidad(e.target.value)}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             disabled={!filtroPropiedad}
           >
-            <option value="">Seleccione unidad...</option>
+            <option value="">Todas las unidades</option>
             {unidadesFiltradas.map(unidad => (
               <option key={unidad} value={unidad}>{unidad}</option>
             ))}
@@ -6517,27 +6443,47 @@ export default function ResumenRecaudo() {
         </div>
       </div>
 
-      {/* Sección de recaudación exacta y evidencia */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4">
-          <Emoji symbol="⚡" /> Recaudo Exacto
+      {/* Semaforo de Resumen */}
+      <SemaforoResumen 
+        registros={registrosFiltrados}
+        customLabels={{
+          recaudado: 'Recaudado',
+          pendiente: 'Pendiente',
+          gratis: 'Gratis',
+          cantidad: 'Registros',
+          total: 'Total'
+        }}
+        colorFondo="rgba(243, 244, 246, 0.5)"
+        className="mb-8"
+      />
+
+      {/* Sección de recaudación */}
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner mb-8">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+          <Emoji symbol="⚡" /> Proceso de Recaudación
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Monto a recaudar ($)</label>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Monto a recaudar ($)
+            </label>
             <input
               type="number"
               min="0"
               step="0.01"
               value={montoRecaudar}
               onChange={e => setMontoRecaudar(e.target.value)}
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border rounded-md dark:bg-gray-800 dark:border-gray-600"
               placeholder="Ej: 25.50"
               disabled={procesando}
             />
           </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-1">Evidencia Fotográfica (Máx. 5 fotos)</label>
+          
+          <div className="md:col-span-2 space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Evidencia fotográfica (Máx. 5)
+            </label>
             <SelectorDeFoto
               onFilesSelected={setFotosEvidencia}
               maxFiles={5}
@@ -6545,68 +6491,72 @@ export default function ResumenRecaudo() {
             />
           </div>
         </div>
+
         <button
           onClick={handleRecaudoExacto}
           disabled={!montoRecaudar || procesando}
-          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+          className="w-full mt-4 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
         >
-          {procesando ? <Loader text="Procesando..." /> : 'Ejecutar Recaudo'}
+          {procesando ? (
+            <Loader text="Procesando..." />
+          ) : (
+            <>
+              <Emoji symbol="✅" /> Ejecutar Recaudo
+            </>
+          )}
         </button>
-        {error && <ErrorMessage message={error} className="mt-4" />}
-        <div className="mt-2 text-sm text-gray-600">
-          El monto debe coincidir exactamente con la suma de los montos de los registros seleccionados. Si no existe una combinación exacta, la operación no se realizará.
-        </div>
-      </div>
 
-      {/* Resumen estadístico */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-green-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-green-700">
-            <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
-          </div>
-          <span className="text-sm">Total Recaudado</span>
-        </div>
-        <div className="bg-yellow-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-yellow-700">
-            <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
-          </div>
-          <span className="text-sm">Pendiente</span>
-        </div>
-        <div className="bg-purple-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-purple-700">
-            <Emoji symbol="🆓" /> {resumen.gratis}
-          </div>
-          <span className="text-sm">Registros Gratis</span>
-        </div>
+        {error && (
+          <ErrorMessage 
+            message={error} 
+            className="mt-4"
+          />
+        )}
       </div>
 
       {/* Tabla de registros */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-2">Placa</th>
-              <th className="px-4 py-2">Tipo</th>
-              <th className="px-4 py-2">Monto</th>
-              <th className="px-4 py-2">Copropietario</th>
-              <th className="px-4 py-2">Fecha Recaudo</th>
-              <th className="px-4 py-2">Evidencia</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Placa</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tipo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Monto</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Copropietario</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Fecha Recaudo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Evidencia</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {registrosFiltrados.map(reg => (
-              <tr key={reg.id} className={reg.recaudado ? 'bg-green-50' : 'bg-white'}>
-                <td className="px-4 py-2">{reg.placa_vehiculo}</td>
-                <td className="px-4 py-2">{reg.tipo_vehiculo}</td>
-                <td className="px-4 py-2">${reg.monto.toFixed(2)}</td>
-                <td className="px-4 py-2">{reg.copropietarios?.nombre || '-'}</td>
-                <td className="px-4 py-2">
+              <tr key={reg.id} className={reg.recaudado ? 'bg-green-50 dark:bg-green-900' : ''}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{reg.placa_vehiculo}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  <Emoji symbol={reg.tipo_vehiculo === 'carro' ? '🚗' : '🏍️'} /> {reg.tipo_vehiculo}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  ${Number(reg.monto).toFixed(2)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  {reg.copropietarios?.nombre || '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {reg.fecha_recaudo ? dayjs(reg.fecha_recaudo).format('DD/MM/YY HH:mm') : '-'}
                 </td>
-                <td className="px-4 py-2">
-                  {reg.evidencia_recaudo?.map(url => (
-                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-2">
-                      <img src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded" />
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {reg.evidencia_recaudo?.map((url, index) => (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mr-2"
+                    >
+                      <img
+                        src={url}
+                        alt={`Evidencia ${index + 1}`}
+                        className="w-12 h-12 object-cover rounded border border-gray-200 dark:border-gray-600"
+                      />
                     </a>
                   ))}
                 </td>
