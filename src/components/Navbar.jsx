@@ -56,6 +56,14 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
       className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center space-y-4 p-6"
       role="navigation"
       aria-label="Menú principal móvil"
+      style={{
+        paddingTop: '56px', // Ajusta según la altura real de tu navbar
+        boxSizing: 'border-box',
+        overflowY: 'auto',
+        width: '100vw',
+        left: 0,
+        right: 0,
+      }}
     >
       {navItems.map(item => (
         <NavLink
@@ -122,7 +130,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-700 to-purple-700 shadow-md fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center px-4 h-16">
+      <div className="max-w-7xl mx-auto flex items-center px-4 h-14 sm:h-16">
         {/* Logo, título y nombre de usuario */}
         <div className="flex-shrink-0 flex items-center">
           <NavLink
