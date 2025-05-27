@@ -1,156 +1,124 @@
 // src/App.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import supabase from './supabaseClient';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserProvider, useUser } from './context/UserContext';
 
-
+// Componentes principales
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthGuard from './components/AuthGuard';
 import Loader from './components/Loader';
 import useOnlineStatus from './hooks/useOnlineStatus';
-import OnlineStatusIndicator from './components/OnlineStatusIndicator';
 
-
-// Páginas
+// Páginas y componentes
 import RegistroParqueo from './pages/RegistroParqueo';
 import Consultas from './pages/Consultas';
-import Recaudo from './pages/ResumenRecaudo';
+import ResumenRecaudo from './pages/ResumenRecaudo';
 import Compensacion from './pages/Compensacion';
-import Descargos from './pages/DescargoGestion';
+import DescargoGestion from './pages/DescargoGestion';
 import GestionUsuarios from './pages/GestionUsuarios';
 import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
-import SignUp from './components/SignUp';
 import AuditLog from './components/AuditLog';
 
-function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
+function AppRoutes({ menuOpen, setMenuOpen }) {
   const location = useLocation();
-  const hideNavbarRoutes = ['/login', '/', '/registro'];
   const { user } = useUser();
+  const isOnline = useOnlineStatus();
+  const hideNavbarRoutes = ['/login', '/', '/registro'];
+
+  // Sincronizar token con localStorage
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      } else {
+        localStorage.removeItem('sb-access-token');
+      }
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
 
   return (
     <>
       {!hideNavbarRoutes.includes(location.pathname) && (
         <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
+
       {!isOnline && (
-        <div 
-          className="offline-banner" 
-          role="status" 
-          aria-live="polite"
-          style={{
-            background: '#fff3cd',
-            color: '#856404',
-            padding: '10px 0',
-            textAlign: 'center',
-            fontWeight: 600,
-            fontSize: '1rem',
-            borderBottom: '1.5px solid #ffe58f',
-            position: 'sticky',
-            top: '64px',
-            zIndex: 40,
-            // Corrección para Forced Colors Mode
-            '@media (forced-colors: active)': {
-              background: 'Canvas',
-              color: 'ButtonText',
-              borderBottom: '2px solid ButtonBorder',
-              forcedColorAdjust: 'preserve-parent-color'
-            }
-          }}
-        >
+        <div className="offline-banner" role="status" aria-live="polite">
           <span role="img" aria-label="offline">⚡</span>
-          &nbsp;Modo offline: solo lectura. Edición y borrado deshabilitados.
+          Modo offline: solo lectura. Edición y borrado deshabilitados.
         </div>
       )}
 
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<SignUp />} />
+            <Route path="/login" element={
+              user ? <Navigate to="/registros" replace /> : <Login />
+            } />
+            
+            {/* Rutas protegidas */}
+            <Route path="/registros" element={
+              <AuthGuard>
+                <RegistroParqueo />
+              </AuthGuard>
+            } />
 
-            <Route
-              path="/registros"
-              element={
-                <AuthGuard>
-                  <RegistroParqueo />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/consultas"
-              element={
-                <AuthGuard>
-                  <Consultas />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/recaudo"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <Recaudo />
-                </AuthGuard>
-              }
-            />
-            <Route
-  path="/compensacion"
-  element={
-    <AuthGuard requiredRole="admin">
-      <Compensacion />
-    </AuthGuard>
-  }
-/>
+            <Route path="/consultas" element={
+              <AuthGuard>
+                <Consultas />
+              </AuthGuard>
+            } />
 
-            <Route
-              path="/descargos"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <Descargos />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/acercade"
-              element={
-                <AuthGuard>
-                  <AcercaDe />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/usuarios"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <GestionUsuarios />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/copropietarios"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <GestionCopropietarios />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/auditoria"
-              element={
-                <AuthGuard requiredRole="admin">
-                  <AuditLog />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/"
-              element={<Navigate to="/registros" replace />}
-            />
+            <Route path="/recaudo" element={
+              <AuthGuard requiredRole="admin">
+                <ResumenRecaudo />
+              </AuthGuard>
+            } />
+
+            <Route path="/compensacion" element={
+              <AuthGuard requiredRole="admin">
+                <Compensacion />
+              </AuthGuard>
+            } />
+
+            <Route path="/descargos" element={
+              <AuthGuard requiredRole="admin">
+                <DescargoGestion />
+              </AuthGuard>
+            } />
+
+            <Route path="/acercade" element={
+              <AuthGuard>
+                <AcercaDe />
+              </AuthGuard>
+            } />
+
+            <Route path="/usuarios" element={
+              <AuthGuard requiredRole="admin">
+                <GestionUsuarios />
+              </AuthGuard>
+            } />
+
+            <Route path="/copropietarios" element={
+              <AuthGuard requiredRole="admin">
+                <GestionCopropietarios />
+              </AuthGuard>
+            } />
+
+            <Route path="/auditoria" element={
+              <AuthGuard requiredRole="admin">
+                <AuditLog />
+              </AuthGuard>
+            } />
+
+            <Route path="/" element={<Navigate to="/registros" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
@@ -163,10 +131,16 @@ function AppRoutes({ menuOpen, setMenuOpen, isOnline }) {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const isOnline = useOnlineStatus();
 
   useEffect(() => {
-    setLoading(false);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      }
+      setLoading(false);
+    };
+    checkSession();
   }, []);
 
   if (loading) {
@@ -180,17 +154,13 @@ function App() {
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
-            v7_fetcherPersist: true,
-            v7_normalizeFormMethod: true,
-            v7_partialHydration: true,
-            v7_skipActionErrorRevalidation: true,
+            v7_fetcherPersist: true
           }}
         >
           <ErrorBoundary>
-            <AppRoutes
-              menuOpen={menuOpen}
-              setMenuOpen={setMenuOpen}
-              isOnline={isOnline}
+            <AppRoutes 
+              menuOpen={menuOpen} 
+              setMenuOpen={setMenuOpen} 
             />
           </ErrorBoundary>
         </BrowserRouter>

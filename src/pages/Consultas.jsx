@@ -9,6 +9,7 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import dayjs from 'dayjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import SemaforoResumen from '../components/SemaforoResumen';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
@@ -209,78 +210,6 @@ export default function Consultas() {
     setModalExportar(false);
   };
 
-  // --- Edición (se mantiene igual) ---
-  const abrirEdicion = (registro) => {
-    setModal({ open: true, registro });
-    setForm({
-      placa_vehiculo: registro.placa_vehiculo,
-      tipo_vehiculo: registro.tipo_vehiculo,
-      fecha_hora_ingreso: dayjs(registro.fecha_hora_ingreso).format('YYYY-MM-DD'),
-      dependencia_id: registro.dependencia_id,
-      observaciones: registro.observaciones || '',
-      monto: registro.monto,
-      gratis: registro.gratis,
-      recaudado: registro.recaudado,
-      fecha_recaudo: registro.fecha_recaudo || ''
-    });
-  };
-
-  const guardarCambios = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          ...form,
-          monto: form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50),
-          fecha_recaudo: form.recaudado ? form.fecha_recaudo : null
-        })
-        .eq('id', modal.registro.id);
-      if (error) throw error;
-      const actualizados = registros.map(r =>
-        r.id === modal.registro.id
-          ? { ...r, ...form, monto: form.gratis ? 0 : (form.tipo_vehiculo === 'carro' ? 1.00 : 0.50) }
-          : r
-      );
-      setRegistros(actualizados);
-      setResultados(actualizados);
-      setModal({ open: false, registro: null });
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-      ...(name === 'recaudado' && !checked ? { fecha_recaudo: '' } : {})
-    }));
-  };
-
-  const handleDelete = async (registro) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return;
-    setDeleting(true);
-    try {
-      const { error } = await supabase
-        .from('registros_parqueadero')
-        .delete()
-        .eq('id', registro.id);
-      if (error) throw error;
-      const actualizados = registros.filter(r => r.id !== registro.id);
-      setRegistros(actualizados);
-      setResultados(actualizados);
-    } catch (err) {
-      alert('Error eliminando registro: ' + err.message);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   if (loading) return <Loader text="Cargando registros..." />;
   if (error) return <ErrorMessage message={error} />;
 
@@ -291,323 +220,242 @@ export default function Consultas() {
       </h2>
       <form className="filtros-form" onSubmit={aplicarFiltros} style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-  <div>
-    <label>
-      <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
-    </label>
-    <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
-    </label>
-    <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🚘" label="Placa" /> Placa:
-    </label>
-    <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
-    </label>
-    <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
-      <option value="">Todos</option>
-      <option value="carro">Carro</option>
-      <option value="moto">Moto</option>
-    </select>
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
-    </label>
-    <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
-      <option value="">Todas</option>
-      {propiedades.map(prop => (
-        <option key={prop} value={prop}>{prop}</option>
-      ))}
-    </select>
-  </div>
-  <div>
-    <label>
-      <Emoji symbol="🔢" label="Unidad" /> Unidad:
-    </label>
-    <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
-      <option value="">Todas</option>
-      {unidadesFiltradas.map(u => (
-        <option key={u} value={u}>{u}</option>
-      ))}
-    </select>
-  </div>
-</div>
-<div style={{ marginTop: 10 }}>
-  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
-    <Emoji symbol="🔍" label="Filtrar" /> Filtrar
-  </button>
-  <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
-    <Emoji symbol="♻️" label="Limpiar" /> Limpiar
-  </button>
-  <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
-    <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
-  </button>
-</div>
-
+          <div>
+            <label>
+              <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
+            </label>
+            <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
+            </label>
+            <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🚘" label="Placa" /> Placa:
+            </label>
+            <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
+            </label>
+            <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
+              <option value="">Todos</option>
+              <option value="carro">Carro</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
+            </label>
+            <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
+              <option value="">Todas</option>
+              {propiedades.map(prop => (
+                <option key={prop} value={prop}>{prop}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>
+              <Emoji symbol="🔢" label="Unidad" /> Unidad:
+            </label>
+            <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
+              <option value="">Todas</option>
+              {unidadesFiltradas.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mr-2">
+            <Emoji symbol="🔍" label="Filtrar" /> Filtrar
+          </button>
+          <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
+            <Emoji symbol="♻️" label="Limpiar" /> Limpiar
+          </button>
+          <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
+            <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
+          </button>
+        </div>
       </form>
+
+      {/* Semáforo de resumen */}
+      <div style={{ marginBottom: 24 }}>
+        <SemaforoResumen
+          registros={resultados}
+          customLabels={{
+            recaudado: 'Recaudado',
+            pendiente: 'Pendiente',
+            gratis: 'Gratis',
+            cantidad: 'Registros',
+            total: 'Total'
+          }}
+          colorFondo="rgba(243, 244, 246, 0.5)"
+        />
+      </div>
 
       {/* Tabla de resultados */}
       <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
-  <table className="registros-table">
-    <thead>
-      <tr>
-        <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
-        <th style={{ textAlign: 'center' }}><Emoji symbol="⚙️" /> Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {resultados.length === 0 ? (
-        <tr>
-          <td colSpan={12} className="sin-resultados">No se encontraron registros</td>
-        </tr>
-      ) : (
-        resultados.map(reg => (
-          <tr key={reg.id}>
-            {/* Fecha/Hora */}
-            <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-            {/* Placa */}
-            <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
-            {/* Copropietario */}
-            <td>
-              {reg.copropietarios ? (
-                <>
-                  {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
-                  {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
-                  {' '}
-                  {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
-                </>
-              ) : (
-                '-'
-              )}
-            </td>
-            {/* Fotos */}
-            <td style={{ textAlign: 'center', maxWidth: 150 }}>
-              {Array.isArray(reg.foto_url) && (
-                reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
-                  <span style={{ color: '#ef4444', fontSize: 20 }}>
-                    <Emoji symbol="❌" label="Sin fotos" />
-                  </span>
-                ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 4,
-                    justifyContent: 'center',
-                    position: 'relative'
-                  }}>
-                    {/* Badge con cantidad de fotos */}
-                    <span style={{
-                      position: 'absolute',
-                      top: -8,
-                      right: -8,
-                      background: '#3b82f6',
-                      color: 'white',
-                      borderRadius: '9999px',
-                      fontSize: 12,
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 10
-                    }}>
-                      {reg.foto_url.filter(url => url && url.trim() !== "").length}
-                    </span>
-                    {/* Miniaturas con lazy loading */}
-                    {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
-                      <a
-                        key={index}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          position: 'relative',
-                          transition: 'transform 0.2s',
-                        }}
-                      >
-                        <img
-                          loading="lazy"
-                          src={url}
-                          alt={`Evidencia ${index + 1}`}
-                          width={40}
-                          height={40}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            objectFit: 'cover',
-                            borderRadius: 6,
-                            border: '1px solid #e5e7eb',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                          }}
-                        />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
-                )
-              )}
-            </td>
-            {/* Tipo */}
-            <td className="px-2 py-1 text-center">
-              {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
-              {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
-            </td>
-            {/* Monto */}
-            <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
-            {/* Gratis */}
-            <td className="px-2 py-1 text-center">
-              {reg.gratis
-                ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
-                : <><Emoji symbol="❌" label="No gratis" /> No</>
-              }
-            </td>
-            {/* Recaudado */}
-            <td className="px-2 py-1 text-center">
-              {reg.recaudado
-                ? <><Emoji symbol="✅" label="Sí" /> Sí</>
-                : <><Emoji symbol="⏳" label="No" /> No</>
-              }
-            </td>
-            {/* Fecha Recaudo */}
-            <td className="px-2 py-1 text-center">{reg.fecha_recaudo || <Emoji symbol="⏳" label="Pendiente" />}</td>
-            {/* Observaciones */}
-            <td className="px-2 py-1 text-center">{reg.observaciones || '-'}</td>
-            {/* Registrado por */}
-            <td>{reg.usuarios_app?.nombre || '-'}</td>
-            {/* Acciones */}
-            <td>
-              <button
-                className="edit-btn"
-                title="Editar"
-                onClick={() => abrirEdicion(reg)}
-                style={{ marginRight: 6 }}
-                disabled={!isOnline || saving}
-              >
-                <Emoji symbol="✏️" label="Editar" />
-              </button>
-              <button
-                className="delete-btn"
-                title="Eliminar"
-                onClick={() => handleDelete(reg)}
-                disabled={!isOnline || deleting}
-              >
-                <Emoji symbol="🗑️" label="Eliminar" />
-              </button>
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div>
-
-
-      {/* Modal de edición */}
-      {modal.open && (
-        <Modal isOpen={modal.open} onClose={() => setModal({ open: false, registro: null })}>
-          <h3>Editar Registro</h3>
-          <form onSubmit={guardarCambios}>
-            <label>
-              Placa:
-              <input name="placa_vehiculo" value={form.placa_vehiculo} onChange={handleFormChange} required disabled={saving} />
-            </label>
-            <label>
-              Tipo:
-              <select name="tipo_vehiculo" value={form.tipo_vehiculo} onChange={handleFormChange} required disabled={saving}>
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-            </label>
-            <label>
-              Fecha ingreso:
-              <input type="date" name="fecha_hora_ingreso" value={form.fecha_hora_ingreso} onChange={handleFormChange} required disabled={saving} />
-            </label>
-            <label>
-              Observaciones:
-              <input name="observaciones" value={form.observaciones} onChange={handleFormChange} disabled={saving} />
-            </label>
-            <label>
-              Copropietario:
-              <select name="dependencia_id" value={form.dependencia_id || ''} onChange={handleFormChange} required disabled={saving}>
-                <option value="">Seleccione...</option>
-                {copropietarios.map(dep => (
-                  <option key={dep.id} value={dep.id}>
-                    {dep.nombre} ({dep.propiedad} - {dep.unidad_asignada})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" name="gratis" checked={!!form.gratis} onChange={handleFormChange} disabled={saving} />
-              <Emoji symbol="🆓" label="Gratis" /> Gratis
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" name="recaudado" checked={!!form.recaudado} onChange={handleFormChange} disabled={saving} />
-              <Emoji symbol="🔗" label="Recaudado" /> Recaudado
-            </label>
-            {form.recaudado && (
-              <label>
-                Fecha Recaudo:
-                <input type="date" name="fecha_recaudo" value={form.fecha_recaudo || ''} onChange={handleFormChange} required={!!form.recaudado} disabled={saving} />
-              </label>
+        <table className="registros-table">
+          <thead>
+            <tr>
+              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🚘" /> Placa</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🏠" /> Copropietario</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📷" /> Fotos</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🚦" /> Tipo</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="💵" /> Monto</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="🆓" /> Gratis</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="✅" /> Recaudado</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📅" /> Fecha Recaudo</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="📝" /> Observaciones</th>
+              <th style={{ textAlign: 'center' }}><Emoji symbol="👤" /> Registrado por</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resultados.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="sin-resultados">No se encontraron registros</td>
+              </tr>
+            ) : (
+              resultados.map(reg => (
+                <tr key={reg.id}>
+                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
+                  <td style={{ textAlign: 'center' }}>{reg.placa_vehiculo}</td>
+                  <td>
+                    {reg.copropietarios ? (
+                      <>
+                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
+                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
+                        {' '}
+                        {reg.copropietarios.nombre} ({reg.copropietarios.propiedad} - {reg.copropietarios.unidad_asignada})
+                      </>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center', maxWidth: 150 }}>
+                    {Array.isArray(reg.foto_url) && (
+                      reg.foto_url.length === 1 && reg.foto_url[0] === "" ? (
+                        <span style={{ color: '#ef4444', fontSize: 20 }}>
+                          <Emoji symbol="❌" label="Sin fotos" />
+                        </span>
+                      ) : reg.foto_url.length > 0 && reg.foto_url.some(url => url && url.trim() !== "") ? (
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 4,
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            background: '#3b82f6',
+                            color: 'white',
+                            borderRadius: '9999px',
+                            fontSize: 12,
+                            width: 20,
+                            height: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 10
+                          }}>
+                            {reg.foto_url.filter(url => url && url.trim() !== "").length}
+                          </span>
+                          {reg.foto_url.filter(url => url && url.trim() !== "").map((url, index) => (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                position: 'relative',
+                                transition: 'transform 0.2s',
+                              }}
+                            >
+                              <img
+                                loading="lazy"
+                                src={url}
+                                alt={`Evidencia ${index + 1}`}
+                                width={40}
+                                height={40}
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  objectFit: 'cover',
+                                  borderRadius: 6,
+                                  border: '1px solid #e5e7eb',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: 14 }}>-</span>
+                      )
+                    )}
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> Carro</>}
+                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> Moto</>}
+                  </td>
+                  <td className="px-2 py-1 text-center">${Number(reg.monto).toFixed(2)}</td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.gratis
+                      ? <><Emoji symbol="🆓" label="Gratis" /> Sí</>
+                      : <><Emoji symbol="❌" label="No gratis" /> No</>
+                    }
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    {reg.recaudado
+                      ? <><Emoji symbol="✅" label="Sí" /> Sí</>
+                      : <><Emoji symbol="⏳" label="No" /> No</>
+                    }
+                  </td>
+                  <td className="px-2 py-1 text-center">{reg.fecha_recaudo || '-'}</td>
+                  <td>{reg.observaciones || '-'}</td>
+                  <td>{reg.usuarios_app?.nombre || '-'}</td>
+                </tr>
+              ))
             )}
-            <div style={{ marginTop: 18 }}>
-              <button type="submit" className="save-btn" disabled={saving}>Guardar</button>
-              <button type="button" className="cancel-btn" onClick={() => setModal({ open: false, registro: null })} disabled={saving}>Cancelar</button>
-            </div>
-          </form>
-        </Modal>
-      )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Modal para nombre de PDF */}
+      {/* Modal para exportar PDF */}
       {modalExportar && (
         <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <h3>Exportar a PDF</h3>
-          <label>
-            Nombre del archivo:
+          <div style={{ padding: 20 }}>
+            <h3>Nombre del archivo PDF</h3>
             <input
               type="text"
               value={nombrePDF}
               onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Mayo 2025"
-              style={{ width: '100%', marginTop: 8, marginBottom: 18 }}
-              autoFocus
+              placeholder="Ej: Reporte Parqueadero"
+              className="p-2 border rounded w-full mb-4"
             />
-          </label>
-          <button
-            className="bg-green-600 text-white px-4 py-2 rounded"
-            onClick={generarPDF}
-            style={{ marginRight: 10 }}
-          >
-            Exportar
-          </button>
-          <button
-            className="bg-gray-400 text-white px-4 py-2 rounded"
-            onClick={() => setModalExportar(false)}
-          >
-            Cancelar
-          </button>
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded mr-2"
+              onClick={generarPDF}
+            >
+              <Emoji symbol="📄" /> Generar PDF
+            </button>
+            <button
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+              onClick={() => setModalExportar(false)}
+            >
+              Cancelar
+            </button>
+          </div>
         </Modal>
       )}
     </div>
