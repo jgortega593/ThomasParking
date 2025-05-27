@@ -28,7 +28,7 @@ function getNavItemsByRole(rol) {
   return baseItems;
 }
 
-// Menú móvil
+// Menú móvil con scroll vertical y sin pérdida de contenido en bordes
 function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOpen }) {
   const menuRef = useRef();
 
@@ -53,11 +53,11 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
   return (
     <nav
       ref={menuRef}
-      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-50 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-start"
       role="navigation"
       aria-label="Menú principal móvil"
       style={{
-        paddingTop: '48px', // igual a la altura de tu navbar
+        paddingTop: '48px', // igual a la altura del navbar
         width: '100vw',
         minWidth: 0,
         maxWidth: '100vw',
@@ -66,6 +66,7 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
         boxSizing: 'border-box',
         overflowY: 'auto',
         overflowX: 'hidden',
+        maxHeight: '100vh',
       }}
     >
       <div
