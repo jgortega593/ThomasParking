@@ -24,6 +24,8 @@ import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import AuditLog from './components/AuditLog';
+import ResetPassword from './pages/ResetPassword';
+
 
 function AppRoutes({ menuOpen, setMenuOpen }) {
   const location = useLocation();
@@ -116,6 +118,9 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
             {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/registros" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
           </Routes>
           <Footer />
         </div>

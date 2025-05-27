@@ -2098,13 +2098,14 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
         <div className="mt-6 w-11/12 mx-auto">
           <ThemeToggle />
         </div>
-        <button
-  className="flex items-center gap-2 mt-6 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-base transition-colors w-11/12 mx-auto shadow-md"
-  type="button"
->
-  <span className="text-xl mr-2" aria-hidden="true">🚶‍♂️➡️🚪</span>
-  <span></span>
-</button>
+         <button
+                onClick={handleLogout}
+                className="flex items-center mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors"
+                aria-label="Cerrar sesión"
+                type="button"
+              >
+                <Emoji symbol="🚶‍♂️➡️🚪" label="Cerrar sesión" /> <span className="ml-2"></span>
+              </button>
 
       </nav>
     </div>
@@ -2212,7 +2213,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
                 aria-label="Cerrar sesión"
                 type="button"
               >
-                <Emoji symbol="🚪" label="Cerrar sesión" /> <span className="ml-2">Cerrar Sesión</span>
+                <Emoji symbol="🚶‍♂️➡️🚪" label="Cerrar sesión" /> <span className="ml-2"></span>
               </button>
             </div>
           )}

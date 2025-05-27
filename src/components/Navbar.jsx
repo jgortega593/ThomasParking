@@ -19,6 +19,7 @@ function getAllNavItems() {
     { to: '/descargos', label: 'Descargos', emoji: '📤', requiredRole: 'admin' },
     { to: '/auditoria', label: 'Auditoría', emoji: '🕵️', requiredRole: 'admin' },
     { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️', requiredRole: null },
+    { to: '/reset-password', label: 'Restablecer Contraseña', emoji: '🔒', requiredRole: null },
   ];
 }
 
