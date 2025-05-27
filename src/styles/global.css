@@ -589,3 +589,21 @@ header button:focus, .navbar button:focus {
   outline: 2px solid #00e6fb;
   outline-offset: 2px;
 }
+
+/* Menú móvil: evitar que quede oculto bajo el navbar */
+nav[role="navigation"].fixed.inset-0,
+nav[role="navigation"].fixed.inset-0.z-50 {
+  padding-top: 56px !important; /* Ajusta según la altura real de tu navbar */
+  box-sizing: border-box;
+  overflow-y: auto;
+  /* Opcional: para evitar scroll horizontal accidental */
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+@media (max-width: 400px) {
+  nav[role="navigation"].fixed.inset-0,
+  nav[role="navigation"].fixed.inset-0.z-50 {
+    padding-top: 48px !important; /* Navbar más bajo en móviles pequeños */
+  }
+}
