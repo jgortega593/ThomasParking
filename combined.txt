@@ -1,5 +1,5 @@
 LISTA DE ARCHIVOS PROCESADOS:
-C:\ThomasParking\ThomasParking\dist\assets\index-DzlgHYNC.css
+C:\ThomasParking\ThomasParking\dist\assets\index.DwPDEBZ5.css
 C:\ThomasParking\ThomasParking\src\App.jsx
 C:\ThomasParking\ThomasParking\src\main.jsx
 C:\ThomasParking\ThomasParking\src\components\AuditLog.jsx
@@ -51,9 +51,9 @@ C:\ThomasParking\ThomasParking\src\styles\global.css
 
 
 
------ C:\ThomasParking\ThomasParking\dist\assets\index-DzlgHYNC.css -----
+----- C:\ThomasParking\ThomasParking\dist\assets\index.DwPDEBZ5.css -----
 
-@charset "UTF-8";.react-datepicker__navigation-icon:before,.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow{border-color:#ccc;border-style:solid;border-width:3px 3px 0 0;content:"";display:block;height:9px;position:absolute;top:6px;width:9px}.react-datepicker-wrapper{display:inline-block;padding:0;border:0}.react-datepicker{font-family:Helvetica Neue,helvetica,arial,sans-serif;font-size:.8rem;background-color:#fff;color:#000;border:1px solid #aeaeae;border-radius:.3rem;display:inline-block;position:relative;line-height:initial}.react-datepicker--time-only .react-datepicker__time-container{border-left:0}.react-datepicker--time-only .react-datepicker__time,.react-datepicker--time-only .react-datepicker__time-box{border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker-popper{z-index:1;line-height:0}.react-datepicker-popper .react-datepicker__triangle{stroke:#aeaeae}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{fill:#f0f0f0;color:#f0f0f0}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle{fill:#fff;color:#fff}.react-datepicker__header{text-align:center;background-color:#f0f0f0;border-bottom:1px solid #aeaeae;border-top-left-radius:.3rem;padding:8px 0;position:relative}.react-datepicker__header--time{padding-bottom:8px;padding-left:5px;padding-right:5px}.react-datepicker__header--time:not(.react-datepicker__header--time--only){border-top-left-radius:0}.react-datepicker__header:not(.react-datepicker__header--has-time-select){border-top-right-radius:.3rem}.react-datepicker__year-dropdown-container--select,.react-datepicker__month-dropdown-container--select,.react-datepicker__month-year-dropdown-container--select,.react-datepicker__year-dropdown-container--scroll,.react-datepicker__month-dropdown-container--scroll,.react-datepicker__month-year-dropdown-container--scroll{display:inline-block;margin:0 15px}.react-datepicker__current-month,.react-datepicker-time__header,.react-datepicker-year-header{margin-top:0;color:#000;font-weight:700;font-size:.944rem}h2.react-datepicker__current-month{padding:0;margin:0}.react-datepicker-time__header{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.react-datepicker__navigation{align-items:center;background:none;display:flex;justify-content:center;text-align:center;cursor:pointer;position:absolute;top:2px;padding:0;border:none;z-index:1;height:32px;width:32px;text-indent:-999em;overflow:hidden}.react-datepicker__navigation--previous{left:2px}.react-datepicker__navigation--next{right:2px}.react-datepicker__navigation--next--with-time:not(.react-datepicker__navigation--next--with-today-button){right:85px}.react-datepicker__navigation--years{position:relative;top:0;display:block;margin-left:auto;margin-right:auto}.react-datepicker__navigation--years-previous{top:4px}.react-datepicker__navigation--years-upcoming{top:-4px}.react-datepicker__navigation:hover *:before{border-color:#a6a6a6}.react-datepicker__navigation-icon{position:relative;top:-1px;font-size:20px;width:0}.react-datepicker__navigation-icon--next{left:-2px}.react-datepicker__navigation-icon--next:before{transform:rotate(45deg);left:-7px}.react-datepicker__navigation-icon--previous{right:-2px}.react-datepicker__navigation-icon--previous:before{transform:rotate(225deg);right:-7px}.react-datepicker__month-container{float:left}.react-datepicker__year{margin:.4rem;text-align:center}.react-datepicker__year-wrapper{display:flex;flex-wrap:wrap;max-width:180px}.react-datepicker__year .react-datepicker__year-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__month{margin:.4rem;text-align:center}.react-datepicker__month .react-datepicker__month-text,.react-datepicker__month .react-datepicker__quarter-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__input-time-container{clear:both;width:100%;float:left;margin:5px 0 10px 15px;text-align:left}.react-datepicker__input-time-container .react-datepicker-time__caption,.react-datepicker__input-time-container .react-datepicker-time__input-container{display:inline-block}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input{display:inline-block;margin-left:10px}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input{width:auto}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-inner-spin-button,.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]{-moz-appearance:textfield}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__delimiter{margin-left:5px;display:inline-block}.react-datepicker__time-container{float:right;border-left:1px solid #aeaeae;width:85px}.react-datepicker__time-container--with-today-button{display:inline;border:1px solid #aeaeae;border-radius:.3rem;position:absolute;right:-87px;top:0}.react-datepicker__time-container .react-datepicker__time{position:relative;background:#fff;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box{width:85px;overflow-x:hidden;margin:0 auto;text-align:center;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list{list-style:none;margin:0;height:calc(195px + .85rem);overflow-y:scroll;padding-right:0;padding-left:0;width:100%;box-sizing:content-box}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item{height:30px;padding:5px 10px;white-space:nowrap}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover{cursor:pointer;background-color:#f0f0f0}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected{background-color:#216ba5;color:#fff;font-weight:700}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover{background-color:#216ba5}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled{color:#ccc}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled:hover{cursor:default;background-color:transparent}.react-datepicker__week-number{color:#ccc;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__week-number.react-datepicker__week-number--clickable{cursor:pointer}.react-datepicker__week-number.react-datepicker__week-number--clickable:not(.react-datepicker__week-number--selected):hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__week-number--selected{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__week-number--selected:hover{background-color:#1d5d90}.react-datepicker__day-names{white-space:nowrap;margin-bottom:-8px}.react-datepicker__week{white-space:nowrap}.react-datepicker__day-name,.react-datepicker__day,.react-datepicker__time-name{color:#000;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__day,.react-datepicker__month-text,.react-datepicker__quarter-text,.react-datepicker__year-text{cursor:pointer}.react-datepicker__day:not([aria-disabled=true]):hover,.react-datepicker__month-text:not([aria-disabled=true]):hover,.react-datepicker__quarter-text:not([aria-disabled=true]):hover,.react-datepicker__year-text:not([aria-disabled=true]):hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__day--today,.react-datepicker__month-text--today,.react-datepicker__quarter-text--today,.react-datepicker__year-text--today{font-weight:700}.react-datepicker__day--highlighted,.react-datepicker__month-text--highlighted,.react-datepicker__quarter-text--highlighted,.react-datepicker__year-text--highlighted{border-radius:.3rem;background-color:#3dcc4a;color:#fff}.react-datepicker__day--highlighted:not([aria-disabled=true]):hover,.react-datepicker__month-text--highlighted:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--highlighted:not([aria-disabled=true]):hover,.react-datepicker__year-text--highlighted:not([aria-disabled=true]):hover{background-color:#32be3f}.react-datepicker__day--highlighted-custom-1,.react-datepicker__month-text--highlighted-custom-1,.react-datepicker__quarter-text--highlighted-custom-1,.react-datepicker__year-text--highlighted-custom-1{color:#f0f}.react-datepicker__day--highlighted-custom-2,.react-datepicker__month-text--highlighted-custom-2,.react-datepicker__quarter-text--highlighted-custom-2,.react-datepicker__year-text--highlighted-custom-2{color:green}.react-datepicker__day--holidays,.react-datepicker__month-text--holidays,.react-datepicker__quarter-text--holidays,.react-datepicker__year-text--holidays{position:relative;border-radius:.3rem;background-color:#ff6803;color:#fff}.react-datepicker__day--holidays .overlay,.react-datepicker__month-text--holidays .overlay,.react-datepicker__quarter-text--holidays .overlay,.react-datepicker__year-text--holidays .overlay{position:absolute;bottom:100%;left:50%;transform:translate(-50%);background-color:#333;color:#fff;padding:4px;border-radius:4px;white-space:nowrap;visibility:hidden;opacity:0;transition:visibility 0s,opacity .3s ease-in-out}.react-datepicker__day--holidays:not([aria-disabled=true]):hover,.react-datepicker__month-text--holidays:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--holidays:not([aria-disabled=true]):hover,.react-datepicker__year-text--holidays:not([aria-disabled=true]):hover{background-color:#cf5300}.react-datepicker__day--holidays:hover .overlay,.react-datepicker__month-text--holidays:hover .overlay,.react-datepicker__quarter-text--holidays:hover .overlay,.react-datepicker__year-text--holidays:hover .overlay{visibility:visible;opacity:1}.react-datepicker__day--selected,.react-datepicker__day--in-selecting-range,.react-datepicker__day--in-range,.react-datepicker__month-text--selected,.react-datepicker__month-text--in-selecting-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--selected,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--selected,.react-datepicker__year-text--in-selecting-range,.react-datepicker__year-text--in-range{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__day--selected:not([aria-disabled=true]):hover,.react-datepicker__day--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__day--in-range:not([aria-disabled=true]):hover,.react-datepicker__month-text--selected:not([aria-disabled=true]):hover,.react-datepicker__month-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__month-text--in-range:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--selected:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--in-range:not([aria-disabled=true]):hover,.react-datepicker__year-text--selected:not([aria-disabled=true]):hover,.react-datepicker__year-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__year-text--in-range:not([aria-disabled=true]):hover{background-color:#1d5d90}.react-datepicker__day--keyboard-selected,.react-datepicker__month-text--keyboard-selected,.react-datepicker__quarter-text--keyboard-selected,.react-datepicker__year-text--keyboard-selected{border-radius:.3rem;background-color:#bad9f1;color:#000}.react-datepicker__day--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__month-text--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__year-text--keyboard-selected:not([aria-disabled=true]):hover{background-color:#1d5d90}.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__month-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__quarter-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__year-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range){background-color:#216ba580}.react-datepicker__month--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range){background-color:#f0f0f0;color:#000}.react-datepicker__day--disabled,.react-datepicker__month-text--disabled,.react-datepicker__quarter-text--disabled,.react-datepicker__year-text--disabled{cursor:default;color:#ccc}.react-datepicker__day--disabled .overlay,.react-datepicker__month-text--disabled .overlay,.react-datepicker__quarter-text--disabled .overlay,.react-datepicker__year-text--disabled .overlay{position:absolute;bottom:70%;left:50%;transform:translate(-50%);background-color:#333;color:#fff;padding:4px;border-radius:4px;white-space:nowrap;visibility:hidden;opacity:0;transition:visibility 0s,opacity .3s ease-in-out}.react-datepicker__input-container{position:relative;display:inline-block;width:100%}.react-datepicker__input-container .react-datepicker__calendar-icon{position:absolute;padding:.5rem;box-sizing:content-box}.react-datepicker__view-calendar-icon input{padding:6px 10px 5px 25px}.react-datepicker__year-read-view,.react-datepicker__month-read-view,.react-datepicker__month-year-read-view{border:1px solid transparent;border-radius:.3rem;position:relative}.react-datepicker__year-read-view:hover,.react-datepicker__month-read-view:hover,.react-datepicker__month-year-read-view:hover{cursor:pointer}.react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__year-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__month-read-view--down-arrow{border-top-color:#b3b3b3}.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow{transform:rotate(135deg);right:-16px;top:0}.react-datepicker__year-dropdown,.react-datepicker__month-dropdown,.react-datepicker__month-year-dropdown{background-color:#f0f0f0;position:absolute;width:50%;left:25%;top:30px;z-index:1;text-align:center;border-radius:.3rem;border:1px solid #aeaeae}.react-datepicker__year-dropdown:hover,.react-datepicker__month-dropdown:hover,.react-datepicker__month-year-dropdown:hover{cursor:pointer}.react-datepicker__year-dropdown--scrollable,.react-datepicker__month-dropdown--scrollable,.react-datepicker__month-year-dropdown--scrollable{height:150px;overflow-y:scroll}.react-datepicker__year-option,.react-datepicker__month-option,.react-datepicker__month-year-option{line-height:20px;width:100%;display:block;margin-left:auto;margin-right:auto}.react-datepicker__year-option:first-of-type,.react-datepicker__month-option:first-of-type,.react-datepicker__month-year-option:first-of-type{border-top-left-radius:.3rem;border-top-right-radius:.3rem}.react-datepicker__year-option:last-of-type,.react-datepicker__month-option:last-of-type,.react-datepicker__month-year-option:last-of-type{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker__year-option:hover,.react-datepicker__month-option:hover,.react-datepicker__month-year-option:hover{background-color:#ccc}.react-datepicker__year-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-upcoming{border-bottom-color:#b3b3b3}.react-datepicker__year-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-previous{border-top-color:#b3b3b3}.react-datepicker__year-option--selected,.react-datepicker__month-option--selected,.react-datepicker__month-year-option--selected{position:absolute;left:15px}.react-datepicker__close-icon{cursor:pointer;background-color:transparent;border:0;outline:0;padding:0 6px 0 0;position:absolute;top:0;right:0;height:100%;display:table-cell;vertical-align:middle}.react-datepicker__close-icon:after{cursor:pointer;background-color:#216ba5;color:#fff;border-radius:50%;height:16px;width:16px;padding:2px;font-size:12px;line-height:1;text-align:center;display:table-cell;vertical-align:middle;content:"×"}.react-datepicker__close-icon--disabled{cursor:default}.react-datepicker__close-icon--disabled:after{cursor:default;background-color:#ccc}.react-datepicker__today-button{background:#f0f0f0;border-top:1px solid #aeaeae;cursor:pointer;text-align:center;font-weight:700;padding:5px 0;clear:left}.react-datepicker__portal{position:fixed;width:100vw;height:100vh;background-color:#000c;left:0;top:0;justify-content:center;align-items:center;display:flex;z-index:2147483647}.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:3rem;line-height:3rem}@media (max-width: 400px),(max-height: 550px){.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:2rem;line-height:2rem}}.react-datepicker__portal .react-datepicker__current-month,.react-datepicker__portal .react-datepicker-time__header{font-size:1.44rem}.react-datepicker__children-container{width:13.8rem;margin:.4rem;padding-right:.2rem;padding-left:.2rem;height:auto}.react-datepicker__aria-live{position:absolute;clip-path:circle(0);border:0;height:1px;margin:-1px;overflow:hidden;padding:0;width:1px;white-space:nowrap}.react-datepicker__calendar-icon{width:1em;height:1em;vertical-align:-.125em}:root{--background: #f8fafc;--surface: #fff;--text: #18181b;--text-muted: #6b7280;--primary: #6366f1;--primary-light: #e0e7ff;--secondary: #38bdf8;--accent: #ff6f91;--success: #10b981;--warning: #f59e42;--danger: #ef4444;--radius-lg: 20px;--radius-md: 12px;--radius-sm: 6px;--shadow-lg: 0 8px 32px #6366f133;--shadow-md: 0 2px 12px #6366f144;--transition: .22s cubic-bezier(.4,0,.2,1);--font-main: "Inter", "Segoe UI", Arial, sans-serif;--focus: #ff6f91}[data-theme=dark]{--background: #18181b;--surface: #23272f;--text: #f3f4f6;--text-muted: #a1a1aa;--primary: #818cf8;--primary-light: #23272f;--secondary: #38bdf8;--accent: #f472b6;--shadow-lg: 0 8px 32px #818cf833;--shadow-md: 0 2px 12px #818cf844}html,body{margin:0;padding:0;font-family:var(--font-main);background:var(--background);color:var(--text);min-height:100vh;scroll-behavior:smooth;text-align:center;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}#root,.app-root{min-height:100vh;display:flex;flex-direction:column;align-items:center;background:var(--background)}a{color:var(--primary);text-decoration:none;transition:color var(--transition)}a:hover,a:focus{color:var(--accent);text-decoration:underline;outline-offset:2px;outline:2px solid var(--accent)}h1,h2,h3,h4{font-weight:800;letter-spacing:-1px;margin-top:0;text-align:center;line-height:1.2}button,input,select,textarea{font-family:inherit;font-size:1rem;border-radius:var(--radius-md);border:1.5px solid #e5e7eb;padding:10px 14px;outline-offset:2px;transition:border-color var(--transition),background var(--transition),box-shadow var(--transition);margin:.25rem 0;box-sizing:border-box}button{cursor:pointer;background:var(--primary);color:#fff;border:none;font-weight:600;box-shadow:var(--shadow-md);min-width:120px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;-webkit-user-select:none;user-select:none}button:hover,button:focus{background:linear-gradient(90deg,var(--secondary) 60%,var(--accent) 100%);outline:none;box-shadow:0 0 0 3px var(--focus)}button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}button[aria-label="Abrir menú"],button[aria-label="Cerrar menú"],.btn-hamburguesa{min-width:0!important;min-height:0!important;width:32px!important;height:32px!important;padding:4px!important;box-shadow:none!important}input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#f0f9ff;box-shadow:0 0 0 3px var(--focus)}input[type=checkbox],input[type=radio]{width:1.1em;height:1.1em;accent-color:var(--primary);margin-right:7px;cursor:pointer}::-webkit-scrollbar{width:10px;background:#e0e7ef}::-webkit-scrollbar-thumb{background:var(--primary);border-radius:8px}.thumbnail{width:38px;height:38px;object-fit:cover;border-radius:var(--radius-sm);box-shadow:0 2px 6px #6366f133}.modal-backdrop{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#18181bbf;display:flex;justify-content:center;align-items:center;z-index:9999}.modal-content{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;max-width:480px;width:90vw;max-height:90vh;overflow-y:auto;text-align:left}.loader-spinner{width:48px;height:48px;border:6px solid #e0e0e0;border-top:6px solid var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-size:2rem}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}@media (max-width: 768px){.filtros-grid{flex-direction:column;align-items:center}.filtro-item{min-width:100%}.resultados-table-container{max-height:300px}}.sin-resultados{color:var(--text-muted);font-size:1.1em;text-align:center;padding:1.2em 0}.error-message{background:#fffbe6;color:var(--danger);border:1.5px solid #ffe58f;margin-top:1rem;padding:12px 18px;border-radius:var(--radius-md);font-size:1.06em;font-weight:600;text-align:center;max-width:700px;word-wrap:break-word}.pt-16{padding-top:4rem!important}
+@charset "UTF-8";.react-datepicker__navigation-icon:before,.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow{border-color:#ccc;border-style:solid;border-width:3px 3px 0 0;content:"";display:block;height:9px;position:absolute;top:6px;width:9px}.react-datepicker-wrapper{display:inline-block;padding:0;border:0}.react-datepicker{font-family:Helvetica Neue,helvetica,arial,sans-serif;font-size:.8rem;background-color:#fff;color:#000;border:1px solid #aeaeae;border-radius:.3rem;display:inline-block;position:relative;line-height:initial}.react-datepicker--time-only .react-datepicker__time-container{border-left:0}.react-datepicker--time-only .react-datepicker__time,.react-datepicker--time-only .react-datepicker__time-box{border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker-popper{z-index:1;line-height:0}.react-datepicker-popper .react-datepicker__triangle{stroke:#aeaeae}.react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle{fill:#f0f0f0;color:#f0f0f0}.react-datepicker-popper[data-placement^=top] .react-datepicker__triangle{fill:#fff;color:#fff}.react-datepicker__header{text-align:center;background-color:#f0f0f0;border-bottom:1px solid #aeaeae;border-top-left-radius:.3rem;padding:8px 0;position:relative}.react-datepicker__header--time{padding-bottom:8px;padding-left:5px;padding-right:5px}.react-datepicker__header--time:not(.react-datepicker__header--time--only){border-top-left-radius:0}.react-datepicker__header:not(.react-datepicker__header--has-time-select){border-top-right-radius:.3rem}.react-datepicker__year-dropdown-container--select,.react-datepicker__month-dropdown-container--select,.react-datepicker__month-year-dropdown-container--select,.react-datepicker__year-dropdown-container--scroll,.react-datepicker__month-dropdown-container--scroll,.react-datepicker__month-year-dropdown-container--scroll{display:inline-block;margin:0 15px}.react-datepicker__current-month,.react-datepicker-time__header,.react-datepicker-year-header{margin-top:0;color:#000;font-weight:700;font-size:.944rem}h2.react-datepicker__current-month{padding:0;margin:0}.react-datepicker-time__header{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.react-datepicker__navigation{align-items:center;background:none;display:flex;justify-content:center;text-align:center;cursor:pointer;position:absolute;top:2px;padding:0;border:none;z-index:1;height:32px;width:32px;text-indent:-999em;overflow:hidden}.react-datepicker__navigation--previous{left:2px}.react-datepicker__navigation--next{right:2px}.react-datepicker__navigation--next--with-time:not(.react-datepicker__navigation--next--with-today-button){right:85px}.react-datepicker__navigation--years{position:relative;top:0;display:block;margin-left:auto;margin-right:auto}.react-datepicker__navigation--years-previous{top:4px}.react-datepicker__navigation--years-upcoming{top:-4px}.react-datepicker__navigation:hover *:before{border-color:#a6a6a6}.react-datepicker__navigation-icon{position:relative;top:-1px;font-size:20px;width:0}.react-datepicker__navigation-icon--next{left:-2px}.react-datepicker__navigation-icon--next:before{transform:rotate(45deg);left:-7px}.react-datepicker__navigation-icon--previous{right:-2px}.react-datepicker__navigation-icon--previous:before{transform:rotate(225deg);right:-7px}.react-datepicker__month-container{float:left}.react-datepicker__year{margin:.4rem;text-align:center}.react-datepicker__year-wrapper{display:flex;flex-wrap:wrap;max-width:180px}.react-datepicker__year .react-datepicker__year-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__month{margin:.4rem;text-align:center}.react-datepicker__month .react-datepicker__month-text,.react-datepicker__month .react-datepicker__quarter-text{display:inline-block;width:4rem;margin:2px}.react-datepicker__input-time-container{clear:both;width:100%;float:left;margin:5px 0 10px 15px;text-align:left}.react-datepicker__input-time-container .react-datepicker-time__caption,.react-datepicker__input-time-container .react-datepicker-time__input-container{display:inline-block}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input{display:inline-block;margin-left:10px}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input{width:auto}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-inner-spin-button,.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__input input[type=time]{-moz-appearance:textfield}.react-datepicker__input-time-container .react-datepicker-time__input-container .react-datepicker-time__delimiter{margin-left:5px;display:inline-block}.react-datepicker__time-container{float:right;border-left:1px solid #aeaeae;width:85px}.react-datepicker__time-container--with-today-button{display:inline;border:1px solid #aeaeae;border-radius:.3rem;position:absolute;right:-87px;top:0}.react-datepicker__time-container .react-datepicker__time{position:relative;background:#fff;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box{width:85px;overflow-x:hidden;margin:0 auto;text-align:center;border-bottom-right-radius:.3rem}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list{list-style:none;margin:0;height:calc(195px + .85rem);overflow-y:scroll;padding-right:0;padding-left:0;width:100%;box-sizing:content-box}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item{height:30px;padding:5px 10px;white-space:nowrap}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover{cursor:pointer;background-color:#f0f0f0}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected{background-color:#216ba5;color:#fff;font-weight:700}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover{background-color:#216ba5}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled{color:#ccc}.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled:hover{cursor:default;background-color:transparent}.react-datepicker__week-number{color:#ccc;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__week-number.react-datepicker__week-number--clickable{cursor:pointer}.react-datepicker__week-number.react-datepicker__week-number--clickable:not(.react-datepicker__week-number--selected):hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__week-number--selected{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__week-number--selected:hover{background-color:#1d5d90}.react-datepicker__day-names{white-space:nowrap;margin-bottom:-8px}.react-datepicker__week{white-space:nowrap}.react-datepicker__day-name,.react-datepicker__day,.react-datepicker__time-name{color:#000;display:inline-block;width:1.7rem;line-height:1.7rem;text-align:center;margin:.166rem}.react-datepicker__day,.react-datepicker__month-text,.react-datepicker__quarter-text,.react-datepicker__year-text{cursor:pointer}.react-datepicker__day:not([aria-disabled=true]):hover,.react-datepicker__month-text:not([aria-disabled=true]):hover,.react-datepicker__quarter-text:not([aria-disabled=true]):hover,.react-datepicker__year-text:not([aria-disabled=true]):hover{border-radius:.3rem;background-color:#f0f0f0}.react-datepicker__day--today,.react-datepicker__month-text--today,.react-datepicker__quarter-text--today,.react-datepicker__year-text--today{font-weight:700}.react-datepicker__day--highlighted,.react-datepicker__month-text--highlighted,.react-datepicker__quarter-text--highlighted,.react-datepicker__year-text--highlighted{border-radius:.3rem;background-color:#3dcc4a;color:#fff}.react-datepicker__day--highlighted:not([aria-disabled=true]):hover,.react-datepicker__month-text--highlighted:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--highlighted:not([aria-disabled=true]):hover,.react-datepicker__year-text--highlighted:not([aria-disabled=true]):hover{background-color:#32be3f}.react-datepicker__day--highlighted-custom-1,.react-datepicker__month-text--highlighted-custom-1,.react-datepicker__quarter-text--highlighted-custom-1,.react-datepicker__year-text--highlighted-custom-1{color:#f0f}.react-datepicker__day--highlighted-custom-2,.react-datepicker__month-text--highlighted-custom-2,.react-datepicker__quarter-text--highlighted-custom-2,.react-datepicker__year-text--highlighted-custom-2{color:green}.react-datepicker__day--holidays,.react-datepicker__month-text--holidays,.react-datepicker__quarter-text--holidays,.react-datepicker__year-text--holidays{position:relative;border-radius:.3rem;background-color:#ff6803;color:#fff}.react-datepicker__day--holidays .overlay,.react-datepicker__month-text--holidays .overlay,.react-datepicker__quarter-text--holidays .overlay,.react-datepicker__year-text--holidays .overlay{position:absolute;bottom:100%;left:50%;transform:translate(-50%);background-color:#333;color:#fff;padding:4px;border-radius:4px;white-space:nowrap;visibility:hidden;opacity:0;transition:visibility 0s,opacity .3s ease-in-out}.react-datepicker__day--holidays:not([aria-disabled=true]):hover,.react-datepicker__month-text--holidays:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--holidays:not([aria-disabled=true]):hover,.react-datepicker__year-text--holidays:not([aria-disabled=true]):hover{background-color:#cf5300}.react-datepicker__day--holidays:hover .overlay,.react-datepicker__month-text--holidays:hover .overlay,.react-datepicker__quarter-text--holidays:hover .overlay,.react-datepicker__year-text--holidays:hover .overlay{visibility:visible;opacity:1}.react-datepicker__day--selected,.react-datepicker__day--in-selecting-range,.react-datepicker__day--in-range,.react-datepicker__month-text--selected,.react-datepicker__month-text--in-selecting-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--selected,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--selected,.react-datepicker__year-text--in-selecting-range,.react-datepicker__year-text--in-range{border-radius:.3rem;background-color:#216ba5;color:#fff}.react-datepicker__day--selected:not([aria-disabled=true]):hover,.react-datepicker__day--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__day--in-range:not([aria-disabled=true]):hover,.react-datepicker__month-text--selected:not([aria-disabled=true]):hover,.react-datepicker__month-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__month-text--in-range:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--selected:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--in-range:not([aria-disabled=true]):hover,.react-datepicker__year-text--selected:not([aria-disabled=true]):hover,.react-datepicker__year-text--in-selecting-range:not([aria-disabled=true]):hover,.react-datepicker__year-text--in-range:not([aria-disabled=true]):hover{background-color:#1d5d90}.react-datepicker__day--keyboard-selected,.react-datepicker__month-text--keyboard-selected,.react-datepicker__quarter-text--keyboard-selected,.react-datepicker__year-text--keyboard-selected{border-radius:.3rem;background-color:#bad9f1;color:#000}.react-datepicker__day--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__month-text--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__quarter-text--keyboard-selected:not([aria-disabled=true]):hover,.react-datepicker__year-text--keyboard-selected:not([aria-disabled=true]):hover{background-color:#1d5d90}.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__month-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__quarter-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range),.react-datepicker__year-text--in-selecting-range:not(.react-datepicker__day--in-range,.react-datepicker__month-text--in-range,.react-datepicker__quarter-text--in-range,.react-datepicker__year-text--in-range){background-color:#216ba580}.react-datepicker__month--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__day--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__month-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__quarter-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__month--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range),.react-datepicker__year--selecting-range .react-datepicker__year-text--in-range:not(.react-datepicker__day--in-selecting-range,.react-datepicker__month-text--in-selecting-range,.react-datepicker__quarter-text--in-selecting-range,.react-datepicker__year-text--in-selecting-range){background-color:#f0f0f0;color:#000}.react-datepicker__day--disabled,.react-datepicker__month-text--disabled,.react-datepicker__quarter-text--disabled,.react-datepicker__year-text--disabled{cursor:default;color:#ccc}.react-datepicker__day--disabled .overlay,.react-datepicker__month-text--disabled .overlay,.react-datepicker__quarter-text--disabled .overlay,.react-datepicker__year-text--disabled .overlay{position:absolute;bottom:70%;left:50%;transform:translate(-50%);background-color:#333;color:#fff;padding:4px;border-radius:4px;white-space:nowrap;visibility:hidden;opacity:0;transition:visibility 0s,opacity .3s ease-in-out}.react-datepicker__input-container{position:relative;display:inline-block;width:100%}.react-datepicker__input-container .react-datepicker__calendar-icon{position:absolute;padding:.5rem;box-sizing:content-box}.react-datepicker__view-calendar-icon input{padding:6px 10px 5px 25px}.react-datepicker__year-read-view,.react-datepicker__month-read-view,.react-datepicker__month-year-read-view{border:1px solid transparent;border-radius:.3rem;position:relative}.react-datepicker__year-read-view:hover,.react-datepicker__month-read-view:hover,.react-datepicker__month-year-read-view:hover{cursor:pointer}.react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__year-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__year-read-view--down-arrow,.react-datepicker__month-year-read-view:hover .react-datepicker__month-read-view--down-arrow{border-top-color:#b3b3b3}.react-datepicker__year-read-view--down-arrow,.react-datepicker__month-read-view--down-arrow,.react-datepicker__month-year-read-view--down-arrow{transform:rotate(135deg);right:-16px;top:0}.react-datepicker__year-dropdown,.react-datepicker__month-dropdown,.react-datepicker__month-year-dropdown{background-color:#f0f0f0;position:absolute;width:50%;left:25%;top:30px;z-index:1;text-align:center;border-radius:.3rem;border:1px solid #aeaeae}.react-datepicker__year-dropdown:hover,.react-datepicker__month-dropdown:hover,.react-datepicker__month-year-dropdown:hover{cursor:pointer}.react-datepicker__year-dropdown--scrollable,.react-datepicker__month-dropdown--scrollable,.react-datepicker__month-year-dropdown--scrollable{height:150px;overflow-y:scroll}.react-datepicker__year-option,.react-datepicker__month-option,.react-datepicker__month-year-option{line-height:20px;width:100%;display:block;margin-left:auto;margin-right:auto}.react-datepicker__year-option:first-of-type,.react-datepicker__month-option:first-of-type,.react-datepicker__month-year-option:first-of-type{border-top-left-radius:.3rem;border-top-right-radius:.3rem}.react-datepicker__year-option:last-of-type,.react-datepicker__month-option:last-of-type,.react-datepicker__month-year-option:last-of-type{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;border-bottom-left-radius:.3rem;border-bottom-right-radius:.3rem}.react-datepicker__year-option:hover,.react-datepicker__month-option:hover,.react-datepicker__month-year-option:hover{background-color:#ccc}.react-datepicker__year-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-option:hover .react-datepicker__navigation--years-upcoming,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-upcoming{border-bottom-color:#b3b3b3}.react-datepicker__year-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-option:hover .react-datepicker__navigation--years-previous,.react-datepicker__month-year-option:hover .react-datepicker__navigation--years-previous{border-top-color:#b3b3b3}.react-datepicker__year-option--selected,.react-datepicker__month-option--selected,.react-datepicker__month-year-option--selected{position:absolute;left:15px}.react-datepicker__close-icon{cursor:pointer;background-color:transparent;border:0;outline:0;padding:0 6px 0 0;position:absolute;top:0;right:0;height:100%;display:table-cell;vertical-align:middle}.react-datepicker__close-icon:after{cursor:pointer;background-color:#216ba5;color:#fff;border-radius:50%;height:16px;width:16px;padding:2px;font-size:12px;line-height:1;text-align:center;display:table-cell;vertical-align:middle;content:"×"}.react-datepicker__close-icon--disabled{cursor:default}.react-datepicker__close-icon--disabled:after{cursor:default;background-color:#ccc}.react-datepicker__today-button{background:#f0f0f0;border-top:1px solid #aeaeae;cursor:pointer;text-align:center;font-weight:700;padding:5px 0;clear:left}.react-datepicker__portal{position:fixed;width:100vw;height:100vh;background-color:#000c;left:0;top:0;justify-content:center;align-items:center;display:flex;z-index:2147483647}.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:3rem;line-height:3rem}@media (max-width: 400px),(max-height: 550px){.react-datepicker__portal .react-datepicker__day-name,.react-datepicker__portal .react-datepicker__day,.react-datepicker__portal .react-datepicker__time-name{width:2rem;line-height:2rem}}.react-datepicker__portal .react-datepicker__current-month,.react-datepicker__portal .react-datepicker-time__header{font-size:1.44rem}.react-datepicker__children-container{width:13.8rem;margin:.4rem;padding-right:.2rem;padding-left:.2rem;height:auto}.react-datepicker__aria-live{position:absolute;clip-path:circle(0);border:0;height:1px;margin:-1px;overflow:hidden;padding:0;width:1px;white-space:nowrap}.react-datepicker__calendar-icon{width:1em;height:1em;vertical-align:-.125em}:root{--background: #181f2a;--surface: #232b3e;--text: #eaf6fb;--text-muted: #7dd3fc;--primary: #00e6fb;--primary-dark: #2563eb;--primary-light: #38bdf8;--secondary: #1e40af;--accent: #7c3aed;--success: #22d3ee;--warning: #fbbf24;--danger: #ef4444;--radius-lg: 20px;--radius-md: 12px;--radius-sm: 6px;--shadow-lg: 0 8px 32px #00e6fb33;--shadow-md: 0 2px 12px #00e6fb44;--transition: .22s cubic-bezier(.4,0,.2,1);--font-main: "Inter", "Segoe UI", Arial, sans-serif;--focus: #00e6fb;--table-header: linear-gradient(90deg, #0ff 0%, #38bdf8 100%);--table-header-text: #18181b;--table-row-hover: #1e293b;--banner-bg: #0ff6;--banner-text: #18181b}[data-theme=light]{--background: #f6fbff;--surface: #fff;--text: #18181b;--text-muted: #38bdf8;--primary: #2563eb;--primary-dark: #1e40af;--primary-light: #38bdf8;--secondary: #1e40af;--accent: #7c3aed;--success: #10b981;--warning: #fbbf24;--danger: #ef4444;--shadow-lg: 0 8px 32px #2563eb33;--shadow-md: 0 2px 12px #2563eb44;--focus: #2563eb;--table-header: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);--table-header-text: #fff;--table-row-hover: #e0f2fe;--banner-bg: #e0f2fe;--banner-text: #2563eb}html,body{margin:0;padding:0;font-family:var(--font-main);background:var(--background);color:var(--text);min-height:100vh;scroll-behavior:smooth;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-size:16px}#root,.app-root{min-height:100vh;display:flex;flex-direction:column;align-items:stretch;background:var(--background)}h1,h2,h3,h4{font-weight:900;letter-spacing:-1px;margin-top:0;text-align:center;line-height:1.15;color:var(--primary);text-shadow:0 2px 16px #00e6fb44}a{color:var(--primary);text-decoration:none;font-weight:600;transition:color var(--transition)}a:hover,a:focus{color:var(--accent);text-shadow:0 0 8px var(--primary-light);outline:none}header,.navbar{width:100vw;min-width:0;max-width:100vw;background:linear-gradient(90deg,#2563eb,#7c3aed);color:#fff;box-shadow:0 2px 12px #6366f144;position:fixed;top:0;left:0;z-index:50;height:48px;padding:0 4px;font-size:1rem}header .menu-mobile-fullscreen,.navbar .menu-mobile-fullscreen{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;background:#18181b;z-index:100}header .max-w-7xl,.navbar .max-w-7xl{max-width:100vw!important;padding:0!important}header .flex,.navbar .flex{flex-wrap:nowrap;gap:.5rem;min-width:0}header .font-bold,.navbar .font-bold{font-size:1rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}header .hidden.md\:flex,.navbar .hidden.md\:flex{display:none!important}header .ml-4,.navbar .ml-4{margin-left:.5rem!important}header .ml-auto,.navbar .ml-auto{margin-left:auto!important}header .text-xs,.navbar .text-xs{font-size:.9em!important}header button,.navbar button{min-width:0!important;min-height:0!important;width:32px!important;height:32px!important;padding:4px!important;font-size:1.2em;background:transparent;box-shadow:none}header svg,.navbar svg{width:20px!important;height:20px!important}.offline-banner{width:100vw;background:#f59e42;color:#fff;font-weight:700;text-align:center;padding:10px 0;position:fixed;top:48px;left:0;z-index:100;letter-spacing:.5px}:root{--background: #f8fafc;--surface: #fff;--text: #18181b;--text-muted: #6b7280;--primary: #6366f1;--primary-light: #e0e7ff;--secondary: #38bdf8;--accent: #ff6f91;--success: #10b981;--warning: #f59e42;--danger: #ef4444;--radius-lg: 20px;--radius-md: 12px;--radius-sm: 6px;--shadow-lg: 0 8px 32px #6366f133;--shadow-md: 0 2px 12px #6366f144;--transition: .22s cubic-bezier(.4,0,.2,1);--font-main: "Inter", "Segoe UI", Arial, sans-serif;--focus: #ff6f91}[data-theme=dark]{--background: #18181b;--surface: #23272f;--text: #f3f4f6;--text-muted: #a1a1aa;--primary: #818cf8;--primary-light: #23272f;--secondary: #38bdf8;--accent: #f472b6;--shadow-lg: 0 8px 32px #818cf833;--shadow-md: 0 2px 12px #818cf844}html,body{margin:0;padding:0;font-family:var(--font-main);background:var(--background);color:var(--text);min-height:100vh;scroll-behavior:smooth;text-align:center;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}#root,.app-root{min-height:100vh;display:flex;flex-direction:column;align-items:center;background:var(--background)}a{color:var(--primary);text-decoration:none;transition:color var(--transition)}a:hover,a:focus{color:var(--accent);text-decoration:underline;outline-offset:2px;outline:2px solid var(--accent)}h1,h2,h3,h4{font-weight:800;letter-spacing:-1px;margin-top:0;text-align:center;line-height:1.2}button,input,select,textarea{font-family:inherit;font-size:1rem;border-radius:var(--radius-md);border:1.5px solid #e5e7eb;padding:10px 14px;outline-offset:2px;transition:border-color var(--transition),background var(--transition),box-shadow var(--transition);margin:.25rem 0;box-sizing:border-box}button{cursor:pointer;background:var(--primary);color:#fff;border:none;font-weight:600;box-shadow:var(--shadow-md);min-width:120px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;-webkit-user-select:none;user-select:none}button:hover,button:focus{background:linear-gradient(90deg,var(--secondary) 60%,var(--accent) 100%);outline:none;box-shadow:0 0 0 3px var(--focus)}button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#f0f9ff;box-shadow:0 0 0 3px var(--focus)}input[type=checkbox],input[type=radio]{width:1.1em;height:1.1em;accent-color:var(--primary);margin-right:7px;cursor:pointer}::-webkit-scrollbar{width:10px;background:#e0e7ef}::-webkit-scrollbar-thumb{background:var(--primary);border-radius:8px}.thumbnail{width:38px;height:38px;object-fit:cover;border-radius:var(--radius-sm);box-shadow:0 2px 6px #6366f133}.pt-16{padding-top:4rem!important}:focus-visible{outline:2.5px solid var(--focus);outline-offset:2px}.offline-banner{background:var(--banner-bg);color:var(--banner-text);padding:8px 0;text-align:center;font-weight:700;font-size:1rem;border-bottom:2px solid var(--primary);position:sticky;top:48px;z-index:40;letter-spacing:1px;text-shadow:0 1px 8px #00e6fb88}.error-message{background:#23272f;color:var(--danger);border:1.5px solid var(--primary);margin-top:1rem;padding:12px 18px;border-radius:var(--radius-md);font-size:1.06em;font-weight:600;text-align:center;max-width:700px;word-wrap:break-word;box-shadow:0 2px 12px #00e6fb33}[data-theme=light] .error-message{background:#fffbe6;color:#ef4444;border-color:#2563eb}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--shadow-md);margin-bottom:2rem;overflow:hidden;font-size:.92em}th,td{padding:10px 6px;text-align:left;border-bottom:1px solid #1e293b}th{background:var(--table-header);color:var(--table-header-text);font-weight:800;text-shadow:0 1px 6px #00e6fb88;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--primary);font-size:.93em}tr:last-child td{border-bottom:none}tbody tr:hover{background:var(--table-row-hover);color:var(--primary);transition:background var(--transition),color var(--transition)}input,select,textarea{font-family:inherit;font-size:1em;border-radius:var(--radius-md);border:1.5px solid #e5e7eb;padding:8px 10px;outline-offset:2px;margin:.18rem 0;box-sizing:border-box;background:#232b3e;color:var(--text);min-width:0;max-width:100%}input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#1e293b;box-shadow:0 0 0 2px var(--focus);color:var(--primary)}button{cursor:pointer;background:var(--primary);color:#fff;border:none;font-weight:600;box-shadow:var(--shadow-md);min-width:100px;min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:1em;border-radius:var(--radius-md);transition:background var(--transition),box-shadow var(--transition),color var(--transition)}button:hover,button:focus{background:linear-gradient(90deg,var(--secondary) 60%,var(--accent) 100%);outline:none;box-shadow:0 0 0 2px var(--focus)}button:active{transform:scale(.97);filter:brightness(1.1)}input[type=checkbox],input[type=radio]{width:1em;height:1em;accent-color:var(--primary);margin-right:5px;cursor:pointer}.loader-spinner{width:32px;height:32px;border:4px solid #e0e0e0;border-top:4px solid var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:.7rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}.modal-backdrop{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#18181bb3;z-index:9999;display:flex;align-items:center;justify-content:center}.modal-content{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;max-width:480px;width:90vw;max-height:90vh;overflow-y:auto;text-align:left;position:relative;font-size:.97em}@media (max-width: 400px),(max-device-width: 400px){html,body{font-size:14px!important;min-width:320px;max-width:100vw;overflow-x:hidden!important}header,.navbar{height:38px!important;font-size:.95rem!important;padding:0 1px!important}.offline-banner{font-size:.92em;padding:6px 0;top:38px}table,th,td{font-size:.89em!important;padding:6px 3px!important}.modal-content{padding:.7rem!important;max-width:99vw!important;width:99vw!important}input,select,textarea,button{font-size:.97em!important;padding:7px 8px!important}.registros-table-wrapper,.resultados-table-container{max-width:100vw!important;overflow-x:auto!important}.sin-resultados,.error-message{font-size:.98em!important;padding:.7em 0!important}.menu-mobile-content,.navbar-mobile-content{width:98vw;max-width:98vw;padding:14px 0}}.text-center{text-align:center!important}.text-right{text-align:right!important}.font-bold{font-weight:700!important}.font-semibold{font-weight:600!important}.flex{display:flex!important}.flex-col{flex-direction:column!important}.items-center{align-items:center!important}.gap-1{gap:.25rem!important}.gap-2{gap:.5rem!important}.gap-4{gap:1rem!important}.rounded-lg{border-radius:var(--radius-lg)!important}.rounded-md{border-radius:var(--radius-md)!important}.rounded{border-radius:var(--radius-sm)!important}.shadow{box-shadow:var(--shadow-md)!important}.shadow-lg{box-shadow:var(--shadow-lg)!important}.pt-16{padding-top:3.1rem!important}.mt-10{margin-top:2.5rem!important}:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.sin-resultados{color:var(--text-muted);font-size:1.05em;text-align:center;padding:.9em 0;letter-spacing:1px}.thumbnail{width:34px;height:34px;object-fit:cover;border-radius:var(--radius-sm);box-shadow:0 2px 6px #00e6fb88;border:2px solid #00e6fb}
 
 
 ----- C:\ThomasParking\ThomasParking\src\App.jsx -----
@@ -125,15 +125,19 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             <Route path="/login" element={
-              user ? <Navigate to="/registros" replace /> : <Login />
+              user ? <Navigate to="/consultas" replace /> : <Login />
             } />
 
             {/* Rutas protegidas */}
-            <Route path="/registros" element={
-              <AuthGuard>
-                <RegistroParqueo />
-              </AuthGuard>
-            } />
+            <Route
+  path="/registros"
+  element={
+    <AuthGuard requiredRole={['admin', 'registrador']}>
+      <RegistroParqueo />
+    </AuthGuard>
+  }
+/>
+
             <Route path="/consultas" element={
               <AuthGuard>
                 <Consultas />
@@ -176,11 +180,11 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
             } />
 
             {/* Redirecciones */}
-            <Route path="/" element={<Navigate to="/registros" replace />} />
+            <Route path="/" element={<Navigate to="/consultas" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
-            
+
           </Routes>
           <Footer />
         </div>
@@ -607,9 +611,21 @@ export default function AuthGuard({ requiredRole = null, children }) {
   if (!authState.user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  if (requiredRole && authState.role !== requiredRole) {
-    return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
+
+  // --- Validación de roles (soporta array o string) ---
+  if (requiredRole) {
+    const userRole = (authState.role || '').toLowerCase();
+    const tieneAcceso = Array.isArray(requiredRole)
+      ? requiredRole.map(r => r.toLowerCase()).includes(userRole)
+      : userRole === requiredRole.toLowerCase();
+
+    if (!tieneAcceso) {
+      return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
+      // O si prefieres redirigir:
+      // return <Navigate to="/access-denied" replace />;
+    }
   }
+
   return children || <Outlet />;
 }
 
@@ -1480,13 +1496,33 @@ export default function Footer() {
 
 ----- C:\ThomasParking\ThomasParking\src\components\ListaRegistros.jsx -----
 
+// src/components/ListaRegistros.jsx
 import React, { useMemo } from 'react';
 import Emoji from './Emoji';
 import Loader from './Loader';
 import dayjs from 'dayjs';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-export default function ListaRegistros({ registros = [], filtros = {}, loading, error, onRegistrosFiltradosChange }) {
+/**
+ * ListaRegistros
+ * Props:
+ * - registros: array de registros a mostrar
+ * - filtros: objeto de filtros aplicados
+ * - loading: boolean
+ * - error: string
+ * - onRegistrosFiltradosChange: función (opcional)
+ * - onEditar: función(registro) => void (opcional)
+ * - onEliminar: función(registro) => void (opcional)
+ */
+export default function ListaRegistros({
+  registros = [],
+  filtros = {},
+  loading,
+  error,
+  onRegistrosFiltradosChange,
+  onEditar,
+  onEliminar
+}) {
   const isOnline = useOnlineStatus();
 
   // Filtrado memoizado
@@ -1629,7 +1665,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                         {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
                         {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
                         {' '}
-                         - {reg.copropietarios.unidad_asignada}
+                        - {reg.copropietarios.unidad_asignada}
                       </>
                     ) : (
                       '-'
@@ -1651,7 +1687,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                       title="Editar"
                       disabled={!isOnline}
                       style={{ marginRight: 6, cursor: isOnline ? 'pointer' : 'not-allowed' }}
-                      onClick={() => alert('Función editar no implementada')}
+                      onClick={() => onEditar && onEditar(reg)}
                     >
                       <Emoji symbol="✏️" label="Editar" />
                     </button>
@@ -1659,7 +1695,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                       title="Eliminar"
                       disabled={!isOnline}
                       style={{ cursor: isOnline ? 'pointer' : 'not-allowed' }}
-                      onClick={() => alert('Función eliminar no implementada')}
+                      onClick={() => onEliminar && onEliminar(reg)}
                     >
                       <Emoji symbol="🗑️" label="Eliminar" />
                     </button>
@@ -1935,7 +1971,7 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 // Ítems de navegación
 function getAllNavItems() {
   return [
-    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: null },
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: ['admin', 'registrador'] },
     { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
     { to: '/recaudo', label: 'Recaudación', emoji: '💰', requiredRole: 'admin' },
     { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
@@ -2068,7 +2104,11 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
         }}
       >
         {navItems.map(item => {
-          const tieneAcceso = !item.requiredRole || rol.toLowerCase() === item.requiredRole;
+const tieneAcceso = !item.requiredRole
+  || (Array.isArray(item.requiredRole)
+      ? item.requiredRole.includes(rol)
+      : rol === item.requiredRole);
+
           return (
             <NavLink
               key={item.to}
@@ -2130,7 +2170,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     navigate('/login');
   };
 
-  const rol = (user?.role || user?.user_metadata?.role || 'registrador').toLowerCase();
+  const rol = (user?.role || user?.user_metadata?.role || '').toLowerCase();
   const navItems = getAllNavItems();
   const esAdmin = rol === 'admin';
   const handleNavClick = () => setMenuOpen(false);
@@ -2186,7 +2226,11 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
         {/* Navegación desktop */}
         <div className="hidden md:flex items-center ml-auto gap-6">
           {navItems.slice(0, 4).map(item => {
-            const tieneAcceso = !item.requiredRole || rol === item.requiredRole;
+            const tieneAcceso = !item.requiredRole
+  || (Array.isArray(item.requiredRole)
+      ? item.requiredRole.includes(rol)
+      : rol === item.requiredRole);
+
             return (
               <NavLink
                 key={item.to}
@@ -3702,338 +3746,381 @@ export default function Compensacion() {
 ----- C:\ThomasParking\ThomasParking\src\pages\Consultas.jsx -----
 
 // src/pages/Consultas.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import supabase from '../supabaseClient';
 import Loader from '../components/Loader';
-import Emoji from '../components/Emoji';
 import ErrorMessage from '../components/ErrorMessage';
-import Modal from '../components/Modal';
-import useOnlineStatus from '../hooks/useOnlineStatus';
-import dayjs from 'dayjs';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import SemaforoResumen from '../components/SemaforoResumen';
 import ListaRegistros from '../components/ListaRegistros';
+import ResumenRegistros from '../components/ResumenRegistros';
+import ExportarPDF from '../components/ExportarPDF';
+import Modal from '../components/Modal';
+import Emoji from '../components/Emoji';
+import dayjs from 'dayjs';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [resultados, setResultados] = useState([]);
   const [filtros, setFiltros] = useState({
     fechaInicio: '',
     fechaFin: '',
     placa: '',
+    tipoVehiculo: '',
     propiedad: '',
     unidadAsignada: '',
-    tipoVehiculo: ''
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [modalExportar, setModalExportar] = useState(false);
-  const [nombrePDF, setNombrePDF] = useState('');
-  const isOnline = useOnlineStatus();
+  const [error, setError] = useState('');
+  const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
+  const [registroEditar, setRegistroEditar] = useState(null);
+  const [editando, setEditando] = useState(false);
+  const [formEdicion, setFormEdicion] = useState({});
+  const [copropietarios, setCopropietarios] = useState([]);
 
+  // Columnas para exportar a PDF
+  const columnasPDF = [
+    { header: 'Fecha/Hora', key: 'fecha_hora_ingreso', formatter: v => v ? new Date(v).toLocaleString() : '' },
+    { header: 'Placa', key: 'placa_vehiculo' },
+    { header: 'Tipo', key: 'tipo_vehiculo' },
+    { header: 'Observaciones', key: 'observaciones' },
+    { header: 'Gratis', key: 'gratis', formatter: v => v ? 'Sí' : 'No' },
+    { header: 'Recaudado', key: 'recaudado', formatter: v => v ? 'Sí' : 'No' }
+  ];
+
+  // Cargar registros y copropietarios al montar
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        const [resRegistros, resCopropietarios] = await Promise.all([
-          supabase
-            .from('registros_parqueadero')
-            .select(`
-              id,
-              placa_vehiculo,
-              tipo_vehiculo,
-              fecha_hora_ingreso,
-              observaciones,
-              foto_url,
-              gratis,
-              monto,
-              recaudado,
-              fecha_recaudo,
-              dependencia_id,
-              observacion_audio_url,
-              copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
-              usuarios_app:usuario_id(nombre, rol)
-            `)
-            .order('fecha_hora_ingreso', { ascending: false }),
-          supabase
-            .from('copropietarios')
-            .select('id, nombre, propiedad, unidad_asignada')
-        ]);
-        if (resRegistros.error) throw resRegistros.error;
-        if (resCopropietarios.error) throw resCopropietarios.error;
-        setRegistros(resRegistros.data || []);
-        setCopropietarios(resCopropietarios.data || []);
-        setResultados(resRegistros.data || []);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargarDatos();
+    setLoading(true);
+    Promise.all([
+      supabase
+        .from('registros_parqueadero')
+        .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)')
+        .order('fecha_hora_ingreso', { ascending: false }),
+      supabase
+        .from('copropietarios')
+        .select('id, propiedad, unidad_asignada')
+    ]).then(([registrosRes, copropietariosRes]) => {
+      if (registrosRes.error) setError('Error al cargar registros');
+      else setRegistros(registrosRes.data || []);
+      if (copropietariosRes.data) setCopropietarios(copropietariosRes.data);
+      setLoading(false);
+    });
   }, []);
 
-  // Actualiza resultados cuando cambian los filtros o los registros
-  useEffect(() => {
-    let filtrados = [...registros];
-    if (filtros.fechaInicio) {
-      filtrados = filtrados.filter(r =>
-        dayjs(r.fecha_hora_ingreso).isAfter(dayjs(filtros.fechaInicio).startOf('day'))
-      );
-    }
-    if (filtros.fechaFin) {
-      filtrados = filtrados.filter(r =>
-        dayjs(r.fecha_hora_ingreso).isBefore(dayjs(filtros.fechaFin).endOf('day'))
-      );
-    }
-    if (filtros.placa) {
-      filtrados = filtrados.filter(r =>
-        r.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase())
-      );
-    }
-    if (filtros.tipoVehiculo) {
-      filtrados = filtrados.filter(r =>
-        r.tipo_vehiculo === filtros.tipoVehiculo
-      );
-    }
-    if (filtros.propiedad) {
-      filtrados = filtrados.filter(r =>
-        r.copropietarios?.propiedad === filtros.propiedad
-      );
-    }
-    if (filtros.unidadAsignada) {
-      filtrados = filtrados.filter(r =>
-        r.copropietarios?.unidad_asignada === filtros.unidadAsignada
-      );
-    }
-    setResultados(filtrados);
-  }, [registros, filtros]);
-
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidadesFiltradas = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  const handleChange = (e) => {
+  // Filtros controlados
+  const handleFiltroChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === 'propiedad' && { unidadAsignada: '' })
+      [name]: value
     }));
   };
 
-  const limpiarFiltros = () => {
-    setFiltros({
-      fechaInicio: '',
-      fechaFin: '',
-      placa: '',
-      propiedad: '',
-      unidadAsignada: '',
-      tipoVehiculo: ''
-    });
-    setResultados(registros);
-  };
+  // Opciones únicas para filtros
+  const tiposUnicos = Array.from(new Set(registros.map(r => r.tipo_vehiculo))).filter(Boolean);
+  const propiedadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.propiedad))).filter(Boolean);
+  const unidadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.unidad_asignada))).filter(Boolean);
 
-  // --- Exportar a PDF ---
-  const columnasPDF = [
-    {
-      key: 'fecha_hora_ingreso',
-      header: 'Fecha/Hora',
-      formatter: v => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : ''
-    },
-    { key: 'placa_vehiculo', header: 'Placa' },
-    { key: 'tipo_vehiculo', header: 'Tipo', formatter: v => v ? v[0].toUpperCase() + v.slice(1) : '' },
-    { key: 'observaciones', header: 'Observaciones' },
-    { key: 'monto', header: 'Monto', formatter: v => v !== undefined ? `$${Number(v).toFixed(2)}` : '-' },
-    { key: 'gratis', header: 'Gratis', formatter: v => v ? 'Sí' : 'No' },
-    { key: 'recaudado', header: 'Recaudado', formatter: v => v ? 'Sí' : 'No' },
-    { key: 'fecha_recaudo', header: 'Fecha Recaudo' },
-    {
-      key: 'copropietarios',
-      header: 'Copropietario',
-      formatter: (_, item) =>
-        item.copropietarios
-          ? `${item.copropietarios.nombre} (${item.copropietarios.propiedad} - ${item.copropietarios.unidad_asignada})`
-          : '-'
-    },
-    {
-      key: 'usuarios_app',
-      header: 'Registrado por',
-      formatter: (_, item) => item.usuarios_app?.nombre || '-'
+  // --- Eliminar registro ---
+  const handleEliminar = async (registro) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar el registro de la placa ${registro.placa_vehiculo}?`)) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from('registros_parqueadero')
+      .delete()
+      .eq('id', registro.id);
+    setLoading(false);
+    if (error) {
+      alert('Error al eliminar: ' + error.message);
+    } else {
+      setRegistros(prev => prev.filter(r => r.id !== registro.id));
     }
-  ];
-
-  const exportarPDF = () => {
-    if (!resultados.length) {
-      alert('No hay datos para exportar');
-      return;
-    }
-    setModalExportar(true);
-    setNombrePDF('');
   };
 
-  const generarPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-    const headers = columnasPDF.map(col => col.header);
-    const rows = resultados.map(item =>
-      columnasPDF.map(col =>
-        col.formatter ? col.formatter(item[col.key], item) : item[col.key]
-      )
-    );
-    doc.setFontSize(16);
-    doc.text(nombrePDF || 'Reporte de Registros de Parqueadero', 40, 40);
-    doc.setFontSize(10);
-    doc.text(`Generado: ${dayjs().format('DD/MM/YYYY HH:mm')}`, 40, 60);
-    autoTable(doc, {
-      head: [headers],
-      body: rows,
-      startY: 80,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { left: 40, right: 40 },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.text(
-          `Página ${data.pageNumber} de ${pageCount}`,
-          data.settings.margin.left,
-          doc.internal.pageSize.getHeight() - 10
-        );
-      }
+  // --- Editar registro ---
+  const handleEditar = (registro) => {
+    setRegistroEditar(registro);
+    setFormEdicion({
+      placa_vehiculo: registro.placa_vehiculo || '',
+      tipo_vehiculo: registro.tipo_vehiculo || 'carro',
+      observaciones: registro.observaciones || '',
+      dependencia_id: registro.dependencia_id || '',
+      gratis: registro.gratis || false,
+      recaudado: registro.recaudado || false,
     });
-    doc.save(
-      `${(nombrePDF || 'reporte-parqueadero').toLowerCase().replace(/\s/g, '-')}-${dayjs().format('YYYYMMDD-HHmm')}.pdf`
-    );
-    setModalExportar(false);
   };
 
-  if (loading) return <Loader text="Cargando registros..." />;
-  if (error) return <ErrorMessage message={error} />;
+  // --- Guardar edición ---
+  const handleGuardarEdicion = async (e) => {
+    e.preventDefault();
+    setEditando(true);
+    try {
+      const { error } = await supabase
+        .from('registros_parqueadero')
+        .update({
+          placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase(),
+          tipo_vehiculo: formEdicion.tipo_vehiculo,
+          observaciones: formEdicion.observaciones,
+          dependencia_id: formEdicion.dependencia_id || null,
+          gratis: formEdicion.gratis,
+          recaudado: formEdicion.recaudado,
+        })
+        .eq('id', registroEditar.id);
+      if (error) throw error;
+      setRegistros(prev =>
+        prev.map(r =>
+          r.id === registroEditar.id
+            ? { ...r, ...formEdicion, placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase() }
+            : r
+        )
+      );
+      setRegistroEditar(null);
+    } catch (error) {
+      alert('Error al actualizar: ' + error.message);
+    } finally {
+      setEditando(false);
+    }
+  };
+
+  // --- Cancelar edición ---
+  const handleCancelarEdicion = () => {
+    setRegistroEditar(null);
+    setFormEdicion({});
+  };
 
   return (
-    <div className="consultas-container">
-      <h2>
-        <Emoji symbol="📊" label="Consultas" /> Consultas y Reportes de Parqueadero
+    <div className="max-w-6xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <Emoji symbol="📊" /> Consultas y Reportes
       </h2>
-      <form className="filtros-form" style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <label>
-              <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
-            </label>
-            <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
-            </label>
-            <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🚘" label="Placa" /> Placa:
-            </label>
-            <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
-            </label>
-            <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
-              <option value="">Todos</option>
-              <option value="carro">Carro</option>
-              <option value="moto">Moto</option>
-            </select>
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
-            </label>
-            <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
-              <option value="">Todas</option>
-              {propiedades.map(prop => (
-                <option key={prop} value={prop}>{prop}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🔢" label="Unidad" /> Unidad:
-            </label>
-            <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
-              <option value="">Todas</option>
-              {unidadesFiltradas.map(u => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <div className="bg-blue-50 text-blue-700 rounded px-4 py-2 mb-2" style={{ maxWidth: 500 }}>
-            <Emoji symbol="ℹ️" label="info" /> El filtrado es <b>automático</b>.
-          </div>
-          <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
-            <Emoji symbol="♻️" label="Limpiar" /> Limpiar
-          </button>
-          <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
-            <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
-          </button>
-        </div>
-      </form>
 
-      {/* Semáforo de resumen */}
-      <div style={{ marginBottom: 24 }}>
-        <SemaforoResumen
-          registros={resultados}
-          customLabels={{
-            recaudado: 'Recaudado',
-            pendiente: 'Pendiente',
-            gratis: 'Gratis',
-            cantidad: 'Registros',
-            total: 'Total'
-          }}
-          colorFondo="rgba(243, 244, 246, 0.5)"
+      {/* Filtros avanzados */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <div>
+          <label className="block text-sm font-medium mb-1">Fecha inicio</label>
+          <input
+            type="date"
+            name="fechaInicio"
+            value={filtros.fechaInicio}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Fecha fin</label>
+          <input
+            type="date"
+            name="fechaFin"
+            value={filtros.fechaFin}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Placa</label>
+          <input
+            type="text"
+            name="placa"
+            value={filtros.placa}
+            onChange={handleFiltroChange}
+            placeholder="Buscar por placa"
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Tipo de vehículo</label>
+          <select
+            name="tipoVehiculo"
+            value={filtros.tipoVehiculo}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todos</option>
+            {tiposUnicos.map(tipo => (
+              <option key={tipo} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Propiedad</label>
+          <select
+            name="propiedad"
+            value={filtros.propiedad}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todas</option>
+            {propiedadesUnicas.map(prop => (
+              <option key={prop} value={prop}>{prop}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Unidad asignada</label>
+          <select
+            name="unidadAsignada"
+            value={filtros.unidadAsignada}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todas</option>
+            {unidadesUnicas.map(unidad => (
+              <option key={unidad} value={unidad}>{unidad}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Resumen estadístico */}
+      <ResumenRegistros registros={registrosFiltrados} />
+
+      {/* Exportar a PDF */}
+      <div className="my-4 flex justify-end">
+        <ExportarPDF
+          datos={registrosFiltrados}
+          columnas={columnasPDF}
+          titulo="Reporte de Registros de Parqueadero"
         />
       </div>
 
-      {/* Tabla de resultados usando ListaRegistros */}
-      <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
+      {/* Tabla de resultados */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-2">
         <ListaRegistros
           registros={registros}
           filtros={filtros}
           loading={loading}
           error={error}
-          onRegistrosFiltradosChange={setResultados}
+          onRegistrosFiltradosChange={setRegistrosFiltrados}
+          onEditar={handleEditar}
+          onEliminar={handleEliminar}
         />
       </div>
 
-      {/* Modal para exportar PDF */}
-      {modalExportar && (
-        <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <div style={{ padding: 24 }}>
-            <h3 className="text-lg font-semibold mb-4">Nombre del archivo PDF</h3>
-            <input
-              type="text"
-              value={nombrePDF}
-              onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Mayo 2025"
-              className="border rounded px-3 py-2 w-full mb-4"
-            />
-            <button
-              className="bg-green-600 text-white px-4 py-2 rounded mr-2"
-              onClick={generarPDF}
-            >
-              Generar PDF
-            </button>
-            <button
-              className="bg-gray-400 text-white px-4 py-2 rounded"
-              onClick={() => setModalExportar(false)}
-            >
-              Cancelar
-            </button>
+      {/* Modal de edición */}
+      {registroEditar && (
+        <Modal isOpen={true} onClose={handleCancelarEdicion}>
+          <div className="max-w-md mx-auto">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Emoji symbol="✏️" /> Editar Registro
+            </h3>
+            <form onSubmit={handleGuardarEdicion} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Placa del vehículo
+                </label>
+                <input
+                  type="text"
+                  value={formEdicion.placa_vehiculo}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    placa_vehiculo: e.target.value.toUpperCase()
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="ABC123"
+                  required
+                  disabled={editando}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Tipo de vehículo
+                </label>
+                <select
+                  value={formEdicion.tipo_vehiculo}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    tipo_vehiculo: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  disabled={editando}
+                >
+                  <option value="carro">🚙 Carro</option>
+                  <option value="moto">🛵 Moto</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Copropietario (opcional)
+                </label>
+                <select
+                  value={formEdicion.dependencia_id}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    dependencia_id: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  disabled={editando}
+                >
+                  <option value="">Sin asignar</option>
+                  {copropietarios.map(cp => (
+                    <option key={cp.id} value={cp.id}>
+                      {cp.propiedad} - {cp.unidad_asignada}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Observaciones
+                </label>
+                <textarea
+                  value={formEdicion.observaciones}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    observaciones: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md h-20"
+                  placeholder="Observaciones adicionales..."
+                  disabled={editando}
+                />
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formEdicion.gratis}
+                    onChange={e => setFormEdicion(prev => ({
+                      ...prev,
+                      gratis: e.target.checked
+                    }))}
+                    disabled={editando}
+                  />
+                  <span className="ml-2">🆓 Gratis</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formEdicion.recaudado}
+                    onChange={e => setFormEdicion(prev => ({
+                      ...prev,
+                      recaudado: e.target.checked
+                    }))}
+                    disabled={editando || formEdicion.gratis}
+                  />
+                  <span className="ml-2">💰 Recaudado</span>
+                </label>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={editando}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  {editando ? (
+                    <Loader text="Guardando..." />
+                  ) : (
+                    <>
+                      <Emoji symbol="💾" /> Guardar Cambios
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelarEdicion}
+                  disabled={editando}
+                  className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  <Emoji symbol="❌" /> Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </Modal>
       )}
