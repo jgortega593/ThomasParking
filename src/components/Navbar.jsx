@@ -12,7 +12,7 @@ function getAllNavItems() {
   return [
     { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: ['admin', 'registrador'] },
     { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
-    { to: '/recaudo', label: 'Recaudación', emoji: '💰', requiredRole: 'admin' },
+    { to: '/recaudo', label: 'Recaudo Parqueo Visita', emoji: '💰', requiredRole: 'admin' },
     { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
     { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️', requiredRole: 'admin' },
     { to: '/usuarios', label: 'Usuarios', emoji: '👥', requiredRole: 'admin' },
@@ -28,7 +28,7 @@ function AccessDenied({ requiredRole, userRole }) {
   const politicas = {
     admin: [
       '👑 Administradores pueden acceder a todas las funcionalidades',
-      '💰 Gestión de recaudación y compensaciones',
+      '💰 Gestión de recaudo y compensaciones',
       '🏘️ Administración de copropietarios y usuarios',
       '📤 Gestión de descargos y auditoría del sistema',
       '📊 Acceso completo a reportes y consultas'
