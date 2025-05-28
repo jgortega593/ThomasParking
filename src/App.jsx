@@ -28,16 +28,30 @@ import ResetPassword from './pages/ResetPassword';
 
 function AppRoutes({ menuOpen, setMenuOpen }) {
   const location = useLocation();
-  const { user, loading: userLoading } = useUser();
+  const { user } = useUser();
   const isOnline = useOnlineStatus();
   const hideNavbarRoutes = ['/login', '/', '/registro'];
 
+  // Sincronizar token con localStorage
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      } else {
+        localStorage.removeItem('sb-access-token');
+      }
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
+
   return (
     <>
+      {/* Mostrar Navbar solo en rutas permitidas */}
       {!hideNavbarRoutes.includes(location.pathname) && (
         <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       )}
 
+      {/* Banner de modo offline */}
       {!isOnline && (
         <div className="offline-banner" role="status" aria-live="polite">
           <span role="img" aria-label="offline">⚡</span>
@@ -45,6 +59,7 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
         </div>
       )}
 
+      {/* Contenido principal */}
       {!menuOpen && (
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
@@ -52,11 +67,15 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
               user ? <Navigate to="/consultas" replace /> : <Login />
             } />
 
-            <Route path="/registros" element={
-              <AuthGuard requiredRole={['admin', 'registrador']}>
-                <RegistroParqueo />
-              </AuthGuard>
-            }/>
+            {/* Rutas protegidas */}
+            <Route
+              path="/registros"
+              element={
+                <AuthGuard requiredRole={['admin', 'registrador']}>
+                  <RegistroParqueo />
+                </AuthGuard>
+              }
+            />
 
             <Route path="/consultas" element={<AuthGuard><Consultas /></AuthGuard>} />
             <Route path="/recaudo" element={<AuthGuard requiredRole="admin"><ResumenRecaudo /></AuthGuard>} />
@@ -67,6 +86,7 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
             <Route path="/copropietarios" element={<AuthGuard requiredRole="admin"><GestionCopropietarios /></AuthGuard>} />
             <Route path="/auditoria" element={<AuthGuard requiredRole="admin"><AuditLog /></AuthGuard>} />
 
+            {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/consultas" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -80,39 +100,79 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  // Registrar Service Worker
+  // Registrar Service Worker y manejar actualizaciones
   useEffect(() => {
-    if ('serviceWorker' in navigator && import.meta.env.PROD) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(registration => {
-          registration.onupdatefound = () => {
-            const newWorker = registration.installing;
-            newWorker.onstatechange = () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setUpdateAvailable(true);
-              }
-            };
-          };
-        })
-        .catch(error => console.error('Service Worker registration failed:', error));
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    setUpdateAvailable(true);
+                    newWorker.postMessage('SKIP_WAITING');
+                  }
+                }
+              });
+            });
+          })
+          .catch(error => console.log('Error registrando Service Worker:', error));
+      });
     }
   }, []);
 
+  // Forzar recarga para actualizar la app
   const handleUpdateApp = () => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(registration => {
-        registration.unregister().then(() => window.location.reload());
+        registration.unregister().then(() => {
+          window.location.reload(true);
+        });
       });
     }
   };
 
+  // Limpieza de cookies al iniciar la app
+  useEffect(() => {
+    const clearAllCookies = () => {
+      const cookies = document.cookie.split("; ");
+      for (const cookie of cookies) {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${window.location.pathname}`;
+      }
+    };
+    clearAllCookies();
+  }, []);
+
+  // Control de sesión inicial
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        localStorage.setItem('sb-access-token', session.access_token);
+      }
+      setLoading(false);
+    };
+    checkSession();
+  }, []);
+
+  if (loading) {
+    return <Loader fullScreen text="Inicializando aplicación..." />;
+  }
+
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <UserProvider>
+      <UserProvider>
+        <BrowserRouter>
           <ErrorBoundary>
+            {/* Notificación de actualización */}
             {updateAvailable && (
               <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg flex items-center gap-4 z-50">
                 <span>¡Nueva versión disponible!</span>
@@ -124,10 +184,13 @@ function App() {
                 </button>
               </div>
             )}
-            <AppRoutes menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+            <AppRoutes 
+              menuOpen={menuOpen} 
+              setMenuOpen={setMenuOpen} 
+            />
           </ErrorBoundary>
-        </UserProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </UserProvider>
     </ThemeProvider>
   );
 }
