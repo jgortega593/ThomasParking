@@ -201,8 +201,20 @@ export default function AuthGuard({ requiredRole = null, children }) {
   if (!authState.user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  if (requiredRole && authState.role !== requiredRole) {
-    return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
+
+  // --- Validación de roles (soporta array o string) ---
+  if (requiredRole) {
+    const userRole = (authState.role || '').toLowerCase();
+    const tieneAcceso = Array.isArray(requiredRole)
+      ? requiredRole.map(r => r.toLowerCase()).includes(userRole)
+      : userRole === requiredRole.toLowerCase();
+
+    if (!tieneAcceso) {
+      return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
+      // O si prefieres redirigir:
+      // return <Navigate to="/access-denied" replace />;
+    }
   }
+
   return children || <Outlet />;
 }

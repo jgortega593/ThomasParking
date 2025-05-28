@@ -65,15 +65,19 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
         <div className="pt-16 min-h-screen flex flex-col">
           <Routes>
             <Route path="/login" element={
-              user ? <Navigate to="/registros" replace /> : <Login />
+              user ? <Navigate to="/consultas" replace /> : <Login />
             } />
 
             {/* Rutas protegidas */}
-            <Route path="/registros" element={
-              <AuthGuard>
-                <RegistroParqueo />
-              </AuthGuard>
-            } />
+            <Route
+  path="/registros"
+  element={
+    <AuthGuard requiredRole={['admin', 'registrador']}>
+      <RegistroParqueo />
+    </AuthGuard>
+  }
+/>
+
             <Route path="/consultas" element={
               <AuthGuard>
                 <Consultas />
@@ -116,11 +120,11 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
             } />
 
             {/* Redirecciones */}
-            <Route path="/" element={<Navigate to="/registros" replace />} />
+            <Route path="/" element={<Navigate to="/consultas" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
-            
+
           </Routes>
           <Footer />
         </div>

@@ -1,336 +1,379 @@
 // src/pages/Consultas.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import supabase from '../supabaseClient';
 import Loader from '../components/Loader';
-import Emoji from '../components/Emoji';
 import ErrorMessage from '../components/ErrorMessage';
-import Modal from '../components/Modal';
-import useOnlineStatus from '../hooks/useOnlineStatus';
-import dayjs from 'dayjs';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import SemaforoResumen from '../components/SemaforoResumen';
 import ListaRegistros from '../components/ListaRegistros';
+import ResumenRegistros from '../components/ResumenRegistros';
+import ExportarPDF from '../components/ExportarPDF';
+import Modal from '../components/Modal';
+import Emoji from '../components/Emoji';
+import dayjs from 'dayjs';
 
 export default function Consultas() {
   const [registros, setRegistros] = useState([]);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [resultados, setResultados] = useState([]);
   const [filtros, setFiltros] = useState({
     fechaInicio: '',
     fechaFin: '',
     placa: '',
+    tipoVehiculo: '',
     propiedad: '',
     unidadAsignada: '',
-    tipoVehiculo: ''
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [modalExportar, setModalExportar] = useState(false);
-  const [nombrePDF, setNombrePDF] = useState('');
-  const isOnline = useOnlineStatus();
+  const [error, setError] = useState('');
+  const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
+  const [registroEditar, setRegistroEditar] = useState(null);
+  const [editando, setEditando] = useState(false);
+  const [formEdicion, setFormEdicion] = useState({});
+  const [copropietarios, setCopropietarios] = useState([]);
 
+  // Columnas para exportar a PDF
+  const columnasPDF = [
+    { header: 'Fecha/Hora', key: 'fecha_hora_ingreso', formatter: v => v ? new Date(v).toLocaleString() : '' },
+    { header: 'Placa', key: 'placa_vehiculo' },
+    { header: 'Tipo', key: 'tipo_vehiculo' },
+    { header: 'Observaciones', key: 'observaciones' },
+    { header: 'Gratis', key: 'gratis', formatter: v => v ? 'Sí' : 'No' },
+    { header: 'Recaudado', key: 'recaudado', formatter: v => v ? 'Sí' : 'No' }
+  ];
+
+  // Cargar registros y copropietarios al montar
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        const [resRegistros, resCopropietarios] = await Promise.all([
-          supabase
-            .from('registros_parqueadero')
-            .select(`
-              id,
-              placa_vehiculo,
-              tipo_vehiculo,
-              fecha_hora_ingreso,
-              observaciones,
-              foto_url,
-              gratis,
-              monto,
-              recaudado,
-              fecha_recaudo,
-              dependencia_id,
-              observacion_audio_url,
-              copropietarios:dependencia_id(nombre, propiedad, unidad_asignada),
-              usuarios_app:usuario_id(nombre, rol)
-            `)
-            .order('fecha_hora_ingreso', { ascending: false }),
-          supabase
-            .from('copropietarios')
-            .select('id, nombre, propiedad, unidad_asignada')
-        ]);
-        if (resRegistros.error) throw resRegistros.error;
-        if (resCopropietarios.error) throw resCopropietarios.error;
-        setRegistros(resRegistros.data || []);
-        setCopropietarios(resCopropietarios.data || []);
-        setResultados(resRegistros.data || []);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargarDatos();
+    setLoading(true);
+    Promise.all([
+      supabase
+        .from('registros_parqueadero')
+        .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)')
+        .order('fecha_hora_ingreso', { ascending: false }),
+      supabase
+        .from('copropietarios')
+        .select('id, propiedad, unidad_asignada')
+    ]).then(([registrosRes, copropietariosRes]) => {
+      if (registrosRes.error) setError('Error al cargar registros');
+      else setRegistros(registrosRes.data || []);
+      if (copropietariosRes.data) setCopropietarios(copropietariosRes.data);
+      setLoading(false);
+    });
   }, []);
 
-  // Actualiza resultados cuando cambian los filtros o los registros
-  useEffect(() => {
-    let filtrados = [...registros];
-    if (filtros.fechaInicio) {
-      filtrados = filtrados.filter(r =>
-        dayjs(r.fecha_hora_ingreso).isAfter(dayjs(filtros.fechaInicio).startOf('day'))
-      );
-    }
-    if (filtros.fechaFin) {
-      filtrados = filtrados.filter(r =>
-        dayjs(r.fecha_hora_ingreso).isBefore(dayjs(filtros.fechaFin).endOf('day'))
-      );
-    }
-    if (filtros.placa) {
-      filtrados = filtrados.filter(r =>
-        r.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase())
-      );
-    }
-    if (filtros.tipoVehiculo) {
-      filtrados = filtrados.filter(r =>
-        r.tipo_vehiculo === filtros.tipoVehiculo
-      );
-    }
-    if (filtros.propiedad) {
-      filtrados = filtrados.filter(r =>
-        r.copropietarios?.propiedad === filtros.propiedad
-      );
-    }
-    if (filtros.unidadAsignada) {
-      filtrados = filtrados.filter(r =>
-        r.copropietarios?.unidad_asignada === filtros.unidadAsignada
-      );
-    }
-    setResultados(filtrados);
-  }, [registros, filtros]);
-
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidadesFiltradas = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  const handleChange = (e) => {
+  // Filtros controlados
+  const handleFiltroChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === 'propiedad' && { unidadAsignada: '' })
+      [name]: value
     }));
   };
 
-  const limpiarFiltros = () => {
-    setFiltros({
-      fechaInicio: '',
-      fechaFin: '',
-      placa: '',
-      propiedad: '',
-      unidadAsignada: '',
-      tipoVehiculo: ''
-    });
-    setResultados(registros);
-  };
+  // Opciones únicas para filtros
+  const tiposUnicos = Array.from(new Set(registros.map(r => r.tipo_vehiculo))).filter(Boolean);
+  const propiedadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.propiedad))).filter(Boolean);
+  const unidadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.unidad_asignada))).filter(Boolean);
 
-  // --- Exportar a PDF ---
-  const columnasPDF = [
-    {
-      key: 'fecha_hora_ingreso',
-      header: 'Fecha/Hora',
-      formatter: v => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : ''
-    },
-    { key: 'placa_vehiculo', header: 'Placa' },
-    { key: 'tipo_vehiculo', header: 'Tipo', formatter: v => v ? v[0].toUpperCase() + v.slice(1) : '' },
-    { key: 'observaciones', header: 'Observaciones' },
-    { key: 'monto', header: 'Monto', formatter: v => v !== undefined ? `$${Number(v).toFixed(2)}` : '-' },
-    { key: 'gratis', header: 'Gratis', formatter: v => v ? 'Sí' : 'No' },
-    { key: 'recaudado', header: 'Recaudado', formatter: v => v ? 'Sí' : 'No' },
-    { key: 'fecha_recaudo', header: 'Fecha Recaudo' },
-    {
-      key: 'copropietarios',
-      header: 'Copropietario',
-      formatter: (_, item) =>
-        item.copropietarios
-          ? `${item.copropietarios.nombre} (${item.copropietarios.propiedad} - ${item.copropietarios.unidad_asignada})`
-          : '-'
-    },
-    {
-      key: 'usuarios_app',
-      header: 'Registrado por',
-      formatter: (_, item) => item.usuarios_app?.nombre || '-'
+  // --- Eliminar registro ---
+  const handleEliminar = async (registro) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar el registro de la placa ${registro.placa_vehiculo}?`)) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from('registros_parqueadero')
+      .delete()
+      .eq('id', registro.id);
+    setLoading(false);
+    if (error) {
+      alert('Error al eliminar: ' + error.message);
+    } else {
+      setRegistros(prev => prev.filter(r => r.id !== registro.id));
     }
-  ];
-
-  const exportarPDF = () => {
-    if (!resultados.length) {
-      alert('No hay datos para exportar');
-      return;
-    }
-    setModalExportar(true);
-    setNombrePDF('');
   };
 
-  const generarPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-    const headers = columnasPDF.map(col => col.header);
-    const rows = resultados.map(item =>
-      columnasPDF.map(col =>
-        col.formatter ? col.formatter(item[col.key], item) : item[col.key]
-      )
-    );
-    doc.setFontSize(16);
-    doc.text(nombrePDF || 'Reporte de Registros de Parqueadero', 40, 40);
-    doc.setFontSize(10);
-    doc.text(`Generado: ${dayjs().format('DD/MM/YYYY HH:mm')}`, 40, 60);
-    autoTable(doc, {
-      head: [headers],
-      body: rows,
-      startY: 80,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { left: 40, right: 40 },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.text(
-          `Página ${data.pageNumber} de ${pageCount}`,
-          data.settings.margin.left,
-          doc.internal.pageSize.getHeight() - 10
-        );
-      }
+  // --- Editar registro ---
+  const handleEditar = (registro) => {
+    setRegistroEditar(registro);
+    setFormEdicion({
+      placa_vehiculo: registro.placa_vehiculo || '',
+      tipo_vehiculo: registro.tipo_vehiculo || 'carro',
+      observaciones: registro.observaciones || '',
+      dependencia_id: registro.dependencia_id || '',
+      gratis: registro.gratis || false,
+      recaudado: registro.recaudado || false,
     });
-    doc.save(
-      `${(nombrePDF || 'reporte-parqueadero').toLowerCase().replace(/\s/g, '-')}-${dayjs().format('YYYYMMDD-HHmm')}.pdf`
-    );
-    setModalExportar(false);
   };
 
-  if (loading) return <Loader text="Cargando registros..." />;
-  if (error) return <ErrorMessage message={error} />;
+  // --- Guardar edición ---
+  const handleGuardarEdicion = async (e) => {
+    e.preventDefault();
+    setEditando(true);
+    try {
+      const { error } = await supabase
+        .from('registros_parqueadero')
+        .update({
+          placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase(),
+          tipo_vehiculo: formEdicion.tipo_vehiculo,
+          observaciones: formEdicion.observaciones,
+          dependencia_id: formEdicion.dependencia_id || null,
+          gratis: formEdicion.gratis,
+          recaudado: formEdicion.recaudado,
+        })
+        .eq('id', registroEditar.id);
+      if (error) throw error;
+      setRegistros(prev =>
+        prev.map(r =>
+          r.id === registroEditar.id
+            ? { ...r, ...formEdicion, placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase() }
+            : r
+        )
+      );
+      setRegistroEditar(null);
+    } catch (error) {
+      alert('Error al actualizar: ' + error.message);
+    } finally {
+      setEditando(false);
+    }
+  };
+
+  // --- Cancelar edición ---
+  const handleCancelarEdicion = () => {
+    setRegistroEditar(null);
+    setFormEdicion({});
+  };
 
   return (
-    <div className="consultas-container">
-      <h2>
-        <Emoji symbol="📊" label="Consultas" /> Consultas y Reportes de Parqueadero
+    <div className="max-w-6xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <Emoji symbol="📊" /> Consultas y Reportes
       </h2>
-      <form className="filtros-form" style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <label>
-              <Emoji symbol="📅" label="Fecha inicio" /> Fecha inicio:
-            </label>
-            <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange} />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="📅" label="Fecha fin" /> Fecha fin:
-            </label>
-            <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange} />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🚘" label="Placa" /> Placa:
-            </label>
-            <input type="text" name="placa" value={filtros.placa} onChange={handleChange} placeholder="Ej: PBA1234" />
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🚦" label="Tipo de vehículo" /> Tipo:
-            </label>
-            <select name="tipoVehiculo" value={filtros.tipoVehiculo} onChange={handleChange}>
-              <option value="">Todos</option>
-              <option value="carro">Carro</option>
-              <option value="moto">Moto</option>
-            </select>
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🏠" label="Propiedad" /> Propiedad:
-            </label>
-            <select name="propiedad" value={filtros.propiedad} onChange={handleChange}>
-              <option value="">Todas</option>
-              {propiedades.map(prop => (
-                <option key={prop} value={prop}>{prop}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>
-              <Emoji symbol="🔢" label="Unidad" /> Unidad:
-            </label>
-            <select name="unidadAsignada" value={filtros.unidadAsignada} onChange={handleChange} disabled={!filtros.propiedad}>
-              <option value="">Todas</option>
-              {unidadesFiltradas.map(u => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <div className="bg-blue-50 text-blue-700 rounded px-4 py-2 mb-2" style={{ maxWidth: 500 }}>
-            <Emoji symbol="ℹ️" label="info" /> El filtrado es <b>automático</b>.
-          </div>
-          <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded" onClick={limpiarFiltros}>
-            <Emoji symbol="♻️" label="Limpiar" /> Limpiar
-          </button>
-          <button type="button" className="bg-green-600 text-white px-4 py-2 rounded ml-2" onClick={exportarPDF}>
-            <Emoji symbol="📄" label="Exportar a PDF" /> Exportar a PDF
-          </button>
-        </div>
-      </form>
 
-      {/* Semáforo de resumen */}
-      <div style={{ marginBottom: 24 }}>
-        <SemaforoResumen
-          registros={resultados}
-          customLabels={{
-            recaudado: 'Recaudado',
-            pendiente: 'Pendiente',
-            gratis: 'Gratis',
-            cantidad: 'Registros',
-            total: 'Total'
-          }}
-          colorFondo="rgba(243, 244, 246, 0.5)"
+      {/* Filtros avanzados */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <div>
+          <label className="block text-sm font-medium mb-1">Fecha inicio</label>
+          <input
+            type="date"
+            name="fechaInicio"
+            value={filtros.fechaInicio}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Fecha fin</label>
+          <input
+            type="date"
+            name="fechaFin"
+            value={filtros.fechaFin}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Placa</label>
+          <input
+            type="text"
+            name="placa"
+            value={filtros.placa}
+            onChange={handleFiltroChange}
+            placeholder="Buscar por placa"
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Tipo de vehículo</label>
+          <select
+            name="tipoVehiculo"
+            value={filtros.tipoVehiculo}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todos</option>
+            {tiposUnicos.map(tipo => (
+              <option key={tipo} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Propiedad</label>
+          <select
+            name="propiedad"
+            value={filtros.propiedad}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todas</option>
+            {propiedadesUnicas.map(prop => (
+              <option key={prop} value={prop}>{prop}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Unidad asignada</label>
+          <select
+            name="unidadAsignada"
+            value={filtros.unidadAsignada}
+            onChange={handleFiltroChange}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">Todas</option>
+            {unidadesUnicas.map(unidad => (
+              <option key={unidad} value={unidad}>{unidad}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Resumen estadístico */}
+      <ResumenRegistros registros={registrosFiltrados} />
+
+      {/* Exportar a PDF */}
+      <div className="my-4 flex justify-end">
+        <ExportarPDF
+          datos={registrosFiltrados}
+          columnas={columnasPDF}
+          titulo="Reporte de Registros de Parqueadero"
         />
       </div>
 
-      {/* Tabla de resultados usando ListaRegistros */}
-      <div className="resultados-table-container" style={{ overflowX: 'auto', marginTop: 18 }}>
+      {/* Tabla de resultados */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-2">
         <ListaRegistros
           registros={registros}
           filtros={filtros}
           loading={loading}
           error={error}
-          onRegistrosFiltradosChange={setResultados}
+          onRegistrosFiltradosChange={setRegistrosFiltrados}
+          onEditar={handleEditar}
+          onEliminar={handleEliminar}
         />
       </div>
 
-      {/* Modal para exportar PDF */}
-      {modalExportar && (
-        <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)}>
-          <div style={{ padding: 24 }}>
-            <h3 className="text-lg font-semibold mb-4">Nombre del archivo PDF</h3>
-            <input
-              type="text"
-              value={nombrePDF}
-              onChange={e => setNombrePDF(e.target.value)}
-              placeholder="Ej: Reporte Mayo 2025"
-              className="border rounded px-3 py-2 w-full mb-4"
-            />
-            <button
-              className="bg-green-600 text-white px-4 py-2 rounded mr-2"
-              onClick={generarPDF}
-            >
-              Generar PDF
-            </button>
-            <button
-              className="bg-gray-400 text-white px-4 py-2 rounded"
-              onClick={() => setModalExportar(false)}
-            >
-              Cancelar
-            </button>
+      {/* Modal de edición */}
+      {registroEditar && (
+        <Modal isOpen={true} onClose={handleCancelarEdicion}>
+          <div className="max-w-md mx-auto">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Emoji symbol="✏️" /> Editar Registro
+            </h3>
+            <form onSubmit={handleGuardarEdicion} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Placa del vehículo
+                </label>
+                <input
+                  type="text"
+                  value={formEdicion.placa_vehiculo}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    placa_vehiculo: e.target.value.toUpperCase()
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="ABC123"
+                  required
+                  disabled={editando}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Tipo de vehículo
+                </label>
+                <select
+                  value={formEdicion.tipo_vehiculo}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    tipo_vehiculo: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  disabled={editando}
+                >
+                  <option value="carro">🚙 Carro</option>
+                  <option value="moto">🛵 Moto</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Copropietario (opcional)
+                </label>
+                <select
+                  value={formEdicion.dependencia_id}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    dependencia_id: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md"
+                  disabled={editando}
+                >
+                  <option value="">Sin asignar</option>
+                  {copropietarios.map(cp => (
+                    <option key={cp.id} value={cp.id}>
+                      {cp.propiedad} - {cp.unidad_asignada}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Observaciones
+                </label>
+                <textarea
+                  value={formEdicion.observaciones}
+                  onChange={e => setFormEdicion(prev => ({
+                    ...prev,
+                    observaciones: e.target.value
+                  }))}
+                  className="w-full p-2 border rounded-md h-20"
+                  placeholder="Observaciones adicionales..."
+                  disabled={editando}
+                />
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formEdicion.gratis}
+                    onChange={e => setFormEdicion(prev => ({
+                      ...prev,
+                      gratis: e.target.checked
+                    }))}
+                    disabled={editando}
+                  />
+                  <span className="ml-2">🆓 Gratis</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formEdicion.recaudado}
+                    onChange={e => setFormEdicion(prev => ({
+                      ...prev,
+                      recaudado: e.target.checked
+                    }))}
+                    disabled={editando || formEdicion.gratis}
+                  />
+                  <span className="ml-2">💰 Recaudado</span>
+                </label>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={editando}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  {editando ? (
+                    <Loader text="Guardando..." />
+                  ) : (
+                    <>
+                      <Emoji symbol="💾" /> Guardar Cambios
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelarEdicion}
+                  disabled={editando}
+                  className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  <Emoji symbol="❌" /> Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </Modal>
       )}

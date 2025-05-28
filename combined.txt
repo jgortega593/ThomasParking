@@ -42,6 +42,7 @@ C:\ThomasParking\ThomasParking\src\pages\GestionCopropietarios.jsx
 C:\ThomasParking\ThomasParking\src\pages\GestionUsuarios.jsx
 C:\ThomasParking\ThomasParking\src\pages\Login.jsx
 C:\ThomasParking\ThomasParking\src\pages\RegistroParqueo.jsx
+C:\ThomasParking\ThomasParking\src\pages\ResetPassword.jsx
 C:\ThomasParking\ThomasParking\src\pages\ResumenRecaudo.jsx
 C:\ThomasParking\ThomasParking\src\providers\QueryClientProvider.jsx
 C:\ThomasParking\ThomasParking\src\styles\global.css
@@ -83,6 +84,8 @@ import GestionCopropietarios from './pages/GestionCopropietarios';
 import AcercaDe from './pages/AcercaDe';
 import Login from './pages/Login';
 import AuditLog from './components/AuditLog';
+import ResetPassword from './pages/ResetPassword';
+
 
 function AppRoutes({ menuOpen, setMenuOpen }) {
   const location = useLocation();
@@ -175,6 +178,9 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
             {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/registros" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
           </Routes>
           <Footer />
         </div>
@@ -1938,6 +1944,7 @@ function getAllNavItems() {
     { to: '/descargos', label: 'Descargos', emoji: '📤', requiredRole: 'admin' },
     { to: '/auditoria', label: 'Auditoría', emoji: '🕵️', requiredRole: 'admin' },
     { to: '/acercade', label: 'Acerca de', emoji: 'ℹ️', requiredRole: null },
+    { to: '/reset-password', label: 'Restablecer Contraseña', emoji: '🔒', requiredRole: null },
   ];
 }
 
@@ -5255,7 +5262,6 @@ export default function GestionUsuarios() {
 
 ----- C:\ThomasParking\ThomasParking\src\pages\Login.jsx -----
 
-// src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import supabase from "../supabaseClient";
@@ -5264,31 +5270,30 @@ import Emoji from "../components/Emoji";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState("email");
+  const [step, setStep] = useState("email"); // "email" | "otp" | "password"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Lógica para login con OTP (correo)
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
-
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false, // Cambiar a true si se permiten nuevos usuarios
-          emailRedirectTo: window.location.origin
-        }
+          shouldCreateUser: false,
+          emailRedirectTo: window.location.origin,
+        },
       });
-
       if (error) throw error;
-      
       setStep("otp");
       setInfo("Código enviado. Revisa tu correo electrónico.");
     } catch (err) {
@@ -5298,28 +5303,48 @@ export default function Login() {
     }
   };
 
+  // Lógica para verificar OTP
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
-
     try {
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: "email"
+        type: "email",
       });
-
       if (error) throw error;
-
-      // Redirección post-login
       const from = location.state?.from?.pathname || "/registros";
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message.includes("token") 
-        ? "Código inválido o expirado" 
-        : err.message);
+      setError(
+        err.message.includes("token")
+          ? "Código inválido o expirado"
+          : err.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lógica para login con contraseña
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      const from = location.state?.from?.pathname || "/registros";
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError("Correo o contraseña incorrectos");
     } finally {
       setLoading(false);
     }
@@ -5327,47 +5352,80 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">
+      <div className="w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg p-8 transition-all">
+        <h1 className="text-3xl font-bold text-center mb-8 text-blue-300 flex items-center justify-center gap-2">
           <Emoji symbol="🔑" /> Acceso al Sistema
         </h1>
 
-        {step === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                placeholder="usuario@ejemplo.com"
-                required
-                autoFocus
+        {step === "email" && (
+          <>
+            <form onSubmit={handleEmailSubmit} className="space-y-5">
+              <div>
+                <label className="block text-base font-medium mb-2 text-white">
+                  Correo electrónico
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-blue-400 focus:border-blue-500 bg-gray-900 text-blue-100 placeholder-gray-400 text-lg outline-none"
+                  placeholder="usuario@ejemplo.com"
+                  required
+                  autoFocus
+                  disabled={loading}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                 disabled={loading}
-              />
-            </div>
+              >
+                {loading ? (
+                  <Loader text="Enviando código..." />
+                ) : (
+                  <>
+                    <Emoji symbol="📨" /> Continuar con correo
+                  </>
+                )}
+              </button>
+            </form>
+            <form onSubmit={handlePasswordLogin} className="space-y-5 mt-6">
+              <div>
+                <label className="block text-base font-medium mb-2 text-white">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-blue-400 focus:border-blue-500 bg-gray-900 text-blue-100 placeholder-gray-400 text-lg outline-none"
+                  placeholder="Ingresa tu contraseña"
+                  required
+                  disabled={loading || !email}
+                  autoComplete="current-password"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={loading || !email || !password}
+              >
+                {loading ? (
+                  <Loader text="Ingresando..." />
+                ) : (
+                  <>
+                    <Emoji symbol="🔓" /> Ingresar con contraseña
+                  </>
+                )}
+              </button>
+            </form>
+          </>
+        )}
 
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader text="Enviando código..." />
-              ) : (
-                <>
-                  <Emoji symbol="📨" /> Continuar con correo
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
+        {step === "otp" && (
           <form onSubmit={handleOtpSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              <label className="block text-base font-medium mb-2 text-white">
                 Código de verificación
               </label>
               <input
@@ -5375,21 +5433,22 @@ export default function Login() {
                 inputMode="numeric"
                 pattern="[0-9]{6}"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-4 py-3 text-center text-2xl font-mono rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                className="w-full px-4 py-3 text-center text-2xl font-mono rounded-lg border-2 border-blue-400 focus:border-blue-500 bg-gray-900 text-blue-100 placeholder-gray-400 outline-none"
                 placeholder="123456"
                 required
                 autoFocus
                 disabled={loading}
               />
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+              <p className="text-sm text-blue-200 mt-2 text-center">
                 Ingresa el código de 6 dígitos enviado a {email}
               </p>
             </div>
-
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
               {loading ? (
@@ -5400,31 +5459,35 @@ export default function Login() {
                 </>
               )}
             </button>
+            <button
+              type="button"
+              className="w-full py-3 bg-blue-400 hover:bg-blue-500 text-white font-bold rounded-lg mt-2 transition-colors flex items-center justify-center gap-2"
+              onClick={() => {
+                setStep("email");
+                setOtp("");
+                setError("");
+                setInfo("");
+              }}
+              disabled={loading}
+            >
+              <Emoji symbol="↩️" /> Volver a ingresar correo
+            </button>
           </form>
         )}
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-lg border border-red-200 dark:border-red-800">
+          <div className="mt-6 p-4 bg-red-900 text-red-100 rounded-lg border border-red-800">
             <Emoji symbol="⚠️" /> {error}
           </div>
         )}
 
         {info && (
-          <div className="mt-6 p-4 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-100 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="mt-6 p-4 bg-green-900 text-green-100 rounded-lg border border-green-800">
             <Emoji symbol="ℹ️" /> {info}
           </div>
         )}
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setStep("email")}
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
-            type="button"
-          >
-            <Emoji symbol="↩️" /> Volver a ingresar correo
-          </button>
         </div>
-      </div>
     </div>
   );
 }
@@ -5834,6 +5897,158 @@ export default function RegistroParqueo() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+
+----- C:\ThomasParking\ThomasParking\src\pages\ResetPassword.jsx -----
+
+// src/pages/ResetPassword.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import supabase from '../supabaseClient';
+import Emoji from '../components/Emoji';
+import ErrorMessage from '../components/ErrorMessage';
+
+export default function ResetPassword() {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const validatePasswords = () => {
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return false;
+    }
+    return true;
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!validatePasswords()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) throw error;
+
+      setSuccess('Contraseña actualizada exitosamente. Redirigiendo al login...');
+      
+      // Cerrar sesión y redirigir al login después de 2 segundos
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate('/login', { replace: true });
+      }, 2000);
+
+    } catch (error) {
+      setError(error.message || 'Error al actualizar la contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 px-4">
+      <form
+        onSubmit={handleResetPassword}
+        className="w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700"
+        aria-label="Formulario para restablecer contraseña"
+      >
+        <h1 className="text-3xl font-bold text-center mb-6 text-blue-300 flex items-center justify-center gap-2">
+          <Emoji symbol="🔒" label="candado" /> Restablecer Contraseña
+        </h1>
+
+        <p className="text-center text-gray-300 mb-6">
+          Ingresa tu nueva contraseña para completar el restablecimiento.
+        </p>
+
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-base font-medium mb-2 text-white">
+            Nueva contraseña
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            className={`w-full p-3 rounded-xl bg-gray-800 text-blue-100 border-2 transition-all outline-none text-lg
+              ${error && password.length < 6 ? 'border-pink-400 focus:border-pink-500' : 'border-blue-400 focus:border-blue-500'}
+            `}
+            placeholder="Mínimo 6 caracteres"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            disabled={loading}
+            minLength={6}
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="confirmPassword" className="block text-base font-medium mb-2 text-white">
+            Confirmar contraseña
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            className={`w-full p-3 rounded-xl bg-gray-800 text-blue-100 border-2 transition-all outline-none text-lg
+              ${error && password !== confirmPassword ? 'border-pink-400 focus:border-pink-500' : 'border-blue-400 focus:border-blue-500'}
+            `}
+            placeholder="Confirma tu nueva contraseña"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        {error && (
+          <div className="mb-3 text-pink-400 text-sm font-semibold">
+            <Emoji symbol="⚠️" /> {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-3 text-green-400 text-sm font-semibold">
+            <Emoji symbol="✅" /> {success}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-lg shadow transition-colors flex items-center justify-center gap-2"
+          disabled={loading}
+        >
+          <Emoji symbol="🔐" />
+          {loading ? 'Actualizando contraseña...' : 'Actualizar contraseña'}
+        </button>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="text-blue-300 hover:underline text-sm"
+            disabled={loading}
+          >
+            ← Volver al login
+          </button>
+        </div>
+
+            </form>
     </div>
   );
 }

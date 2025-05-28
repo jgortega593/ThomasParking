@@ -1,10 +1,30 @@
+// src/components/ListaRegistros.jsx
 import React, { useMemo } from 'react';
 import Emoji from './Emoji';
 import Loader from './Loader';
 import dayjs from 'dayjs';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
-export default function ListaRegistros({ registros = [], filtros = {}, loading, error, onRegistrosFiltradosChange }) {
+/**
+ * ListaRegistros
+ * Props:
+ * - registros: array de registros a mostrar
+ * - filtros: objeto de filtros aplicados
+ * - loading: boolean
+ * - error: string
+ * - onRegistrosFiltradosChange: función (opcional)
+ * - onEditar: función(registro) => void (opcional)
+ * - onEliminar: función(registro) => void (opcional)
+ */
+export default function ListaRegistros({
+  registros = [],
+  filtros = {},
+  loading,
+  error,
+  onRegistrosFiltradosChange,
+  onEditar,
+  onEliminar
+}) {
   const isOnline = useOnlineStatus();
 
   // Filtrado memoizado
@@ -147,7 +167,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                         {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
                         {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
                         {' '}
-                         - {reg.copropietarios.unidad_asignada}
+                        - {reg.copropietarios.unidad_asignada}
                       </>
                     ) : (
                       '-'
@@ -169,7 +189,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                       title="Editar"
                       disabled={!isOnline}
                       style={{ marginRight: 6, cursor: isOnline ? 'pointer' : 'not-allowed' }}
-                      onClick={() => alert('Función editar no implementada')}
+                      onClick={() => onEditar && onEditar(reg)}
                     >
                       <Emoji symbol="✏️" label="Editar" />
                     </button>
@@ -177,7 +197,7 @@ export default function ListaRegistros({ registros = [], filtros = {}, loading, 
                       title="Eliminar"
                       disabled={!isOnline}
                       style={{ cursor: isOnline ? 'pointer' : 'not-allowed' }}
-                      onClick={() => alert('Función eliminar no implementada')}
+                      onClick={() => onEliminar && onEliminar(reg)}
                     >
                       <Emoji symbol="🗑️" label="Eliminar" />
                     </button>

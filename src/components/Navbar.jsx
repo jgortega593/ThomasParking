@@ -10,7 +10,7 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 // Ítems de navegación
 function getAllNavItems() {
   return [
-    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: null },
+    { to: '/registros', label: 'Registro Parqueo', emoji: '📝', requiredRole: ['admin', 'registrador'] },
     { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
     { to: '/recaudo', label: 'Recaudación', emoji: '💰', requiredRole: 'admin' },
     { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
@@ -143,7 +143,11 @@ function NavMenuMobile({ navItems, user, handleNavClick, handleLogout, setMenuOp
         }}
       >
         {navItems.map(item => {
-          const tieneAcceso = !item.requiredRole || rol.toLowerCase() === item.requiredRole;
+const tieneAcceso = !item.requiredRole
+  || (Array.isArray(item.requiredRole)
+      ? item.requiredRole.includes(rol)
+      : rol === item.requiredRole);
+
           return (
             <NavLink
               key={item.to}
@@ -205,7 +209,7 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
     navigate('/login');
   };
 
-  const rol = (user?.role || user?.user_metadata?.role || 'registrador').toLowerCase();
+  const rol = (user?.role || user?.user_metadata?.role || '').toLowerCase();
   const navItems = getAllNavItems();
   const esAdmin = rol === 'admin';
   const handleNavClick = () => setMenuOpen(false);
@@ -261,7 +265,11 @@ export default function Navbar({ menuOpen, setMenuOpen }) {
         {/* Navegación desktop */}
         <div className="hidden md:flex items-center ml-auto gap-6">
           {navItems.slice(0, 4).map(item => {
-            const tieneAcceso = !item.requiredRole || rol === item.requiredRole;
+            const tieneAcceso = !item.requiredRole
+  || (Array.isArray(item.requiredRole)
+      ? item.requiredRole.includes(rol)
+      : rol === item.requiredRole);
+
             return (
               <NavLink
                 key={item.to}
