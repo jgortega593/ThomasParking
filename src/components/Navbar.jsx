@@ -14,7 +14,7 @@ function getAllNavItems() {
     { to: '/consultas', label: 'Reportes', emoji: '📊', requiredRole: null },
     { to: '/recaudo', label: 'Recaudo Parqueo Visita', emoji: '💰', requiredRole: 'admin' },
     { to: '/compensacion', label: 'Compensación', emoji: '🎁', requiredRole: 'admin' },
-    { to: '/copropietarios', label: 'Copropietarios', emoji: '🏘️', requiredRole: 'admin' },
+    { to: '/copropietarios', label: 'Copropietarios / ControlAcceso 🚫  ', emoji: '🚶‍♂️', requiredRole: 'admin' },
     { to: '/usuarios', label: 'Usuarios', emoji: '👥', requiredRole: 'admin' },
     { to: '/descargos', label: 'Descargos', emoji: '📤', requiredRole: 'admin' },
     { to: '/auditoria', label: 'Auditoría', emoji: '🕵️', requiredRole: 'admin' },
