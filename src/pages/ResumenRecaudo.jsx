@@ -79,12 +79,13 @@ export default function ResumenRecaudo() {
       const urls = [];
       for (let i = 0; i < fotos.length; i++) {
         const file = fotos[i];
-        const filePath = `evidencia-recaudo/${Date.now()}-${file.name}`;
+        const filePath = `${Date.now()}-${file.name}`; 
+
         const { error: uploadError } = await supabase.storage
-          .from('evidencias')
+          .from('evidencias-recaudo')
           .upload(filePath, file, { upsert: true });
         if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('evidencias').getPublicUrl(filePath);
+        const { data } = supabase.storage.from('evidencias-recaudo').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
 

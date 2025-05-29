@@ -4,6 +4,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import supabase from "../supabaseClient";
 import dayjs from "dayjs";
+import SemaforoDescargos from '../components/SemaforoDescargos';
+
 
 // Error Boundary para capturar errores en el componente
 class ErrorBoundary extends React.Component {
@@ -356,6 +358,7 @@ function DescargoGestionComponent() {
       >
         <Emoji symbol="📝" /> Descargo de Gestión
       </h2>
+      <SemaforoDescargos />
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -563,6 +566,7 @@ function DescargoGestionComponent() {
                 <th style={{ padding: 12 }}>Fecha</th>
                 <th style={{ padding: 12 }}>Descripción</th>
                 <th style={{ padding: 12 }}>Esfuerzo</th>
+                <th style={{ padding: 12 }}>Monto</th>
                 <th style={{ padding: 12 }}>Archivos</th>
                 <th style={{ padding: 12 }}>Acciones</th>
               </tr>
@@ -602,6 +606,12 @@ function DescargoGestionComponent() {
                         ))}
                       </select>
                     </td>
+                    <td>
+        {/* NUEVO: Columna monto */}
+        {reg.monto !== undefined && reg.monto !== null
+          ? `$${Number(reg.monto).toLocaleString()}`
+          : ""}
+      </td>
                     <td style={{ padding: 12 }}>
                       <input
                         type="file"
@@ -637,6 +647,7 @@ function DescargoGestionComponent() {
                         (e) => esfuerzosDisponibles.find((esf) => esf.valor === e)?.etiqueta
                       ).join(", ")}
                     </td>
+                     <td>${Number(reg.monto).toLocaleString()}</td>
                     <td style={{ padding: 12 }}>
                       <AdjuntosPreview archivos={archivosPreviewAdapt(reg.archivos)} />
                     </td>
