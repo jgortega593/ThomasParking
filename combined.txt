@@ -23,6 +23,7 @@ C:\ThomasParking\ThomasParking\src\components\OnlineStatusIndicator.jsx
 C:\ThomasParking\ThomasParking\src\components\ResizeImage.jsx
 C:\ThomasParking\ThomasParking\src\components\ResumenRegistros.jsx
 C:\ThomasParking\ThomasParking\src\components\SelectorDeFoto.jsx
+C:\ThomasParking\ThomasParking\src\components\SemaforoDescargos.jsx
 C:\ThomasParking\ThomasParking\src\components\SemaforoResumen.jsx
 C:\ThomasParking\ThomasParking\src\components\SignUp.jsx
 C:\ThomasParking\ThomasParking\src\components\SyncIndicator.jsx
@@ -2651,43 +2652,138 @@ export default function SelectorDeFoto({ onFilesSelected, maxFiles = 5, disabled
 }
 
 
+----- C:\ThomasParking\ThomasParking\src\components\SemaforoDescargos.jsx -----
+
+import React, { useState, useEffect } from 'react';
+import supabase from '../supabaseClient';
+import Loader from '../components/Loader';
+import ErrorMessage from '../components/ErrorMessage';
+
+// Componente Emoji accesible
+const Emoji = ({ symbol, label }) => (
+  <span role="img" aria-label={label} className="inline text-2xl align-middle mx-1">
+    {symbol}
+  </span>
+);
+
+export default function SemaforoDescargos() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totales, setTotales] = useState({
+    recaudadoTotal: 0,
+    descargadoTotal: 0,
+    pendienteDescargo: 0,
+  });
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        // Total recaudado
+        const { data: dataRecaudado } = await supabase
+          .from('registros_parqueadero')
+          .select('monto')
+          .eq('recaudado', true);
+
+        const recaudadoTotal = dataRecaudado?.reduce(
+          (acc, item) => acc + Number(item.monto),
+          0
+        ) || 0;
+
+        // Total descargado
+        const { data: dataDescargos } = await supabase
+          .from('descargos_gestion')
+          .select('monto');
+
+        const descargadoTotal = dataDescargos?.reduce(
+          (acc, item) => acc + Number(item.monto || 0),
+          0
+        ) || 0;
+
+        setTotales({
+          recaudadoTotal,
+          descargadoTotal,
+          pendienteDescargo: recaudadoTotal - descargadoTotal,
+        });
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, []);
+
+  if (loading) return <Loader />;
+  if (error) return <ErrorMessage message={error} />;
+
+  // Lógica de semáforo
+  let status, color, emoji, message;
+  if (totales.pendienteDescargo === 0 && totales.recaudadoTotal > 0) {
+    status = 'OK';
+    color = 'bg-green-100 text-green-800 border-green-400';
+    emoji = '✅';
+    message = '¡Todo justificado! No hay fondos pendientes.';
+  } else if (totales.pendienteDescargo > 0) {
+    status = 'Pendiente';
+    color = 'bg-yellow-100 text-yellow-800 border-yellow-400';
+    emoji = '🟡';
+    message = 'Fondos recaudados pendientes de justificación.';
+  } else if (totales.pendienteDescargo < 0) {
+    status = 'Exceso';
+    color = 'bg-red-100 text-red-800 border-red-400';
+    emoji = '⚠️';
+    message = '¡Descargos mayores que lo recaudado!';
+  } else {
+    status = 'Sin datos';
+    color = 'bg-gray-100 text-gray-800 border-gray-400';
+    emoji = 'ℹ️';
+    message = 'No hay movimientos registrados.';
+  }
+
+  return (
+    <section className={`border-l-4 p-4 mb-6 rounded shadow-sm ${color} flex flex-col md:flex-row md:items-center gap-4`}>
+      <div className="flex items-center gap-3">
+        <Emoji symbol={emoji} label={status} />
+        <span className="font-bold text-lg">{message}</span>
+      </div>
+      <div className="flex flex-wrap gap-3 mt-2 md:mt-0 md:ml-auto">
+        <div className="flex items-center gap-1">
+          <Emoji symbol="💰" label="Recaudado" />
+          <span className="font-semibold">Recaudado:</span>
+          <span>${totales.recaudadoTotal.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Emoji symbol="📤" label="Descargado" />
+          <span className="font-semibold">Descargado:</span>
+          <span>${totales.descargadoTotal.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Emoji symbol="⏳" label="Pendiente" />
+          <span className="font-semibold">Pendiente:</span>
+          <span>${totales.pendienteDescargo.toLocaleString()}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 ----- C:\ThomasParking\ThomasParking\src\components\SemaforoResumen.jsx -----
 
-// src/components/SemaforoResumen.jsx
-import React from 'react';
-import Emoji from './Emoji';
+import React from 'react'
+import Emoji from './Emoji'
 
-/**
- * SemaforoResumen
- * Muestra un resumen estadístico tipo "semaforo" sobre los registros recibidos.
- * Props:
- * - registros: array de objetos de registros (filtrados por el padre)
- * - customLabels: objeto opcional para personalizar los textos de cada métrica
- * - colorFondo: string opcional para personalizar el fondo
- */
-export default function SemaforoResumen({
-  registros = [],
-  customLabels = {},
-  colorFondo = 'rgba(255,255,255,0.1)'
-}) {
-  // Lógica de negocio igual a Compensación
+export default function SemaforoResumen({ registros = [] }) {
   const resumen = registros.reduce((acc, reg) => {
-    if (reg.gratis) acc.gratis++;
-    else if (reg.recaudado) acc.recaudado += Number(reg.monto || 0);
-    else acc.pendiente += Number(reg.monto || 0);
-    acc.total += Number(reg.monto || 0);
-    acc.cantidad++;
-    return acc;
-  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0 });
-
-  // Permite personalizar los textos
-  const labels = {
-    recaudado: customLabels.recaudado || 'Recaudado',
-    pendiente: customLabels.pendiente || 'Pendiente',
-    gratis: customLabels.gratis || 'Gratis',
-    cantidad: customLabels.cantidad || 'Registros',
-    total: customLabels.total || 'Total'
-  };
+    if (reg.gratis) acc.gratis++
+    else if (reg.recaudado) acc.recaudado += Number(reg.monto)
+    else acc.pendiente += Number(reg.monto)
+    acc.total += Number(reg.monto)
+    acc.cantidad++
+    if (reg.esfuerzo_no_economico) acc.esfuerzoNoEco++
+    return acc
+  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0, esfuerzoNoEco: 0 })
 
   return (
     <div style={{
@@ -2695,42 +2791,53 @@ export default function SemaforoResumen({
       gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
       gap: '1rem',
       padding: '1rem',
-      background: colorFondo,
+      background: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
     }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#10B981' }}>
-          <Emoji symbol="💰" label="Recaudado" /> ${resumen.recaudado.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
         </div>
-        <small style={{ color: '#666' }}>{labels.recaudado}</small>
+        <small style={{ color: '#666' }}>Recaudado</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#F59E0B' }}>
-          <Emoji symbol="⏳" label="Pendiente" /> ${resumen.pendiente.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
         </div>
-        <small style={{ color: '#666' }}>{labels.pendiente}</small>
+        <small style={{ color: '#666' }}>Pendiente</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#3B82F6' }}>
-          <Emoji symbol="🆓" label="Gratis" /> {resumen.gratis}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🆓" /> {resumen.gratis}
         </div>
-        <small style={{ color: '#666' }}>{labels.gratis}</small>
+        <small style={{ color: '#666' }}>Gratis</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#6366F1' }}>
-          <Emoji symbol="📋" label="Registros" /> {resumen.cantidad}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🤝" /> {resumen.esfuerzoNoEco}
         </div>
-        <small style={{ color: '#666' }}>{labels.cantidad}</small>
+        <small style={{ color: '#666' }}>Con esfuerzo no económico</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#8B5CF6' }}>
-          <Emoji symbol="🧾" label="Total" /> ${resumen.total.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="📋" /> {resumen.cantidad}
         </div>
-        <small style={{ color: '#666' }}>{labels.total}</small>
+        <small style={{ color: '#666' }}>Registros</small>
+      </div>
+
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🧾" /> ${resumen.total.toFixed(2)}
+        </div>
+        <small style={{ color: '#666' }}>Total</small>
       </div>
     </div>
-  );
+  )
 }
 
 
@@ -3483,196 +3590,248 @@ import Emoji from '../components/Emoji';
 import dayjs from 'dayjs';
 import ExportarPDF from '../components/ExportarPDF';
 import ErrorMessage from '../components/ErrorMessage';
-import ResumenRegistros from '../components/ResumenRegistros';
 import SelectorDeFoto from '../components/SelectorDeFoto';
+import SemaforoResumen from '../components/SemaforoResumen';
+
+const ESFUERZO_OPCIONES = [
+  { label: 'Mano de obra', value: 'mano_obra', emoji: '👷', seleccionado: false },
+  { label: 'Materiales', value: 'materiales', emoji: '🧱', seleccionado: false },
+  { label: 'Herramientas', value: 'herramientas', emoji: '🛠️', seleccionado: false }
+];
 
 export default function Compensacion() {
   const { user } = useUser();
-  const [registros, setRegistros] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [montoCompensar, setMontoCompensar] = useState('');
-  const [procesando, setProcesando] = useState(false);
-  const [errorCompensacion, setErrorCompensacion] = useState('');
-  const [exito, setExito] = useState('');
-  const [registrosModificados, setRegistrosModificados] = useState([]);
-  const [copropietarios, setCopropietarios] = useState([]);
-  const [filtroPropiedad, setFiltroPropiedad] = useState('');
-  const [filtroUnidad, setFiltroUnidad] = useState('');
-  const [fotosEvidencia, setFotosEvidencia] = useState([]);
+  const [state, setState] = useState({
+    registros: [],
+    copropietarios: [],
+    filtroPropiedad: '',
+    filtroUnidad: '',
+    montoCompensar: '',
+    procesando: false,
+    error: '',
+    exito: '',
+    registrosModificados: [],
+    evidencias: [],
+    esfuerzoNoEco: {
+      opciones: ESFUERZO_OPCIONES,
+      detalles: ''
+    }
+  });
 
   // Columnas para PDF
   const columnasPDF = [
     { header: 'Fecha', key: 'fecha_hora_ingreso', formatter: v => dayjs(v).format('DD/MM/YY HH:mm') },
-    { header: 'Placa', key: 'placa_vehiculo' },
-    { header: 'Tipo', key: 'tipo_vehiculo' },
-    { header: 'Monto', key: 'monto', formatter: v => `$${Number(v).toFixed(2)}` },
-    { header: 'Evidencia', key: 'evidencia_recaudo', formatter: urls => Array.isArray(urls) && urls.length ? 'Sí' : 'No' }
+    { header: 'Monto Original', key: 'monto', formatter: v => `$${v.toFixed(2)}` },
+    { header: 'Estado', key: 'estado', formatter: (v, reg) => 
+      reg.recaudado ? '⏳ Revertido' : '✅ Compensado' }
   ];
 
-  // Cargar copropietarios y registros
   useEffect(() => {
     const cargarDatos = async () => {
-      setLoading(true);
       try {
-        const [resRegistros, resCopropietarios] = await Promise.all([
-          supabase.from('registros_parqueadero').select('*, copropietarios:dependencia_id(propiedad, unidad_asignada)').order('fecha_hora_ingreso'),
-          supabase.from('copropietarios').select('propiedad, unidad_asignada')
+        const [{ data: copropietarios }, { data: registros }] = await Promise.all([
+          supabase.from('copropietarios').select('propiedad, unidad_asignada'),
+          supabase.from('registros_parqueadero')
+            .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada)')
+            .order('fecha_hora_ingreso', { ascending: true })
         ]);
-        if (resRegistros.error) throw resRegistros.error;
-        if (resCopropietarios.error) throw resCopropietarios.error;
-        setRegistros(resRegistros.data || []);
-        setCopropietarios(resCopropietarios.data || []);
+        
+        setState(prev => ({
+          ...prev,
+          registros: registros || [],
+          copropietarios: copropietarios || []
+        }));
       } catch (error) {
-        setErrorCompensacion(error.message);
-      } finally {
-        setLoading(false);
+        setState(prev => ({ ...prev, error: error.message }));
       }
     };
     cargarDatos();
   }, []);
 
-  // Opciones únicas para selects
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidadesFiltradas = filtroPropiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtroPropiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  // Filtrar registros por copropietario seleccionado
-  const registrosFiltrados = registros.filter(reg =>
-    reg.copropietarios?.propiedad === filtroPropiedad &&
-    reg.copropietarios?.unidad_asignada === filtroUnidad
-  );
-
-  // Algoritmo para encontrar combinación exacta
-  function encontrarCombinacionExacta(registros, objetivo, index = 0, seleccionados = []) {
-    if (objetivo === 0) return seleccionados;
-    if (objetivo < 0 || index >= registros.length) return null;
-    // Incluir actual
-    const montoActual = parseFloat(registros[index].monto);
-    const conActual = encontrarCombinacionExacta(
-      registros, +(objetivo - montoActual).toFixed(2), index + 1, [...seleccionados, registros[index]]
-    );
-    if (conActual) return conActual;
-    // Omitir actual
-    return encontrarCombinacionExacta(registros, objetivo, index + 1, seleccionados);
-  }
-
-  // Subir fotos a Supabase Storage y devolver URLs públicas
-  const subirEvidencia = async () => {
-    const urls = [];
-    for (const foto of fotosEvidencia) {
-      const nombreArchivo = `evidencia-recaudo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}.jpg`;
-      const { error } = await supabase.storage
-        .from('evidencias-recaudo')
-        .upload(nombreArchivo, foto);
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('evidencias-recaudo')
-          .getPublicUrl(nombreArchivo);
-        urls.push(publicUrl);
+  // Checkboxes controlados
+  const handleCheckboxChange = (index) => {
+    setState(prev => ({
+      ...prev,
+      esfuerzoNoEco: {
+        ...prev.esfuerzoNoEco,
+        opciones: prev.esfuerzoNoEco.opciones.map((op, i) => 
+          i === index ? { ...op, seleccionado: !op.seleccionado } : op
+        )
       }
-    }
-    return urls;
+    }));
   };
 
-  // Manejar la compensación exacta
+  // Subida de evidencias
+  const subirEvidencias = async (files) => {
+    const evidenciaUrls = [];
+    for (const file of files) {
+      const nombre = `compensacion/${user.id}-${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+      const { error } = await supabase.storage
+        .from('evidencias')
+        .upload(nombre, file);
+      if (error) throw new Error(`Error subiendo ${file.name}: ${error.message}`);
+      const { data: { publicUrl } } = supabase.storage
+        .from('evidencias')
+        .getPublicUrl(nombre);
+      evidenciaUrls.push(publicUrl);
+    }
+    return evidenciaUrls;
+  };
+
+  // Lógica principal de compensación
   const handleMarcarGratis = async () => {
-    setErrorCompensacion('');
-    setExito('');
-    if (!filtroPropiedad || !filtroUnidad) {
-      setErrorCompensacion('Debe seleccionar propiedad y unidad asignada');
-      return;
-    }
-    const montoObjetivo = parseFloat(montoCompensar);
-    if (isNaN(montoObjetivo) || montoObjetivo <= 0) {
-      setErrorCompensacion('Ingrese un monto válido mayor a 0');
-      return;
-    }
-    if (fotosEvidencia.length === 0) {
-      setErrorCompensacion('Debe adjuntar al menos una evidencia fotográfica');
-      return;
-    }
-    setProcesando(true);
+    setState(prev => ({ ...prev, error: '', exito: '', procesando: true }));
+    
     try {
-      const pendientes = registrosFiltrados
+      const { filtroPropiedad, filtroUnidad, montoCompensar, registros, evidencias, esfuerzoNoEco } = state;
+      
+      // Validaciones
+      if (!filtroPropiedad || !filtroUnidad) throw new Error('Seleccione propiedad y unidad');
+      const montoObjetivo = parseFloat(montoCompensar);
+      if (isNaN(montoObjetivo) || montoObjetivo <= 0) throw new Error('Monto inválido');
+
+      // Filtrar registros
+      const registrosFiltrados = registros.filter(r => 
+        r.copropietarios?.propiedad === filtroPropiedad &&
+        r.copropietarios?.unidad_asignada === filtroUnidad
+      );
+
+      // Buscar combinación exacta
+      let pendientes = registrosFiltrados
         .filter(r => !r.recaudado && !r.gratis)
         .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
-      const seleccion = encontrarCombinacionExacta(pendientes, +montoObjetivo.toFixed(2));
-      if (!seleccion || seleccion.length === 0) {
-        setErrorCompensacion('No existe una combinación exacta de registros para el monto ingresado.');
-        return;
+
+      let seleccion = encontrarCombinacionExacta(pendientes, montoObjetivo);
+      let revertidos = [];
+
+      if (!seleccion) {
+        const recaudados = registrosFiltrados
+          .filter(r => r.recaudado)
+          .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
+        seleccion = encontrarCombinacionExacta([...pendientes, ...recaudados], montoObjetivo);
+        revertidos = seleccion?.filter(r => r.recaudado) || [];
       }
-      const sumaSeleccion = seleccion.reduce((acc, r) => acc + parseFloat(r.monto), 0);
-      if (Math.abs(sumaSeleccion - montoObjetivo) > 0.009) {
-        setErrorCompensacion('No existe una combinación exacta de registros para el monto ingresado.');
-        return;
+
+      if (!seleccion) throw new Error('No existe combinación exacta');
+
+      // Subir evidencias
+      let evidenciaUrls = [];
+      if (evidencias.length > 0) {
+        evidenciaUrls = await subirEvidencias(evidencias);
       }
-      // Subir evidencia
-      const urlsEvidencia = await subirEvidencia();
-      // Actualizar registros seleccionados
-      const updates = seleccion.map(reg =>
-        supabase
-          .from('registros_parqueadero')
+
+      const opcionesSeleccionadas = esfuerzoNoEco.opciones.filter(op => op.seleccionado);
+      const esEsfuerzoNoEconomico = opcionesSeleccionadas.length > 0;
+
+      // Actualizaciones
+      const updates = seleccion.map(reg => {
+        const nuevasObservaciones = [
+          reg.observaciones,
+          opcionesSeleccionadas.map(op => `${op.emoji} ${op.label}`).join(', '),
+          esfuerzoNoEco.detalles
+        ].filter(Boolean).join(' | ');
+
+        return supabase.from('registros_parqueadero')
           .update({
-            gratis: true,
+            gratis: esEsfuerzoNoEconomico ? false : true,
             monto: 0,
             recaudado: false,
             fecha_recaudo: null,
-            usuario_gratis: user?.id || null,
-            fecha_gratis: new Date().toISOString(),
-            evidencia_recaudo: urlsEvidencia
+            usuario_gratis: esEsfuerzoNoEconomico ? null : user?.id,
+            fecha_gratis: esEsfuerzoNoEconomico ? null : new Date().toISOString(),
+            esfuerzo_no_economico: esEsfuerzoNoEconomico,
+            observaciones: nuevasObservaciones,
+            foto_url: evidenciaUrls.length > 0 ? supabase.sql`array[${evidenciaUrls}]` : reg.foto_url
           })
-          .eq('id', reg.id)
-      );
+          .eq('id', reg.id);
+      });
+
       const resultados = await Promise.all(updates);
       const errores = resultados.filter(r => r.error);
-      if (errores.length === 0) {
-        setExito(`Marcados como gratis ${seleccion.length} registros (total: $${sumaSeleccion.toFixed(2)})`);
-        setRegistros(prev =>
-          prev.map(r =>
-            seleccion.some(m => m.id === r.id)
-              ? { ...r, gratis: true, monto: 0, recaudado: false, fecha_recaudo: null, evidencia_recaudo: urlsEvidencia }
-              : r
-          )
-        );
-        setRegistrosModificados(seleccion.map(r => ({ ...r, evidencia_recaudo: urlsEvidencia })));
-      } else {
-        setErrorCompensacion(`Error al actualizar algunos registros (${errores.length})`);
-      }
-      setMontoCompensar('');
-      setFotosEvidencia([]);
+      if (errores.length > 0) throw new Error(`Error en ${errores.length} registros`);
+
+      // Actualizar estado
+      setState(prev => ({
+        ...prev,
+        registros: prev.registros.map(r => 
+          seleccion.some(s => s.id === r.id) ? {
+            ...r,
+            gratis: esEsfuerzoNoEconomico ? false : true,
+            monto: 0,
+            recaudado: false,
+            esfuerzo_no_economico: esEsfuerzoNoEconomico,
+            observaciones: nuevasObservaciones,
+            foto_url: evidenciaUrls.length > 0 ? evidenciaUrls : r.foto_url,
+            fecha_gratis: esEsfuerzoNoEconomico ? null : new Date().toISOString()
+          } : r
+        ),
+        registrosModificados: [...prev.registrosModificados, ...seleccion],
+        exito: `Compensación aplicada: $${montoObjetivo.toFixed(2)}`,
+        evidencias: [],
+        esfuerzoNoEco: {
+          opciones: prev.esfuerzoNoEco.opciones.map(op => ({ ...op, seleccionado: false })),
+          detalles: ''
+        },
+        montoCompensar: ''
+      }));
+
     } catch (error) {
-      setErrorCompensacion(error.message);
+      setState(prev => ({ ...prev, error: error.message }));
     } finally {
-      setProcesando(false);
+      setState(prev => ({ ...prev, procesando: false }));
     }
   };
 
-  if (loading) return <Loader text="Cargando resumen..." />;
+  // Algoritmo de combinación exacta
+  const encontrarCombinacionExacta = (registros, objetivo) => {
+    const resultados = [];
+    const backtrack = (restante, index, camino) => {
+      if (Math.abs(restante) < 0.01) {
+        resultados.push([...camino]);
+        return;
+      }
+      if (restante < 0 || index >= registros.length) return;
+
+      const actual = registros[index];
+      const nuevoRestante = +(restante - actual.monto).toFixed(2);
+      
+      camino.push(actual);
+      backtrack(nuevoRestante, index + 1, camino);
+      camino.pop();
+      backtrack(restante, index + 1, camino);
+    };
+    
+    backtrack(objetivo, 0, []);
+    return resultados[0] || null;
+  };
+
+  // Selectores
+  const propiedades = [...new Set(state.copropietarios.map(c => c.propiedad))].sort();
+  const unidadesFiltradas = state.filtroPropiedad
+    ? [...new Set(state.copropietarios
+        .filter(c => c.propiedad === state.filtroPropiedad)
+        .map(c => c.unidad_asignada))]
+    : [];
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold">
-          <Emoji symbol="💰" /> Gestión de Recaudo
-        </h2>
-        <ExportarPDF
-          datos={registrosModificados}
-          columnas={columnasPDF}
-          titulo="Registros Compensados"
-        />
-      </div>
+      <h2 className="text-2xl font-bold mb-4">
+        <Emoji symbol="🎁" /> Gestión de Compensaciones
+      </h2>
 
       {/* Filtros */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Propiedad:</label>
+          <label className="block text-sm font-medium mb-1">
+            <Emoji symbol="🏘️" /> Propiedad:
+          </label>
           <select
-            value={filtroPropiedad}
-            onChange={e => {
-              setFiltroPropiedad(e.target.value);
-              setFiltroUnidad('');
-            }}
+            value={state.filtroPropiedad}
+            onChange={e => setState(prev => ({
+              ...prev,
+              filtroPropiedad: e.target.value,
+              filtroUnidad: ''
+            }))}
             className="w-full p-2 border rounded-md"
           >
             <option value="">Seleccione propiedad...</option>
@@ -3681,13 +3840,16 @@ export default function Compensacion() {
             ))}
           </select>
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">Unidad asignada:</label>
+          <label className="block text-sm font-medium mb-1">
+            <Emoji symbol="🚪" /> Unidad:
+          </label>
           <select
-            value={filtroUnidad}
-            onChange={e => setFiltroUnidad(e.target.value)}
+            value={state.filtroUnidad}
+            onChange={e => setState(prev => ({ ...prev, filtroUnidad: e.target.value }))}
             className="w-full p-2 border rounded-md"
-            disabled={!filtroPropiedad}
+            disabled={!state.filtroPropiedad}
           >
             <option value="">Seleccione unidad...</option>
             {unidadesFiltradas.map(unidad => (
@@ -3697,97 +3859,159 @@ export default function Compensacion() {
         </div>
       </div>
 
-      {/* Sección de compensación y evidencia */}
+      <SemaforoResumen 
+        registros={state.registros.filter(r => 
+          r.copropietarios?.propiedad === state.filtroPropiedad &&
+          r.copropietarios?.unidad_asignada === state.filtroUnidad
+        )}
+      />
+
+      {/* Formulario de compensación */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4">
-          <Emoji symbol="🎁" /> Compensación de Registros
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Monto a compensar ($)</label>
+            <label className="block text-sm font-medium mb-1">
+              <Emoji symbol="💲" /> Monto a compensar:
+            </label>
             <input
               type="number"
               min="0"
               step="0.01"
-              value={montoCompensar}
-              onChange={e => setMontoCompensar(e.target.value)}
-              className="w-full p-2 border rounded-md"
+              value={state.montoCompensar}
+              onChange={e => setState(prev => ({ ...prev, montoCompensar: e.target.value }))}
               placeholder="Ej: 25.50"
-              disabled={procesando}
+              className="w-full p-2 border rounded-md"
+              disabled={state.procesando}
             />
           </div>
-          <div className="flex items-end">
-            <button
-              onClick={handleMarcarGratis}
-              disabled={!montoCompensar || procesando}
-              className="w-full bg-green-600 text-white p-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-            >
-              {procesando ? <Loader text="Procesando..." /> : 'Aplicar Compensación'}
-            </button>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              <Emoji symbol="📷" /> Evidencia fotográfica:
+            </label>
+            <SelectorDeFoto 
+              onFilesSelected={files => setState(prev => ({ ...prev, evidencias: files }))}
+              maxFiles={3}
+              disabled={state.procesando}
+            />
           </div>
         </div>
 
-        {/* Selector de fotos de evidencia */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium mb-2">
-            <Emoji symbol="📸" /> Evidencia Fotográfica (Máx. 5 fotos)
-          </label>
-          <SelectorDeFoto
-            onFilesSelected={setFotosEvidencia}
-            maxFiles={5}
-            disabled={procesando}
+        {/* Checklist esfuerzo no económico */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-3">
+            <input
+              type="checkbox"
+              checked={state.esfuerzoNoEco.opciones.some(op => op.seleccionado)}
+              onChange={() => {}}
+              className="w-4 h-4"
+            />
+            <span className="font-medium text-blue-800">
+              <Emoji symbol="♻️" /> Compensación mediante esfuerzo no económico
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+            {state.esfuerzoNoEco.opciones.map((op, idx) => (
+              <label key={op.value} className="flex items-center gap-2 p-3 bg-white rounded border hover:bg-blue-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={op.seleccionado}
+                  onChange={() => handleCheckboxChange(idx)}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="flex items-center gap-2">
+                  <Emoji symbol={op.emoji} /> {op.label}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <textarea
+            value={state.esfuerzoNoEco.detalles}
+            onChange={e => setState(prev => ({
+              ...prev,
+              esfuerzoNoEco: { ...prev.esfuerzoNoEco, detalles: e.target.value }
+            }))}
+            placeholder="Detalles adicionales del esfuerzo realizado..."
+            className="w-full p-2 border rounded-md mt-4 h-24"
           />
         </div>
 
-        {errorCompensacion && <ErrorMessage message={errorCompensacion} />}
-        {exito && (
-          <div className="bg-green-100 text-green-700 p-3 rounded-md mt-4">
-            ✅ {exito}
+        <button
+          onClick={handleMarcarGratis}
+          disabled={!state.montoCompensar || state.procesando}
+          className="w-full mt-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+        >
+          {state.procesando ? (
+            <><Loader inline /> Procesando...</>
+          ) : (
+            <><Emoji symbol="✅" /> Aplicar Compensación</>
+          )}
+        </button>
+
+        {state.error && <ErrorMessage message={state.error} />}
+        {state.exito && (
+          <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md">
+            {state.exito}
           </div>
         )}
-        <div className="mt-2 text-sm text-gray-600">
-          El monto a compensar debe coincidir exactamente con la suma de los montos de los registros seleccionados. Si no existe una combinación exacta, la operación no se realizará.
-        </div>
       </div>
 
-      {/* Resumen estadístico */}
-      <ResumenRegistros registros={registrosFiltrados} />
-
-      {/* Registros modificados */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">
-          <Emoji symbol="📝" /> Últimas compensaciones
+      {/* Tabla de registros compensados */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">
+          <Emoji symbol="📋" /> Registros Compensados
         </h3>
-        <div className="space-y-4">
-          {registrosModificados.map(registro => (
-            <div key={registro.id} className="p-4 border rounded-lg bg-gray-50">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">
-                    {dayjs(registro.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')}
-                  </p>
-                  <p className="text-sm text-gray-600">{registro.placa_vehiculo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm line-through">${registro.monto}</p>
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                    <Emoji symbol="✅" /> Compensado
-                  </span>
-                </div>
-              </div>
-              {registro.evidencia_recaudo?.length > 0 && (
-                <div className="mt-2 flex gap-2">
-                  {registro.evidencia_recaudo.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                      <img src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded" />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="overflow-x-auto rounded-lg shadow">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2">Fecha</th>
+                <th className="px-4 py-2">Monto Original</th>
+                <th className="px-4 py-2">Estado</th>
+                <th className="px-4 py-2">Evidencias</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.registrosModificados
+                .filter(reg => reg.fecha_gratis !== null)
+                .map(reg => (
+                  <tr key={reg.id} className="hover:bg-gray-50 even:bg-gray-50">
+                    <td className="px-4 py-2">
+                      {dayjs(reg.fecha_hora_ingreso).format('DD/MM/YY HH:mm')}
+                    </td>
+                    <td className="px-4 py-2">${Number(reg.monto).toFixed(2)}</td>
+                    <td className="px-4 py-2">
+                      {reg.recaudado ? 
+                        <span className="text-yellow-600"><Emoji symbol="⏳" /> Revertido</span> : 
+                        <span className="text-green-600"><Emoji symbol="✅" /> Compensado</span>}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        {reg.foto_url?.map((url, idx) => (
+                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={url}
+                              alt={`Evidencia ${idx + 1}`}
+                              className="w-10 h-10 object-cover rounded border"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <ExportarPDF
+        datos={state.registrosModificados.filter(reg => reg.fecha_gratis !== null)}
+        columnas={columnasPDF}
+        titulo="Registros Compensados"
+      />
     </div>
   );
 }
@@ -3797,384 +4021,456 @@ export default function Compensacion() {
 
 // src/pages/Consultas.jsx
 import React, { useState, useEffect } from 'react';
+import { useUser } from '../context/UserContext';
 import supabase from '../supabaseClient';
+import dayjs from 'dayjs';
+import ExportarPDF from '../components/ExportarPDF';
+import ListaRegistros from '../components/ListaRegistros';
+import SemaforoResumen from '../components/SemaforoResumen';
 import Loader from '../components/Loader';
 import ErrorMessage from '../components/ErrorMessage';
-import ListaRegistros from '../components/ListaRegistros';
-import ResumenRegistros from '../components/ResumenRegistros';
-import ExportarPDF from '../components/ExportarPDF';
 import Modal from '../components/Modal';
-import Emoji from '../components/Emoji';
-import dayjs from 'dayjs';
 
 export default function Consultas() {
+  const { user } = useUser();
   const [registros, setRegistros] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filtros, setFiltros] = useState({
     fechaInicio: '',
     fechaFin: '',
     placa: '',
     tipoVehiculo: '',
     propiedad: '',
-    unidadAsignada: '',
+    unidadAsignada: ''
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
-  const [registroEditar, setRegistroEditar] = useState(null);
-  const [editando, setEditando] = useState(false);
-  const [formEdicion, setFormEdicion] = useState({});
   const [copropietarios, setCopropietarios] = useState([]);
+  const [modalEditar, setModalEditar] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState(null);
+  const [procesando, setProcesando] = useState(false);
 
-  // Columnas para exportar a PDF
+  // Columnas para PDF
   const columnasPDF = [
-    { header: 'Fecha/Hora', key: 'fecha_hora_ingreso', formatter: v => v ? new Date(v).toLocaleString() : '' },
+    { header: 'Fecha', key: 'fecha_hora_ingreso', formatter: v => dayjs(v).format('DD/MM/YY HH:mm') },
     { header: 'Placa', key: 'placa_vehiculo' },
     { header: 'Tipo', key: 'tipo_vehiculo' },
-    { header: 'Observaciones', key: 'observaciones' },
-    { header: 'Gratis', key: 'gratis', formatter: v => v ? 'Sí' : 'No' },
-    { header: 'Recaudado', key: 'recaudado', formatter: v => v ? 'Sí' : 'No' }
+    { header: 'Monto', key: 'monto', formatter: v => `$${Number(v).toFixed(2)}` },
+    { header: 'Estado', key: 'recaudado', formatter: v => v ? 'Recaudado' : 'Pendiente' }
   ];
 
-  // Cargar registros y copropietarios al montar
+  // Cargar registros y copropietarios
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      supabase
-        .from('registros_parqueadero')
-        .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)')
-        .order('fecha_hora_ingreso', { ascending: false }),
-      supabase
-        .from('copropietarios')
-        .select('id, propiedad, unidad_asignada')
-    ]).then(([registrosRes, copropietariosRes]) => {
-      if (registrosRes.error) setError('Error al cargar registros');
-      else setRegistros(registrosRes.data || []);
-      if (copropietariosRes.data) setCopropietarios(copropietariosRes.data);
-      setLoading(false);
-    });
+    const cargarDatos = async () => {
+      setLoading(true);
+      try {
+        const { data: regs, error: errRegs } = await supabase
+          .from('registros_parqueadero')
+          .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)')
+          .order('fecha_hora_ingreso', { ascending: false });
+        if (errRegs) throw errRegs;
+        setRegistros(regs);
+
+        const { data: copros, error: errCopros } = await supabase
+          .from('copropietarios')
+          .select('propiedad, unidad_asignada, id');
+        if (errCopros) throw errCopros;
+        setCopropietarios(copros);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargarDatos();
   }, []);
 
-  // Filtros controlados
-  const handleFiltroChange = (e) => {
-    const { name, value } = e.target;
-    setFiltros(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Lógica de editar registro
+  const handleEditarRegistro = (registro) => setModalEditar(registro);
 
-  // Opciones únicas para filtros
-  const tiposUnicos = Array.from(new Set(registros.map(r => r.tipo_vehiculo))).filter(Boolean);
-  const propiedadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.propiedad))).filter(Boolean);
-  const unidadesUnicas = Array.from(new Set(registros.map(r => r.copropietarios?.unidad_asignada))).filter(Boolean);
-
-  // --- Eliminar registro ---
-  const handleEliminar = async (registro) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar el registro de la placa ${registro.placa_vehiculo}?`)) return;
-    setLoading(true);
-    const { error } = await supabase
-      .from('registros_parqueadero')
-      .delete()
-      .eq('id', registro.id);
-    setLoading(false);
-    if (error) {
-      alert('Error al eliminar: ' + error.message);
-    } else {
-      setRegistros(prev => prev.filter(r => r.id !== registro.id));
-    }
-  };
-
-  // --- Editar registro ---
-  const handleEditar = (registro) => {
-    setRegistroEditar(registro);
-    setFormEdicion({
-      placa_vehiculo: registro.placa_vehiculo || '',
-      tipo_vehiculo: registro.tipo_vehiculo || 'carro',
-      observaciones: registro.observaciones || '',
-      dependencia_id: registro.dependencia_id || '',
-      gratis: registro.gratis || false,
-      recaudado: registro.recaudado || false,
-    });
-  };
-
-  // --- Guardar edición ---
-  const handleGuardarEdicion = async (e) => {
-    e.preventDefault();
-    setEditando(true);
+  const handleGuardarEdicion = async (registroEditado) => {
+    setProcesando(true);
     try {
       const { error } = await supabase
         .from('registros_parqueadero')
         .update({
-          placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase(),
-          tipo_vehiculo: formEdicion.tipo_vehiculo,
-          observaciones: formEdicion.observaciones,
-          dependencia_id: formEdicion.dependencia_id || null,
-          gratis: formEdicion.gratis,
-          recaudado: formEdicion.recaudado,
+          placa_vehiculo: registroEditado.placa_vehiculo,
+          tipo_vehiculo: registroEditado.tipo_vehiculo,
+          observaciones: registroEditado.observaciones,
+          monto: parseFloat(registroEditado.monto),
+          recaudado: !!registroEditado.recaudado,
+          gratis: !!registroEditado.gratis,
+          fecha_hora_ingreso: registroEditado.fecha_hora_ingreso,
+          dependencia_id: registroEditado.dependencia_id
         })
-        .eq('id', registroEditar.id);
+        .eq('id', registroEditado.id);
+
       if (error) throw error;
       setRegistros(prev =>
         prev.map(r =>
-          r.id === registroEditar.id
-            ? { ...r, ...formEdicion, placa_vehiculo: formEdicion.placa_vehiculo.toUpperCase() }
+          r.id === registroEditado.id
+            ? {
+                ...r,
+                ...registroEditado,
+                copropietarios: copropietarios.find(c => c.id === registroEditado.dependencia_id)
+              }
             : r
         )
       );
-      setRegistroEditar(null);
+      setModalEditar(null);
     } catch (error) {
-      alert('Error al actualizar: ' + error.message);
+      alert('Error al guardar cambios: ' + error.message);
     } finally {
-      setEditando(false);
+      setProcesando(false);
     }
   };
 
-  // --- Cancelar edición ---
-  const handleCancelarEdicion = () => {
-    setRegistroEditar(null);
-    setFormEdicion({});
+  // Lógica de eliminar registro
+  const handleEliminarRegistro = (registro) => setModalEliminar(registro);
+
+  const handleConfirmarEliminar = async () => {
+    if (!modalEliminar) return;
+    setProcesando(true);
+    try {
+      const { error } = await supabase
+        .from('registros_parqueadero')
+        .delete()
+        .eq('id', modalEliminar.id);
+      if (error) throw error;
+      setRegistros(registros => registros.filter(r => r.id !== modalEliminar.id));
+      setModalEliminar(null);
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  // Opciones únicas para selects
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const unidades = filtros.propiedad
+    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
+    : [];
+
+  if (loading) return <Loader text="Cargando registros..." />;
+  if (error) return <ErrorMessage message={error} />;
+
+  return (
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <span role="img" aria-label="lupa">🔍</span>
+          Consulta de Registros
+        </h1>
+        <ExportarPDF
+          datos={registros}
+          columnas={columnasPDF}
+          titulo="Reporte de Parqueo"
+        />
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Fecha Inicio</label>
+            <input
+              type="date"
+              value={filtros.fechaInicio}
+              onChange={e => setFiltros({ ...filtros, fechaInicio: e.target.value })}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Fecha Fin</label>
+            <input
+              type="date"
+              value={filtros.fechaFin}
+              onChange={e => setFiltros({ ...filtros, fechaFin: e.target.value })}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Placa</label>
+            <input
+              type="text"
+              placeholder="Buscar por placa..."
+              value={filtros.placa}
+              onChange={e => setFiltros({ ...filtros, placa: e.target.value })}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Tipo Vehículo</label>
+            <select
+              value={filtros.tipoVehiculo}
+              onChange={e => setFiltros({ ...filtros, tipoVehiculo: e.target.value })}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">Todos</option>
+              <option value="carro">Carro</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Propiedad</label>
+            <select
+              value={filtros.propiedad}
+              onChange={e => setFiltros({ ...filtros, propiedad: e.target.value, unidadAsignada: '' })}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">Todas</option>
+              {propiedades.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Unidad</label>
+            <select
+              value={filtros.unidadAsignada}
+              onChange={e => setFiltros({ ...filtros, unidadAsignada: e.target.value })}
+              className="w-full p-2 border rounded-md"
+              disabled={!filtros.propiedad}
+            >
+              <option value="">Todas</option>
+              {unidades.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Semáforo resumen */}
+      <div className="mb-6">
+        <SemaforoResumen registros={registros} />
+      </div>
+
+      {/* Tabla de registros */}
+      <ListaRegistros
+        registros={registros}
+        filtros={filtros}
+        onEditar={handleEditarRegistro}
+        onEliminar={handleEliminarRegistro}
+      />
+
+      {/* Modal de edición */}
+      {modalEditar && (
+        <Modal isOpen={!!modalEditar} onClose={() => setModalEditar(null)}>
+          <FormularioEdicionRegistro
+            registro={modalEditar}
+            copropietarios={copropietarios}
+            onGuardar={handleGuardarEdicion}
+            onCancelar={() => setModalEditar(null)}
+            procesando={procesando}
+          />
+        </Modal>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {modalEliminar && (
+        <Modal isOpen={!!modalEliminar} onClose={() => setModalEliminar(null)}>
+          <div>
+            <h3 className="text-xl font-bold mb-4">Eliminar Registro</h3>
+            <p>¿Estás seguro de que deseas eliminar el registro de <b>{modalEliminar.placa_vehiculo}</b> del <b>{dayjs(modalEliminar.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')}</b>?</p>
+            <div className="flex gap-4 justify-end mt-6">
+              <button onClick={() => setModalEliminar(null)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Cancelar</button>
+              <button
+                onClick={handleConfirmarEliminar}
+                className="px-4 py-2 bg-red-600 text-white rounded"
+                disabled={procesando}
+              >
+                {procesando ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// Formulario de edición de TODOS los campos principales
+function FormularioEdicionRegistro({ registro, copropietarios, onGuardar, onCancelar, procesando }) {
+  const [editado, setEditado] = useState(() => ({
+    ...registro,
+    fecha_hora_ingreso: registro.fecha_hora_ingreso
+      ? dayjs(registro.fecha_hora_ingreso).format('YYYY-MM-DDTHH:mm')
+      : '',
+    dependencia_id: registro.dependencia_id || registro.copropietarios?.id || ''
+  }));
+
+  // Opciones de propiedad y unidad
+  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const unidades = editado.propiedad
+    ? [...new Set(copropietarios.filter(c => c.propiedad === editado.propiedad).map(c => c.unidad_asignada))]
+    : [];
+
+  useEffect(() => {
+    // Si cambia propiedad, limpiar unidad y dependencia_id
+    setEditado(prev => ({
+      ...prev,
+      unidad_asignada: '',
+      dependencia_id: ''
+    }));
+    // eslint-disable-next-line
+  }, [editado.propiedad]);
+
+  const handleChange = e => {
+    const { name, value, type, checked } = e.target;
+    if (name === 'propiedad') {
+      setEditado(prev => ({
+        ...prev,
+        propiedad: value,
+        unidad_asignada: '',
+        dependencia_id: ''
+      }));
+    } else if (name === 'unidad_asignada') {
+      const dep = copropietarios.find(
+        c => c.propiedad === editado.propiedad && c.unidad_asignada === value
+      );
+      setEditado(prev => ({
+        ...prev,
+        unidad_asignada: value,
+        dependencia_id: dep?.id || ''
+      }));
+    } else if (type === 'checkbox') {
+      setEditado(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setEditado(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    onGuardar({
+      ...editado,
+      fecha_hora_ingreso: new Date(editado.fecha_hora_ingreso).toISOString()
+    });
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Emoji symbol="📊" /> Consultas y Reportes
-      </h2>
-
-      {/* Filtros avanzados */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <div>
-          <label className="block text-sm font-medium mb-1">Fecha inicio</label>
-          <input
-            type="date"
-            name="fechaInicio"
-            value={filtros.fechaInicio}
-            onChange={handleFiltroChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Fecha fin</label>
-          <input
-            type="date"
-            name="fechaFin"
-            value={filtros.fechaFin}
-            onChange={handleFiltroChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
+    <form onSubmit={handleSubmit}>
+      <h3 className="text-xl font-bold mb-4">Editar Registro</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1">Placa</label>
           <input
             type="text"
-            name="placa"
-            value={filtros.placa}
-            onChange={handleFiltroChange}
-            placeholder="Buscar por placa"
+            name="placa_vehiculo"
+            value={editado.placa_vehiculo}
+            onChange={handleChange}
             className="w-full p-2 border rounded-md"
+            required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Tipo de vehículo</label>
+          <label className="block text-sm font-medium mb-1">Tipo Vehículo</label>
           <select
-            name="tipoVehiculo"
-            value={filtros.tipoVehiculo}
-            onChange={handleFiltroChange}
+            name="tipo_vehiculo"
+            value={editado.tipo_vehiculo}
+            onChange={handleChange}
             className="w-full p-2 border rounded-md"
+            required
           >
-            <option value="">Todos</option>
-            {tiposUnicos.map(tipo => (
-              <option key={tipo} value={tipo}>{tipo}</option>
-            ))}
+            <option value="carro">Carro</option>
+            <option value="moto">Moto</option>
           </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Fecha/Hora Ingreso</label>
+          <input
+            type="datetime-local"
+            name="fecha_hora_ingreso"
+            value={editado.fecha_hora_ingreso}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Monto</label>
+          <input
+            type="number"
+            step="0.01"
+            name="monto"
+            value={editado.monto}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+            required
+          />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Propiedad</label>
           <select
             name="propiedad"
-            value={filtros.propiedad}
-            onChange={handleFiltroChange}
+            value={editado.propiedad || registro.copropietarios?.propiedad || ''}
+            onChange={handleChange}
             className="w-full p-2 border rounded-md"
           >
-            <option value="">Todas</option>
-            {propiedadesUnicas.map(prop => (
-              <option key={prop} value={prop}>{prop}</option>
+            <option value="">Seleccionar...</option>
+            {propiedades.map(p => (
+              <option key={p} value={p}>{p}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Unidad asignada</label>
+          <label className="block text-sm font-medium mb-1">Unidad Asignada</label>
           <select
-            name="unidadAsignada"
-            value={filtros.unidadAsignada}
-            onChange={handleFiltroChange}
+            name="unidad_asignada"
+            value={editado.unidad_asignada || registro.copropietarios?.unidad_asignada || ''}
+            onChange={handleChange}
             className="w-full p-2 border rounded-md"
+            disabled={!editado.propiedad}
           >
-            <option value="">Todas</option>
-            {unidadesUnicas.map(unidad => (
-              <option key={unidad} value={unidad}>{unidad}</option>
+            <option value="">Seleccionar...</option>
+            {unidades.map(u => (
+              <option key={u} value={u}>{u}</option>
             ))}
           </select>
         </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              name="recaudado"
+              checked={!!editado.recaudado}
+              onChange={handleChange}
+            />
+            Recaudado
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              name="gratis"
+              checked={!!editado.gratis}
+              onChange={handleChange}
+            />
+            Gratis
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Observaciones</label>
+          <textarea
+            name="observaciones"
+            value={editado.observaciones || ''}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+            rows="2"
+          />
+        </div>
       </div>
-
-      {/* Resumen estadístico */}
-      <ResumenRegistros registros={registrosFiltrados} />
-
-      {/* Exportar a PDF */}
-      <div className="my-4 flex justify-end">
-        <ExportarPDF
-          datos={registrosFiltrados}
-          columnas={columnasPDF}
-          titulo="Reporte de Registros de Parqueadero"
-        />
+      <div className="flex gap-4 justify-end mt-6">
+        <button type="button" onClick={onCancelar} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Cancelar</button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+          disabled={procesando}
+        >
+          {procesando ? 'Guardando...' : 'Guardar'}
+        </button>
       </div>
-
-      {/* Tabla de resultados */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-2">
-        <ListaRegistros
-          registros={registros}
-          filtros={filtros}
-          loading={loading}
-          error={error}
-          onRegistrosFiltradosChange={setRegistrosFiltrados}
-          onEditar={handleEditar}
-          onEliminar={handleEliminar}
-        />
-      </div>
-
-      {/* Modal de edición */}
-      {registroEditar && (
-        <Modal isOpen={true} onClose={handleCancelarEdicion}>
-          <div className="max-w-md mx-auto">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Emoji symbol="✏️" /> Editar Registro
-            </h3>
-            <form onSubmit={handleGuardarEdicion} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Placa del vehículo
-                </label>
-                <input
-                  type="text"
-                  value={formEdicion.placa_vehiculo}
-                  onChange={e => setFormEdicion(prev => ({
-                    ...prev,
-                    placa_vehiculo: e.target.value.toUpperCase()
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  placeholder="ABC123"
-                  required
-                  disabled={editando}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Tipo de vehículo
-                </label>
-                <select
-                  value={formEdicion.tipo_vehiculo}
-                  onChange={e => setFormEdicion(prev => ({
-                    ...prev,
-                    tipo_vehiculo: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  disabled={editando}
-                >
-                  <option value="carro">🚙 Carro</option>
-                  <option value="moto">🛵 Moto</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Copropietario (opcional)
-                </label>
-                <select
-                  value={formEdicion.dependencia_id}
-                  onChange={e => setFormEdicion(prev => ({
-                    ...prev,
-                    dependencia_id: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  disabled={editando}
-                >
-                  <option value="">Sin asignar</option>
-                  {copropietarios.map(cp => (
-                    <option key={cp.id} value={cp.id}>
-                      {cp.propiedad} - {cp.unidad_asignada}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Observaciones
-                </label>
-                <textarea
-                  value={formEdicion.observaciones}
-                  onChange={e => setFormEdicion(prev => ({
-                    ...prev,
-                    observaciones: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md h-20"
-                  placeholder="Observaciones adicionales..."
-                  disabled={editando}
-                />
-              </div>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formEdicion.gratis}
-                    onChange={e => setFormEdicion(prev => ({
-                      ...prev,
-                      gratis: e.target.checked
-                    }))}
-                    disabled={editando}
-                  />
-                  <span className="ml-2">🆓 Gratis</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formEdicion.recaudado}
-                    onChange={e => setFormEdicion(prev => ({
-                      ...prev,
-                      recaudado: e.target.checked
-                    }))}
-                    disabled={editando || formEdicion.gratis}
-                  />
-                  <span className="ml-2">💰 Recaudado</span>
-                </label>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={editando}
-                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  {editando ? (
-                    <Loader text="Guardando..." />
-                  ) : (
-                    <>
-                      <Emoji symbol="💾" /> Guardar Cambios
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelarEdicion}
-                  disabled={editando}
-                  className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors"
-                >
-                  <Emoji symbol="❌" /> Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </Modal>
-      )}
-    </div>
+    </form>
   );
 }
 
@@ -4187,6 +4483,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import supabase from "../supabaseClient";
 import dayjs from "dayjs";
+import SemaforoDescargos from '../components/SemaforoDescargos';
+
 
 // Error Boundary para capturar errores en el componente
 class ErrorBoundary extends React.Component {
@@ -4539,6 +4837,7 @@ function DescargoGestionComponent() {
       >
         <Emoji symbol="📝" /> Descargo de Gestión
       </h2>
+      <SemaforoDescargos />
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -4746,6 +5045,7 @@ function DescargoGestionComponent() {
                 <th style={{ padding: 12 }}>Fecha</th>
                 <th style={{ padding: 12 }}>Descripción</th>
                 <th style={{ padding: 12 }}>Esfuerzo</th>
+                <th style={{ padding: 12 }}>Monto</th>
                 <th style={{ padding: 12 }}>Archivos</th>
                 <th style={{ padding: 12 }}>Acciones</th>
               </tr>
@@ -4785,6 +5085,12 @@ function DescargoGestionComponent() {
                         ))}
                       </select>
                     </td>
+                    <td>
+        {/* NUEVO: Columna monto */}
+        {reg.monto !== undefined && reg.monto !== null
+          ? `$${Number(reg.monto).toLocaleString()}`
+          : ""}
+      </td>
                     <td style={{ padding: 12 }}>
                       <input
                         type="file"
@@ -4820,6 +5126,7 @@ function DescargoGestionComponent() {
                         (e) => esfuerzosDisponibles.find((esf) => esf.valor === e)?.etiqueta
                       ).join(", ")}
                     </td>
+                     <td>${Number(reg.monto).toLocaleString()}</td>
                     <td style={{ padding: 12 }}>
                       <AdjuntosPreview archivos={archivosPreviewAdapt(reg.archivos)} />
                     </td>
@@ -6338,8 +6645,6 @@ export default function ResumenRecaudo() {
   const [procesando, setProcesando] = useState(false);
   const [exito, setExito] = useState('');
   const [errorRecaudo, setErrorRecaudo] = useState('');
-
-  // Filtros de copropietario
   const [filtroPropiedad, setFiltroPropiedad] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState('');
   const [copropietarios, setCopropietarios] = useState([]);
@@ -6367,19 +6672,16 @@ export default function ResumenRecaudo() {
     cargarRegistros();
   }, []);
 
-  // Opciones únicas para selects
   const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
   const unidadesFiltradas = filtroPropiedad
     ? [...new Set(copropietarios.filter(c => c.propiedad === filtroPropiedad).map(c => c.unidad_asignada))]
     : [];
 
-  // Filtrar registros por copropietario seleccionado
   const registrosFiltrados = registros.filter(reg =>
     (!filtroPropiedad || reg.copropietarios?.propiedad === filtroPropiedad) &&
     (!filtroUnidad || reg.copropietarios?.unidad_asignada === filtroUnidad)
   );
 
-  // Subida de imágenes y proceso de recaudo
   const handleRecaudar = async () => {
     setErrorRecaudo('');
     setExito('');
@@ -6391,55 +6693,59 @@ export default function ResumenRecaudo() {
       setErrorRecaudo('Ingrese un monto válido mayor a 0');
       return;
     }
-    if (fotos.length === 0) {
-      setErrorRecaudo('Debe adjuntar al menos una evidencia fotográfica');
-      return;
-    }
+    // Se elimina la validación de fotos para permitir recaudo sin evidencia
     setProcesando(true);
     try {
-      // Subir las fotos a Supabase Storage y obtener las URLs
-      const urls = [];
-      for (let i = 0; i < fotos.length; i++) {
-        const file = fotos[i];
-        const filePath = `evidencia-recaudo/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('evidencias')
-          .upload(filePath, file, { upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('evidencias').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+      // Subir las fotos a Supabase Storage y obtener las URLs (opcional)
+      let urls = [];
+      if (fotos.length > 0) {
+        for (let i = 0; i < fotos.length; i++) {
+          const file = fotos[i];
+          const filePath = `${Date.now()}-${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('evidencias-recaudo')
+            .upload(filePath, file, { upsert: true });
+          if (uploadError) throw uploadError;
+          const { data } = supabase.storage.from('evidencias-recaudo').getPublicUrl(filePath);
+          urls.push(data.publicUrl);
+        }
       }
 
-      // Buscar el registro pendiente más antiguo para el copropietario
-      const registro = registrosFiltrados.find(r => !r.recaudado && !r.gratis);
-      if (!registro) {
-        setErrorRecaudo('No hay registros pendientes para recaudar en esta unidad.');
-        setProcesando(false);
+      // Obtener registros pendientes más antiguos y validar sumatoria
+      const pendientes = registrosFiltrados
+        .filter(r => !r.recaudado && !r.gratis)
+        .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
+      const totalPendiente = pendientes.reduce((sum, r) => sum + Number(r.monto), 0);
+      if (Number(montoRecaudar) !== totalPendiente) {
+        setErrorRecaudo(`Monto ingresado (${montoRecaudar}) ≠ Total pendiente (${totalPendiente})`);
         return;
       }
 
-      // Actualizar el registro con la evidencia y marcar como recaudado
-      const { error: updateError } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          recaudado: true,
-          fecha_recaudo: new Date().toISOString(),
-          evidencia_recaudo: urls,
-          monto: Number(montoRecaudar)
-        })
-        .eq('id', registro.id);
+      // Actualizar registros
+      for (const registro of pendientes) {
+        const { error: updateError } = await supabase
+          .from('registros_parqueadero')
+          .update({
+            recaudado: true,
+            fecha_recaudo: new Date().toISOString(),
+            evidencia_recaudo: urls,
+            monto: Number(registro.monto) // Conserva el monto original del registro
+          })
+          .eq('id', registro.id);
+        if (updateError) throw updateError;
+      }
 
-      if (updateError) throw updateError;
-
-      setExito('Recaudo registrado exitosamente.');
+      setExito(`Recaudo de $${montoRecaudar} registrado en ${pendientes.length} tickets`);
       setFotos([]);
       setMontoRecaudar('');
+
       // Recargar registros
       const { data: nuevosRegistros } = await supabase
         .from('registros_parqueadero')
         .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada)')
         .order('fecha_hora_ingreso', { ascending: false });
       setRegistros(nuevosRegistros || []);
+
     } catch (e) {
       setErrorRecaudo('Error al registrar recaudo: ' + (e.message || e));
     } finally {
@@ -6447,7 +6753,6 @@ export default function ResumenRecaudo() {
     }
   };
 
-  // Miniatura de evidencia
   const EvidenciaCell = ({ evidencia }) => {
     let fotos = [];
     if (Array.isArray(evidencia)) {
@@ -6512,10 +6817,8 @@ export default function ResumenRecaudo() {
         <Emoji symbol="💰" /> Recaudo Parqueo Visita
       </h2>
 
-      {/* Semáforo de recaudación */}
       <SemaforoResumen registros={registrosFiltrados} />
 
-      {/* Filtros de copropietario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
         <div>
           <label className="block text-sm font-medium mb-1">Propiedad:</label>
@@ -6549,7 +6852,6 @@ export default function ResumenRecaudo() {
         </div>
       </div>
 
-      {/* Proceso de Recaudación */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Emoji symbol="⚡" /> Proceso de Recaudación
@@ -6570,10 +6872,9 @@ export default function ResumenRecaudo() {
           </label>
         </div>
 
-        {/* Selector de fotos */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
-            <Emoji symbol="📷" /> Evidencia fotográfica (Máx. 5)
+            <Emoji symbol="📷" /> Evidencia fotográfica (Máx. 5) <span className="text-gray-500">(Opcional)</span>
           </label>
           <SelectorDeFoto
             onFilesSelected={setFotos}
@@ -6597,7 +6898,6 @@ export default function ResumenRecaudo() {
         )}
       </div>
 
-      {/* Tabla de registros */}
       <div className="overflow-x-auto rounded-lg shadow mt-8">
         <table className="min-w-full bg-white">
           <thead className="bg-blue-50">

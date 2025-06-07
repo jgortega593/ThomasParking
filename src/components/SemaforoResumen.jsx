@@ -1,38 +1,16 @@
-// src/components/SemaforoResumen.jsx
-import React from 'react';
-import Emoji from './Emoji';
+import React from 'react'
+import Emoji from './Emoji'
 
-/**
- * SemaforoResumen
- * Muestra un resumen estadístico tipo "semaforo" sobre los registros recibidos.
- * Props:
- * - registros: array de objetos de registros (filtrados por el padre)
- * - customLabels: objeto opcional para personalizar los textos de cada métrica
- * - colorFondo: string opcional para personalizar el fondo
- */
-export default function SemaforoResumen({
-  registros = [],
-  customLabels = {},
-  colorFondo = 'rgba(255,255,255,0.1)'
-}) {
-  // Lógica de negocio igual a Compensación
+export default function SemaforoResumen({ registros = [] }) {
   const resumen = registros.reduce((acc, reg) => {
-    if (reg.gratis) acc.gratis++;
-    else if (reg.recaudado) acc.recaudado += Number(reg.monto || 0);
-    else acc.pendiente += Number(reg.monto || 0);
-    acc.total += Number(reg.monto || 0);
-    acc.cantidad++;
-    return acc;
-  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0 });
-
-  // Permite personalizar los textos
-  const labels = {
-    recaudado: customLabels.recaudado || 'Recaudado',
-    pendiente: customLabels.pendiente || 'Pendiente',
-    gratis: customLabels.gratis || 'Gratis',
-    cantidad: customLabels.cantidad || 'Registros',
-    total: customLabels.total || 'Total'
-  };
+    if (reg.gratis) acc.gratis++
+    else if (reg.recaudado) acc.recaudado += Number(reg.monto)
+    else acc.pendiente += Number(reg.monto)
+    acc.total += Number(reg.monto)
+    acc.cantidad++
+    if (reg.esfuerzo_no_economico) acc.esfuerzoNoEco++
+    return acc
+  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0, esfuerzoNoEco: 0 })
 
   return (
     <div style={{
@@ -40,40 +18,51 @@ export default function SemaforoResumen({
       gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
       gap: '1rem',
       padding: '1rem',
-      background: colorFondo,
+      background: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
     }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#10B981' }}>
-          <Emoji symbol="💰" label="Recaudado" /> ${resumen.recaudado.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
         </div>
-        <small style={{ color: '#666' }}>{labels.recaudado}</small>
+        <small style={{ color: '#666' }}>Recaudado</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#F59E0B' }}>
-          <Emoji symbol="⏳" label="Pendiente" /> ${resumen.pendiente.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
         </div>
-        <small style={{ color: '#666' }}>{labels.pendiente}</small>
+        <small style={{ color: '#666' }}>Pendiente</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#3B82F6' }}>
-          <Emoji symbol="🆓" label="Gratis" /> {resumen.gratis}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🆓" /> {resumen.gratis}
         </div>
-        <small style={{ color: '#666' }}>{labels.gratis}</small>
+        <small style={{ color: '#666' }}>Gratis</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#6366F1' }}>
-          <Emoji symbol="📋" label="Registros" /> {resumen.cantidad}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🤝" /> {resumen.esfuerzoNoEco}
         </div>
-        <small style={{ color: '#666' }}>{labels.cantidad}</small>
+        <small style={{ color: '#666' }}>Con esfuerzo no económico</small>
       </div>
+
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', color: '#8B5CF6' }}>
-          <Emoji symbol="🧾" label="Total" /> ${resumen.total.toFixed(2)}
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="📋" /> {resumen.cantidad}
         </div>
-        <small style={{ color: '#666' }}>{labels.total}</small>
+        <small style={{ color: '#666' }}>Registros</small>
+      </div>
+
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.5rem' }}>
+          <Emoji symbol="🧾" /> ${resumen.total.toFixed(2)}
+        </div>
+        <small style={{ color: '#666' }}>Total</small>
       </div>
     </div>
-  );
+  )
 }

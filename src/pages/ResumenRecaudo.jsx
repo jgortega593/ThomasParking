@@ -16,8 +16,6 @@ export default function ResumenRecaudo() {
   const [procesando, setProcesando] = useState(false);
   const [exito, setExito] = useState('');
   const [errorRecaudo, setErrorRecaudo] = useState('');
-
-  // Filtros de copropietario
   const [filtroPropiedad, setFiltroPropiedad] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState('');
   const [copropietarios, setCopropietarios] = useState([]);
@@ -45,19 +43,16 @@ export default function ResumenRecaudo() {
     cargarRegistros();
   }, []);
 
-  // Opciones únicas para selects
   const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
   const unidadesFiltradas = filtroPropiedad
     ? [...new Set(copropietarios.filter(c => c.propiedad === filtroPropiedad).map(c => c.unidad_asignada))]
     : [];
 
-  // Filtrar registros por copropietario seleccionado
   const registrosFiltrados = registros.filter(reg =>
     (!filtroPropiedad || reg.copropietarios?.propiedad === filtroPropiedad) &&
     (!filtroUnidad || reg.copropietarios?.unidad_asignada === filtroUnidad)
   );
 
-  // Subida de imágenes y proceso de recaudo
   const handleRecaudar = async () => {
     setErrorRecaudo('');
     setExito('');
@@ -69,56 +64,59 @@ export default function ResumenRecaudo() {
       setErrorRecaudo('Ingrese un monto válido mayor a 0');
       return;
     }
-    if (fotos.length === 0) {
-      setErrorRecaudo('Debe adjuntar al menos una evidencia fotográfica');
-      return;
-    }
+    // Se elimina la validación de fotos para permitir recaudo sin evidencia
     setProcesando(true);
     try {
-      // Subir las fotos a Supabase Storage y obtener las URLs
-      const urls = [];
-      for (let i = 0; i < fotos.length; i++) {
-        const file = fotos[i];
-        const filePath = `${Date.now()}-${file.name}`; 
-
-        const { error: uploadError } = await supabase.storage
-          .from('evidencias-recaudo')
-          .upload(filePath, file, { upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('evidencias-recaudo').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+      // Subir las fotos a Supabase Storage y obtener las URLs (opcional)
+      let urls = [];
+      if (fotos.length > 0) {
+        for (let i = 0; i < fotos.length; i++) {
+          const file = fotos[i];
+          const filePath = `${Date.now()}-${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('evidencias-recaudo')
+            .upload(filePath, file, { upsert: true });
+          if (uploadError) throw uploadError;
+          const { data } = supabase.storage.from('evidencias-recaudo').getPublicUrl(filePath);
+          urls.push(data.publicUrl);
+        }
       }
 
-      // Buscar el registro pendiente más antiguo para el copropietario
-      const registro = registrosFiltrados.find(r => !r.recaudado && !r.gratis);
-      if (!registro) {
-        setErrorRecaudo('No hay registros pendientes para recaudar en esta unidad.');
-        setProcesando(false);
+      // Obtener registros pendientes más antiguos y validar sumatoria
+      const pendientes = registrosFiltrados
+        .filter(r => !r.recaudado && !r.gratis)
+        .sort((a, b) => new Date(a.fecha_hora_ingreso) - new Date(b.fecha_hora_ingreso));
+      const totalPendiente = pendientes.reduce((sum, r) => sum + Number(r.monto), 0);
+      if (Number(montoRecaudar) !== totalPendiente) {
+        setErrorRecaudo(`Monto ingresado (${montoRecaudar}) ≠ Total pendiente (${totalPendiente})`);
         return;
       }
 
-      // Actualizar el registro con la evidencia y marcar como recaudado
-      const { error: updateError } = await supabase
-        .from('registros_parqueadero')
-        .update({
-          recaudado: true,
-          fecha_recaudo: new Date().toISOString(),
-          evidencia_recaudo: urls,
-          monto: Number(montoRecaudar)
-        })
-        .eq('id', registro.id);
+      // Actualizar registros
+      for (const registro of pendientes) {
+        const { error: updateError } = await supabase
+          .from('registros_parqueadero')
+          .update({
+            recaudado: true,
+            fecha_recaudo: new Date().toISOString(),
+            evidencia_recaudo: urls,
+            monto: Number(registro.monto) // Conserva el monto original del registro
+          })
+          .eq('id', registro.id);
+        if (updateError) throw updateError;
+      }
 
-      if (updateError) throw updateError;
-
-      setExito('Recaudo registrado exitosamente.');
+      setExito(`Recaudo de $${montoRecaudar} registrado en ${pendientes.length} tickets`);
       setFotos([]);
       setMontoRecaudar('');
+
       // Recargar registros
       const { data: nuevosRegistros } = await supabase
         .from('registros_parqueadero')
         .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada)')
         .order('fecha_hora_ingreso', { ascending: false });
       setRegistros(nuevosRegistros || []);
+
     } catch (e) {
       setErrorRecaudo('Error al registrar recaudo: ' + (e.message || e));
     } finally {
@@ -126,7 +124,6 @@ export default function ResumenRecaudo() {
     }
   };
 
-  // Miniatura de evidencia
   const EvidenciaCell = ({ evidencia }) => {
     let fotos = [];
     if (Array.isArray(evidencia)) {
@@ -191,10 +188,8 @@ export default function ResumenRecaudo() {
         <Emoji symbol="💰" /> Recaudo Parqueo Visita
       </h2>
 
-      {/* Semáforo de recaudación */}
       <SemaforoResumen registros={registrosFiltrados} />
 
-      {/* Filtros de copropietario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
         <div>
           <label className="block text-sm font-medium mb-1">Propiedad:</label>
@@ -228,7 +223,6 @@ export default function ResumenRecaudo() {
         </div>
       </div>
 
-      {/* Proceso de Recaudación */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Emoji symbol="⚡" /> Proceso de Recaudación
@@ -249,10 +243,9 @@ export default function ResumenRecaudo() {
           </label>
         </div>
 
-        {/* Selector de fotos */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
-            <Emoji symbol="📷" /> Evidencia fotográfica (Máx. 5)
+            <Emoji symbol="📷" /> Evidencia fotográfica (Máx. 5) <span className="text-gray-500">(Opcional)</span>
           </label>
           <SelectorDeFoto
             onFilesSelected={setFotos}
@@ -276,7 +269,6 @@ export default function ResumenRecaudo() {
         )}
       </div>
 
-      {/* Tabla de registros */}
       <div className="overflow-x-auto rounded-lg shadow mt-8">
         <table className="min-w-full bg-white">
           <thead className="bg-blue-50">
