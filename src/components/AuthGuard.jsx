@@ -11,6 +11,7 @@ import { AccessDenied } from './Navbar';
 // Constantes configurables
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
+const INITIALIZATION_TIMEOUT = 15 * 1000;     // 15 segundos
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
 export default function AuthGuard({ requiredRole = null, children }) {
@@ -26,6 +27,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
   const inactivityTimer = useRef(null);
   const refreshInterval = useRef(null);
   const isMounted = useRef(true);
+  const initializationTimeout = useRef(null);
 
   // Función para resetear temporizador de inactividad
   const resetInactivityTimer = useCallback(() => {
@@ -44,8 +46,8 @@ export default function AuthGuard({ requiredRole = null, children }) {
         .eq('id', user.id)
         .single();
 
-      if (error || !data) throw new Error('Usuario no registrado');
-      if (!data.activo) throw new Error('Cuenta desactivada');
+      if (error || !data) throw new Error('Usuario no registrado en el sistema');
+      if (!data.activo) throw new Error('Cuenta desactivada por administración');
 
       return data.rol.toLowerCase();
     } catch (error) {
@@ -82,10 +84,18 @@ export default function AuthGuard({ requiredRole = null, children }) {
       window.addEventListener(event, resetInactivityTimer)
     );
 
-    // Configurar refresh automático de token
+    // Configurar refresh automático de token con reintentos
     refreshInterval.current = setInterval(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) await supabase.auth.setSession(session);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.refresh_token) {
+          const { error } = await supabase.auth.setSession(session);
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error('Error refrescando sesión:', error);
+        await supabase.auth.signOut();
+      }
     }, TOKEN_REFRESH_INTERVAL);
 
     // Suscripción a cambios de autenticación
@@ -95,11 +105,29 @@ export default function AuthGuard({ requiredRole = null, children }) {
       }
     );
 
-    // Verificar sesión inicial
+    // Verificar sesión inicial con timeout
     const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await handleAuthStateChange(session);
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          initializationTimeout.current = setTimeout(
+            () => reject(new Error('Tiempo de espera excedido al verificar sesión')),
+            INITIALIZATION_TIMEOUT
+          )
+        );
+
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        await handleAuthStateChange(session);
+      } catch (error) {
+        if (isMounted.current) {
+          setAuthState({ loading: false, error: error.message, role: null });
+        }
+      } finally {
+        clearTimeout(initializationTimeout.current);
+      }
     };
+    
     initializeAuth();
 
     // Cleanup
@@ -107,6 +135,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
       isMounted.current = false;
       clearTimeout(inactivityTimer.current);
       clearInterval(refreshInterval.current);
+      clearTimeout(initializationTimeout.current);
       ACTIVITY_EVENTS.forEach(event => 
         window.removeEventListener(event, resetInactivityTimer)
       );
@@ -124,6 +153,13 @@ export default function AuthGuard({ requiredRole = null, children }) {
       setAuthState({ loading: false, error: error.message, role: null });
     }
   };
+
+  // Reconexión automática al volver online
+  useEffect(() => {
+    if (isOnline && authState.error?.includes('conexión')) {
+      handleRetry();
+    }
+  }, [isOnline]);
 
   // Estados de carga
   if (userLoading || authState.loading) {
