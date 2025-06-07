@@ -11,7 +11,7 @@ import { AccessDenied } from './Navbar';
 // Constantes configurables
 const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
-const INITIALIZATION_TIMEOUT = 15 * 1000;     // 15 segundos
+const INITIALIZATION_TIMEOUT = 15 * 1000;     // 15 segundos (reducido a 10-15s para evitar esperas largas)
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
 export default function AuthGuard({ requiredRole = null, children }) {
@@ -84,7 +84,7 @@ export default function AuthGuard({ requiredRole = null, children }) {
       window.addEventListener(event, resetInactivityTimer)
     );
 
-    // Configurar refresh automático de token con reintentos
+    // Configurar refresh automático de token
     refreshInterval.current = setInterval(async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -107,24 +107,31 @@ export default function AuthGuard({ requiredRole = null, children }) {
 
     // Verificar sesión inicial con timeout
     const initializeAuth = async () => {
+      let timeoutId;
       try {
-        const timeoutPromise = new Promise((_, reject) => 
-          initializationTimeout.current = setTimeout(
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(
             () => reject(new Error('Tiempo de espera excedido al verificar sesión')),
             INITIALIZATION_TIMEOUT
-          )
-        );
+          );
+        });
 
         const sessionPromise = supabase.auth.getSession();
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
-        
+        clearTimeout(timeoutId);
         await handleAuthStateChange(session);
       } catch (error) {
         if (isMounted.current) {
-          setAuthState({ loading: false, error: error.message, role: null });
+          setAuthState({
+            loading: false,
+            error: error.message.includes('conexión')
+              ? 'Error de conexión. Verifica tu internet'
+              : error.message,
+            role: null
+          });
         }
       } finally {
-        clearTimeout(initializationTimeout.current);
+        clearTimeout(timeoutId);
       }
     };
     
@@ -172,16 +179,33 @@ export default function AuthGuard({ requiredRole = null, children }) {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <ErrorMessage
           title="Error de acceso"
-          message={authState.error || userError}
+          message={
+            authState.error.includes('conexión')
+              ? <>
+                  Problemas de conexión detectados:<br/>
+                  1. Verifica tu conexión a internet<br/>
+                  2. Intenta recargar la página<br/>
+                  3. Si persiste, contacta al administrador
+                </>
+              : authState.error
+          }
           retryable={isOnline}
           onRetry={handleRetry}
         >
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-          >
-            Cerrar Sesión
-          </button>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Recargar página
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </ErrorMessage>
       </div>
     );
