@@ -1,4 +1,3 @@
-// src/service-worker.js
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, NetworkFirst, CacheFirst } from 'workbox-strategies';
@@ -43,20 +42,6 @@ registerRoute(
 );
 
 registerRoute(
-  ({ request }) => request.destination === 'image',
-  new CacheFirst({
-    cacheName: `${CACHE_NAME}-images`,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
-      }),
-    ],
-  })
-);
-
-// 4. Manejo de API
-registerRoute(
   ({ url }) => url.pathname.startsWith('/api'),
   new NetworkFirst({
     cacheName: `${CACHE_NAME}-api`,
@@ -65,6 +50,27 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 50,
         maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+      }),
+    ],
+  })
+);
+
+// 4. CacheFirst para TODOS los demás recursos
+registerRoute(
+  ({ request, url }) => {
+    // Excluir APIs y documentos principales
+    return !url.pathname.startsWith('/api') &&
+           request.destination !== 'document' &&
+           request.destination !== 'script' &&
+           request.destination !== 'style';
+  },
+  new CacheFirst({
+    cacheName: `${CACHE_NAME}-other`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: MAX_AGE_DAYS * 24 * 60 * 60,
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -111,8 +117,4 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('install', (event) => {
   console.log(`[SW v${APP_VERSION}] 🛠️ Instalado`);
   event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener('fetch', (event) => {
-  console.log(`[SW] 🔄 Solicitando: ${event.request.url}`);
 });

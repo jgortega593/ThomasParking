@@ -1,4 +1,3 @@
-// src/components/AuthGuard.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import supabase from '../supabaseClient';
@@ -9,10 +8,10 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import { AccessDenied } from './Navbar';
 
 // Constantes configurables
-const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
-const INITIALIZATION_TIMEOUT = 15 * 1000;     // 15 segundos (reducido a 10-15s para evitar esperas largas)
+const TOKEN_REFRESH_INTERVAL = 25 * 60 * 1000; // 25 minutos
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000;     // 30 minutos
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+const LOADER_TIMEOUT = 3000;                   // 3 segundos para recarga
 
 export default function AuthGuard({ requiredRole = null, children }) {
   const location = useLocation();
@@ -20,34 +19,39 @@ export default function AuthGuard({ requiredRole = null, children }) {
   const [authState, setAuthState] = useState({
     loading: true,
     error: null,
-    role: null
+    role: null,
+    isValid: false,
   });
-  
+  const [timeoutExcedido, setTimeoutExcedido] = useState(false);
   const isOnline = useOnlineStatus();
   const inactivityTimer = useRef(null);
   const refreshInterval = useRef(null);
   const isMounted = useRef(true);
-  const initializationTimeout = useRef(null);
+  const loaderTimeout = useRef(null);
 
   // Función para resetear temporizador de inactividad
   const resetInactivityTimer = useCallback(() => {
     clearTimeout(inactivityTimer.current);
     inactivityTimer.current = setTimeout(() => {
       supabase.auth.signOut();
+      window.location.reload();
     }, INACTIVITY_TIMEOUT);
   }, []);
 
   // Función para verificar autorización con Supabase
   const checkAuthorization = useCallback(async (user) => {
     try {
-      const { data, error } = await supabase
-        .from('usuarios_app')
-        .select('rol, activo')
-        .eq('id', user.id)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error("Sesión no válida");
+
+      const { data, error: userError } = await supabase
+        .from("usuarios_app")
+        .select("rol, activo")
+        .eq("id", user.id)
         .single();
 
-      if (error || !data) throw new Error('Usuario no registrado en el sistema');
-      if (!data.activo) throw new Error('Cuenta desactivada por administración');
+      if (userError || !data) throw new Error("Usuario no registrado");
+      if (!data.activo) throw new Error("Cuenta desactivada");
 
       return data.rol.toLowerCase();
     } catch (error) {
@@ -57,45 +61,40 @@ export default function AuthGuard({ requiredRole = null, children }) {
   }, []);
 
   // Manejo de cambios de sesión
-  const handleAuthStateChange = useCallback(async (session) => {
-    try {
-      if (!session?.user) {
-        setAuthState({ loading: false, error: null, role: null });
-        return;
+  const handleAuthStateChange = useCallback(
+    async (session) => {
+      try {
+        if (!session?.user) {
+          setAuthState({ loading: false, error: null, role: null, isValid: false });
+          return;
+        }
+
+        const role = await checkAuthorization(session.user);
+        if (isMounted.current) {
+          setAuthState({ loading: false, error: null, role, isValid: true });
+        }
+      } catch (error) {
+        if (isMounted.current) {
+          setAuthState({ loading: false, error: error.message, role: null, isValid: false });
+        }
       }
-      
-      const role = await checkAuthorization(session.user);
-      if (isMounted.current) {
-        setAuthState({ loading: false, error: null, role });
-      }
-    } catch (error) {
-      if (isMounted.current) {
-        setAuthState({ loading: false, error: error.message, role: null });
-      }
-    }
-  }, [checkAuthorization]);
+    },
+    [checkAuthorization]
+  );
 
   // Efecto principal: Configurar listeners y verificar sesión
   useEffect(() => {
     isMounted.current = true;
 
     // Configurar listeners de actividad
-    ACTIVITY_EVENTS.forEach(event => 
+    ACTIVITY_EVENTS.forEach((event) => 
       window.addEventListener(event, resetInactivityTimer)
     );
 
     // Configurar refresh automático de token
     refreshInterval.current = setInterval(async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.refresh_token) {
-          const { error } = await supabase.auth.setSession(session);
-          if (error) throw error;
-        }
-      } catch (error) {
-        console.error('Error refrescando sesión:', error);
-        await supabase.auth.signOut();
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await supabase.auth.setSession(session);
     }, TOKEN_REFRESH_INTERVAL);
 
     // Suscripción a cambios de autenticación
@@ -105,36 +104,11 @@ export default function AuthGuard({ requiredRole = null, children }) {
       }
     );
 
-    // Verificar sesión inicial con timeout
+    // Verificar sesión inicial
     const initializeAuth = async () => {
-      let timeoutId;
-      try {
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(
-            () => reject(new Error('Tiempo de espera excedido al verificar sesión')),
-            INITIALIZATION_TIMEOUT
-          );
-        });
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
-        clearTimeout(timeoutId);
-        await handleAuthStateChange(session);
-      } catch (error) {
-        if (isMounted.current) {
-          setAuthState({
-            loading: false,
-            error: error.message.includes('conexión')
-              ? 'Error de conexión. Verifica tu internet'
-              : error.message,
-            role: null
-          });
-        }
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      await handleAuthStateChange(session);
     };
-    
     initializeAuth();
 
     // Cleanup
@@ -142,35 +116,40 @@ export default function AuthGuard({ requiredRole = null, children }) {
       isMounted.current = false;
       clearTimeout(inactivityTimer.current);
       clearInterval(refreshInterval.current);
-      clearTimeout(initializationTimeout.current);
-      ACTIVITY_EVENTS.forEach(event => 
+      ACTIVITY_EVENTS.forEach((event) => 
         window.removeEventListener(event, resetInactivityTimer)
       );
       subscription?.unsubscribe();
     };
   }, [handleAuthStateChange, resetInactivityTimer]);
 
+  // Timeout para recargar si el loader se queda pegado
+  useEffect(() => {
+    if (authState.loading || userLoading) {
+      loaderTimeout.current = setTimeout(() => {
+        if (isMounted.current) {
+          setTimeoutExcedido(true);
+          window.location.reload();
+        }
+      }, LOADER_TIMEOUT);
+    }
+    return () => clearTimeout(loaderTimeout.current);
+  }, [authState.loading, userLoading]);
+
   // Manejar reintento manual
   const handleRetry = async () => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await handleAuthStateChange(session);
     } catch (error) {
-      setAuthState({ loading: false, error: error.message, role: null });
+      setAuthState({ loading: false, error: error.message, role: null, isValid: false });
     }
   };
 
-  // Reconexión automática al volver online
-  useEffect(() => {
-    if (isOnline && authState.error?.includes('conexión')) {
-      handleRetry();
-    }
-  }, [isOnline]);
-
   // Estados de carga
   if (userLoading || authState.loading) {
-    return <Loader fullScreen text="Verificando credenciales..." />;
+    return <Loader fullScreen text={timeoutExcedido ? "Reintentando verificación..." : "Verificando credenciales..."} />;
   }
 
   // Manejo de errores
@@ -179,49 +158,32 @@ export default function AuthGuard({ requiredRole = null, children }) {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <ErrorMessage
           title="Error de acceso"
-          message={
-            authState.error.includes('conexión')
-              ? <>
-                  Problemas de conexión detectados:<br/>
-                  1. Verifica tu conexión a internet<br/>
-                  2. Intenta recargar la página<br/>
-                  3. Si persiste, contacta al administrador
-                </>
-              : authState.error
-          }
+          message={authState.error || userError}
           retryable={isOnline}
           onRetry={handleRetry}
         >
-          <div className="flex gap-4 mt-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Recargar página
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Cerrar sesión
-            </button>
-          </div>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          >
+            Cerrar Sesión
+          </button>
         </ErrorMessage>
       </div>
     );
   }
 
   // Redirección si no está autenticado
-  if (!user) {
+  if (!user || !authState.isValid) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Validación de roles
   if (requiredRole) {
-    const requiredRoles = Array.isArray(requiredRole) 
-      ? requiredRole.map(r => r.toLowerCase()) 
+    const requiredRoles = Array.isArray(requiredRole)
+      ? requiredRole.map((r) => r.toLowerCase())
       : [requiredRole.toLowerCase()];
-    
+
     if (!requiredRoles.includes(authState.role)) {
       return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
     }

@@ -33,16 +33,21 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
   const hideNavbarRoutes = ['/login', '/', '/registro'];
 
   // Sincronizar token con localStorage
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+// En el efecto principal de App.jsx
+useEffect(() => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         localStorage.setItem('sb-access-token', session.access_token);
-      } else {
+      }
+      if (event === 'SIGNED_OUT') {
         localStorage.removeItem('sb-access-token');
       }
-    });
-    return () => subscription?.unsubscribe();
-  }, []);
+    }
+  );
+  
+  return () => subscription?.unsubscribe();
+}, []);
 
   return (
     <>

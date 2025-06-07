@@ -95,16 +95,21 @@ function AppRoutes({ menuOpen, setMenuOpen }) {
   const hideNavbarRoutes = ['/login', '/', '/registro'];
 
   // Sincronizar token con localStorage
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+// En el efecto principal de App.jsx
+useEffect(() => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         localStorage.setItem('sb-access-token', session.access_token);
-      } else {
+      }
+      if (event === 'SIGNED_OUT') {
         localStorage.removeItem('sb-access-token');
       }
-    });
-    return () => subscription?.unsubscribe();
-  }, []);
+    }
+  );
+  
+  return () => subscription?.unsubscribe();
+}, []);
 
   return (
     <>
@@ -389,7 +394,6 @@ export default function AuditLog() {
 
 ----- C:\ThomasParking\ThomasParking\src\components\AuthGuard.jsx -----
 
-// src/components/AuthGuard.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import supabase from '../supabaseClient';
@@ -400,9 +404,10 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import { AccessDenied } from './Navbar';
 
 // Constantes configurables
-const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000;    // 30 minutos
+const TOKEN_REFRESH_INTERVAL = 25 * 60 * 1000; // 25 minutos
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000;     // 30 minutos
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+const LOADER_TIMEOUT = 3000;                   // 3 segundos para recarga
 
 export default function AuthGuard({ requiredRole = null, children }) {
   const location = useLocation();
@@ -410,33 +415,39 @@ export default function AuthGuard({ requiredRole = null, children }) {
   const [authState, setAuthState] = useState({
     loading: true,
     error: null,
-    role: null
+    role: null,
+    isValid: false,
   });
-  
+  const [timeoutExcedido, setTimeoutExcedido] = useState(false);
   const isOnline = useOnlineStatus();
   const inactivityTimer = useRef(null);
   const refreshInterval = useRef(null);
   const isMounted = useRef(true);
+  const loaderTimeout = useRef(null);
 
   // Función para resetear temporizador de inactividad
   const resetInactivityTimer = useCallback(() => {
     clearTimeout(inactivityTimer.current);
     inactivityTimer.current = setTimeout(() => {
       supabase.auth.signOut();
+      window.location.reload();
     }, INACTIVITY_TIMEOUT);
   }, []);
 
   // Función para verificar autorización con Supabase
   const checkAuthorization = useCallback(async (user) => {
     try {
-      const { data, error } = await supabase
-        .from('usuarios_app')
-        .select('rol, activo')
-        .eq('id', user.id)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error("Sesión no válida");
+
+      const { data, error: userError } = await supabase
+        .from("usuarios_app")
+        .select("rol, activo")
+        .eq("id", user.id)
         .single();
 
-      if (error || !data) throw new Error('Usuario no registrado');
-      if (!data.activo) throw new Error('Cuenta desactivada');
+      if (userError || !data) throw new Error("Usuario no registrado");
+      if (!data.activo) throw new Error("Cuenta desactivada");
 
       return data.rol.toLowerCase();
     } catch (error) {
@@ -446,30 +457,33 @@ export default function AuthGuard({ requiredRole = null, children }) {
   }, []);
 
   // Manejo de cambios de sesión
-  const handleAuthStateChange = useCallback(async (session) => {
-    try {
-      if (!session?.user) {
-        setAuthState({ loading: false, error: null, role: null });
-        return;
+  const handleAuthStateChange = useCallback(
+    async (session) => {
+      try {
+        if (!session?.user) {
+          setAuthState({ loading: false, error: null, role: null, isValid: false });
+          return;
+        }
+
+        const role = await checkAuthorization(session.user);
+        if (isMounted.current) {
+          setAuthState({ loading: false, error: null, role, isValid: true });
+        }
+      } catch (error) {
+        if (isMounted.current) {
+          setAuthState({ loading: false, error: error.message, role: null, isValid: false });
+        }
       }
-      
-      const role = await checkAuthorization(session.user);
-      if (isMounted.current) {
-        setAuthState({ loading: false, error: null, role });
-      }
-    } catch (error) {
-      if (isMounted.current) {
-        setAuthState({ loading: false, error: error.message, role: null });
-      }
-    }
-  }, [checkAuthorization]);
+    },
+    [checkAuthorization]
+  );
 
   // Efecto principal: Configurar listeners y verificar sesión
   useEffect(() => {
     isMounted.current = true;
 
     // Configurar listeners de actividad
-    ACTIVITY_EVENTS.forEach(event => 
+    ACTIVITY_EVENTS.forEach((event) => 
       window.addEventListener(event, resetInactivityTimer)
     );
 
@@ -498,27 +512,40 @@ export default function AuthGuard({ requiredRole = null, children }) {
       isMounted.current = false;
       clearTimeout(inactivityTimer.current);
       clearInterval(refreshInterval.current);
-      ACTIVITY_EVENTS.forEach(event => 
+      ACTIVITY_EVENTS.forEach((event) => 
         window.removeEventListener(event, resetInactivityTimer)
       );
       subscription?.unsubscribe();
     };
   }, [handleAuthStateChange, resetInactivityTimer]);
 
+  // Timeout para recargar si el loader se queda pegado
+  useEffect(() => {
+    if (authState.loading || userLoading) {
+      loaderTimeout.current = setTimeout(() => {
+        if (isMounted.current) {
+          setTimeoutExcedido(true);
+          window.location.reload();
+        }
+      }, LOADER_TIMEOUT);
+    }
+    return () => clearTimeout(loaderTimeout.current);
+  }, [authState.loading, userLoading]);
+
   // Manejar reintento manual
   const handleRetry = async () => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await handleAuthStateChange(session);
     } catch (error) {
-      setAuthState({ loading: false, error: error.message, role: null });
+      setAuthState({ loading: false, error: error.message, role: null, isValid: false });
     }
   };
 
   // Estados de carga
   if (userLoading || authState.loading) {
-    return <Loader fullScreen text="Verificando credenciales..." />;
+    return <Loader fullScreen text={timeoutExcedido ? "Reintentando verificación..." : "Verificando credenciales..."} />;
   }
 
   // Manejo de errores
@@ -543,16 +570,16 @@ export default function AuthGuard({ requiredRole = null, children }) {
   }
 
   // Redirección si no está autenticado
-  if (!user) {
+  if (!user || !authState.isValid) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Validación de roles
   if (requiredRole) {
-    const requiredRoles = Array.isArray(requiredRole) 
-      ? requiredRole.map(r => r.toLowerCase()) 
+    const requiredRoles = Array.isArray(requiredRole)
+      ? requiredRole.map((r) => r.toLowerCase())
       : [requiredRole.toLowerCase()];
-    
+
     if (!requiredRoles.includes(authState.role)) {
       return <AccessDenied requiredRole={requiredRole} userRole={authState.role} />;
     }
@@ -1428,24 +1455,12 @@ export default function Footer() {
 
 ----- C:\ThomasParking\ThomasParking\src\components\ListaRegistros.jsx -----
 
-// src/components/ListaRegistros.jsx
-import React, { useMemo } from 'react';
-import Emoji from './Emoji';
-import Loader from './Loader';
-import dayjs from 'dayjs';
-import useOnlineStatus from '../hooks/useOnlineStatus';
+import React, { useMemo } from "react";
+import Emoji from "./Emoji";
+import Loader from "./Loader";
+import dayjs from "dayjs";
+import useOnlineStatus from "../hooks/useOnlineStatus";
 
-/**
- * ListaRegistros
- * Props:
- * - registros: array de registros a mostrar
- * - filtros: objeto de filtros aplicados
- * - loading: boolean
- * - error: string
- * - onRegistrosFiltradosChange: función (opcional)
- * - onEditar: función(registro) => void (opcional)
- * - onEliminar: función(registro) => void (opcional)
- */
 export default function ListaRegistros({
   registros = [],
   filtros = {},
@@ -1453,58 +1468,75 @@ export default function ListaRegistros({
   error,
   onRegistrosFiltradosChange,
   onEditar,
-  onEliminar
+  onEliminar,
 }) {
   const isOnline = useOnlineStatus();
 
   // Filtrado memoizado
   const registrosFiltrados = useMemo(() => {
-    return registros.filter(reg => {
+    return registros.filter((reg) => {
       const fechaRegistro = dayjs(reg.fecha_hora_ingreso);
-      const cumpleFechaInicio = !filtros.fechaInicio || fechaRegistro.isAfter(dayjs(filtros.fechaInicio).startOf('day'));
-      const cumpleFechaFin = !filtros.fechaFin || fechaRegistro.isBefore(dayjs(filtros.fechaFin).endOf('day'));
-      const cumplePlaca = !filtros.placa || reg.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase());
-      const cumpleTipo = !filtros.tipoVehiculo || reg.tipo_vehiculo === filtros.tipoVehiculo;
-      const cumplePropiedad = !filtros.propiedad || reg.copropietarios?.propiedad === filtros.propiedad;
-      const cumpleUnidad = !filtros.unidadAsignada || reg.copropietarios?.unidad_asignada === filtros.unidadAsignada;
-      return cumpleFechaInicio && cumpleFechaFin && cumplePlaca && cumpleTipo && cumplePropiedad && cumpleUnidad;
+      const cumpleFechaInicio =
+        !filtros.fechaInicio ||
+        fechaRegistro.isAfter(dayjs(filtros.fechaInicio).startOf("day"));
+      const cumpleFechaFin =
+        !filtros.fechaFin ||
+        fechaRegistro.isBefore(dayjs(filtros.fechaFin).endOf("day"));
+      const cumplePlaca =
+        !filtros.placa ||
+        reg.placa_vehiculo.toLowerCase().includes(filtros.placa.toLowerCase());
+      const cumpleTipo =
+        !filtros.tipoVehiculo || reg.tipo_vehiculo === filtros.tipoVehiculo;
+      const cumplePropiedad =
+        !filtros.propiedad ||
+        reg.copropietarios?.propiedad === filtros.propiedad;
+      const cumpleUnidad =
+        !filtros.unidadAsignada ||
+        reg.copropietarios?.unidad_asignada === filtros.unidadAsignada;
+      return (
+        cumpleFechaInicio &&
+        cumpleFechaFin &&
+        cumplePlaca &&
+        cumpleTipo &&
+        cumplePropiedad &&
+        cumpleUnidad
+      );
     });
   }, [registros, filtros]);
 
   // Notificar cambios al padre solo si cambia el array
   React.useEffect(() => {
     if (onRegistrosFiltradosChange) onRegistrosFiltradosChange(registrosFiltrados);
-    // eslint-disable-next-line
-  }, [registrosFiltrados]);
+  }, [registrosFiltrados, onRegistrosFiltradosChange]);
 
   // Miniaturas de fotos
   const FotosCell = ({ foto_url }) => {
     let fotos = [];
     if (Array.isArray(foto_url)) {
-      fotos = foto_url.filter(url => url && url.trim() !== '');
-    } else if (typeof foto_url === 'string' && foto_url.trim() !== '') {
+      fotos = foto_url.filter((url) => url && url.trim() !== "");
+    } else if (typeof foto_url === "string" && foto_url.trim() !== "") {
       fotos = [foto_url];
     }
     if (fotos.length === 0) {
-      return <span style={{ color: '#ef4444', fontSize: 22 }}><Emoji symbol="❌" label="Sin fotos" /></span>;
+      return <span style={{ color: "#ef4444", fontSize: 22 }}><Emoji symbol="❌" label="Sin fotos" /></span>;
     }
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', minWidth: 44 }}>
+      <div style={{ display: "inline-flex", alignItems: "center", position: "relative", minWidth: 44 }}>
         <span style={{
-          position: 'absolute',
+          position: "absolute",
           top: -8,
           right: -8,
-          background: '#2563eb',
-          color: 'white',
-          borderRadius: '9999px',
+          background: "#2563eb",
+          color: "white",
+          borderRadius: "9999px",
           fontSize: 12,
           width: 20,
           height: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           zIndex: 10,
-          boxShadow: '0 1px 4px #0003'
+          boxShadow: "0 1px 4px #0003"
         }}>
           {fotos.length}
         </span>
@@ -1515,14 +1547,14 @@ export default function ListaRegistros({
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: 'inline-block',
+              display: "inline-block",
               marginRight: 2,
               marginLeft: idx === 0 ? 0 : -8,
               zIndex: 3 - idx,
               borderRadius: 6,
-              border: '1.5px solid #e5e7eb',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.13)',
-              overflow: 'hidden'
+              border: "1.5px solid #e5e7eb",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.13)",
+              overflow: "hidden"
             }}
             title={`Evidencia ${idx + 1}`}
           >
@@ -1535,15 +1567,15 @@ export default function ListaRegistros({
               style={{
                 width: 38,
                 height: 38,
-                objectFit: 'cover',
+                objectFit: "cover",
                 borderRadius: 6,
-                display: 'block'
+                display: "block"
               }}
             />
           </a>
         ))}
         {fotos.length > 3 && (
-          <span style={{ marginLeft: 4, fontSize: 13, fontWeight: 600, color: '#2563eb' }}>
+          <span style={{ marginLeft: 4, fontSize: 13, fontWeight: 600, color: "#2563eb" }}>
             +{fotos.length - 3}
           </span>
         )}
@@ -1552,91 +1584,122 @@ export default function ListaRegistros({
   };
 
   if (loading) return <Loader text="Cargando registros..." />;
-  if (error) return <div className="error-message" role="alert">{error}</div>;
+  if (error)
+    return (
+      <div className="error-message" role="alert">
+        {error}
+      </div>
+    );
 
   return (
     <div className="lista-registros-container">
-      <div style={{ overflowX: 'auto' }}>
-        <table className="registros-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ overflowX: "auto" }}>
+        <table
+          className="registros-table"
+          style={{ width: "100%", borderCollapse: "collapse" }}
+        >
           <thead>
             <tr>
-              <th><Emoji symbol="⏱️" /> Fecha/Hora</th>
-              <th><Emoji symbol="📷" /> Fotos</th>
-              <th><Emoji symbol="🚘" /> Placa</th>
-              <th><Emoji symbol="🚦" /> Tipo</th>
-              <th><Emoji symbol="📝" /> Observaciones</th>
-              <th><Emoji symbol="🆓" /> Gratis</th>
-              <th><Emoji symbol="🔗" /> Recaudado</th>
-              <th><Emoji symbol="🏠" /> Copropietario</th>
-              <th><Emoji symbol="🔊" /> Audio</th>
-              <th><Emoji symbol="👤" /> Registrado por</th>
-              <th><Emoji symbol="⚙️" /> Acciones</th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="⏱️" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="📷" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="🚘" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="🆓" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="🔗" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="🏠" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="🔊" /></th>
+              <th style={{ textAlign: "center" }}><Emoji symbol="⚙️" /></th>
             </tr>
           </thead>
           <tbody>
             {registrosFiltrados.length > 0 ? (
-              registrosFiltrados.map(reg => (
+              registrosFiltrados.map((reg) => (
                 <tr key={reg.id}>
-                  <td>{reg.fecha_hora_ingreso ? dayjs(reg.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm') : ''}</td>
-                  <td><FotosCell foto_url={reg.foto_url} /></td>
-                  <td>{reg.placa_vehiculo}</td>
                   <td>
-                    {reg.tipo_vehiculo === 'carro' && <><Emoji symbol="🚙" label="Carro" /> </>}
-                    {reg.tipo_vehiculo === 'moto' && <><Emoji symbol="🛵" label="Moto" /> </>}
+                    {reg.fecha_hora_ingreso
+                      ? dayjs(reg.fecha_hora_ingreso).format("DD/MM/YYYY HH:mm")
+                      : ""}
                   </td>
-                  <td>{reg.observaciones || '-'}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.gratis ? <Emoji symbol="🆓" label="Gratis" /> : <Emoji symbol="❌" label="No gratis" />}
+                  <td style={{ textAlign: "center" }}>
+                    <FotosCell foto_url={reg.foto_url} />
                   </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.recaudado ? <Emoji symbol="✅" label="Sí" /> : <Emoji symbol="⏳" label="No" />}
+                  <td>{reg.placa_vehiculo}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {reg.gratis ? <Emoji symbol="🆓" /> : <Emoji symbol="❌" />}
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {reg.recaudado ? <Emoji symbol="✅" /> : <Emoji symbol="⏳" />}
                   </td>
                   <td>
                     {reg.copropietarios ? (
                       <>
-                        {reg.copropietarios.propiedad === 'Casa' && <Emoji symbol="🏡" label="Casa" />}
-                        {reg.copropietarios.propiedad === 'Departamento' && <Emoji symbol="🌆" label="Departamento" />}
-                        {' '}
-                        - {reg.copropietarios.unidad_asignada}
+                        {reg.copropietarios.propiedad === "Casa" && <Emoji symbol="🏡" />}
+                        {reg.copropietarios.propiedad === "Departamento" && <Emoji symbol="🌆" />}
+                        {" "}- {reg.copropietarios.unidad_asignada}
                       </>
                     ) : (
-                      '-'
+                      "-"
                     )}
                   </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.observacion_audio_url && reg.observacion_audio_url !== 'pendiente-sync' ? (
+                  <td style={{ textAlign: "center" }}>
+                    {reg.observacion_audio_url &&
+                    reg.observacion_audio_url !== "pendiente-sync" ? (
                       <audio controls style={{ width: 90 }}>
                         <source src={reg.observacion_audio_url} type="audio/webm" />
                         Tu navegador no soporta audio.
                       </audio>
                     ) : (
-                      <span style={{ color: '#aaa', fontSize: 14 }}>-</span>
+                      <span style={{ color: "#aaa", fontSize: 14 }}>-</span>
                     )}
                   </td>
-                  <td>{reg.usuario?.nombre || reg.usuarios_app?.nombre || '-'}</td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>
                     <button
                       title="Editar"
                       disabled={!isOnline}
-                      style={{ marginRight: 6, cursor: isOnline ? 'pointer' : 'not-allowed' }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        borderRadius: 6,
+                        margin: 0,
+                        fontSize: "1.2em",
+                        cursor: isOnline ? "pointer" : "not-allowed",
+                        minWidth: 24,
+                        minHeight: 24,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                       onClick={() => onEditar && onEditar(reg)}
                     >
-                      <Emoji symbol="✏️" label="Editar" />
+                      <Emoji symbol="✏️" />
                     </button>
                     <button
                       title="Eliminar"
                       disabled={!isOnline}
-                      style={{ cursor: isOnline ? 'pointer' : 'not-allowed' }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        borderRadius: 6,
+                        margin: 0,
+                        fontSize: "1.2em",
+                        cursor: isOnline ? "pointer" : "not-allowed",
+                        minWidth: 24,
+                        minHeight: 24,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                       onClick={() => onEliminar && onEliminar(reg)}
                     >
-                      <Emoji symbol="🗑️" label="Eliminar" />
+                      <Emoji symbol="🗑️" />
                     </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={11} className="sin-resultados">
+                <td colSpan={8} className="sin-resultados">
                   No se encontraron registros con los filtros seleccionados
                 </td>
               </tr>
@@ -2771,73 +2834,167 @@ export default function SemaforoDescargos() {
 
 ----- C:\ThomasParking\ThomasParking\src\components\SemaforoResumen.jsx -----
 
-import React from 'react'
-import Emoji from './Emoji'
+import React from 'react';
+import Emoji from './Emoji';
 
 export default function SemaforoResumen({ registros = [] }) {
   const resumen = registros.reduce((acc, reg) => {
-    if (reg.gratis) acc.gratis++
-    else if (reg.recaudado) acc.recaudado += Number(reg.monto)
-    else acc.pendiente += Number(reg.monto)
-    acc.total += Number(reg.monto)
-    acc.cantidad++
-    if (reg.esfuerzo_no_economico) acc.esfuerzoNoEco++
-    return acc
-  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0, esfuerzoNoEco: 0 })
+    if (reg.gratis) acc.gratis++;
+    else if (reg.recaudado) acc.recaudado += Number(reg.monto || 0);
+    else acc.pendiente += Number(reg.monto || 0);
+    acc.total += Number(reg.monto || 0);
+    acc.cantidad++;
+    return acc;
+  }, { recaudado: 0, pendiente: 0, gratis: 0, total: 0, cantidad: 0 });
+
+  // Montos exactos en USD, con dos decimales
+  const recaudadoUSD = resumen.recaudado.toFixed(2);
+  const pendienteUSD = resumen.pendiente.toFixed(2);
+  const totalUSD = resumen.total.toFixed(2);
 
   return (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-      gap: '1rem',
-      padding: '1rem',
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+      borderRadius: '16px',
+      padding: '12px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+      margin: '16px 0',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="💰" /> ${resumen.recaudado.toFixed(2)}
+      {/* Barra de progreso flotante */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        height: '4px',
+        background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+        width: `${(resumen.recaudado / (resumen.total || 1)) * 100}%`,
+        transition: 'width 0.5s ease'
+      }} />
+
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        overflowX: 'auto',
+        paddingBottom: '8px',
+        scrollbarWidth: 'thin'
+      }}>
+        {/* Recaudado */}
+        <div style={{ flex: '0 0 auto', minWidth: '120px' }}>
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.15)',
+            borderRadius: '12px',
+            padding: '12px',
+            position: 'relative'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '4px'
+            }}>
+              <Emoji symbol="💰" />
+              <span style={{
+                fontSize: '1.4em',
+                fontWeight: '800',
+                background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                ${recaudadoUSD}
+              </span>
+            </div>
+            <div style={{
+              fontSize: '0.8em',
+              color: '#94a3b8',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>Recaudado</span>
+              <span style={{ color: '#10b981' }}>
+                {resumen.total > 0 ? `${((resumen.recaudado / resumen.total) * 100).toFixed(1)}%` : '0%'}
+              </span>
+            </div>
+          </div>
         </div>
-        <small style={{ color: '#666' }}>Recaudado</small>
+
+        {/* Pendiente */}
+        <div style={{ flex: '0 0 auto', minWidth: '120px' }}>
+          <div style={{
+            background: 'rgba(234, 179, 8, 0.15)',
+            borderRadius: '12px',
+            padding: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Emoji symbol="⏳" />
+              <span style={{
+                fontSize: '1.4em',
+                fontWeight: '800',
+                color: '#eab308'
+              }}>
+                ${pendienteUSD}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.8em', color: '#94a3b8' }}>Pendiente</div>
+          </div>
+        </div>
+
+        {/* Gratis */}
+        <div style={{ flex: '0 0 auto', minWidth: '100px' }}>
+          <div style={{
+            background: 'rgba(59, 130, 246, 0.15)',
+            borderRadius: '12px',
+            padding: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Emoji symbol="🆓" />
+              <span style={{
+                fontSize: '1.4em',
+                fontWeight: '800',
+                color: '#3b82f6'
+              }}>
+                {resumen.gratis}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.8em', color: '#94a3b8' }}>Gratis</div>
+          </div>
+        </div>
+
+        {/* Total */}
+        <div style={{ flex: '0 0 auto', minWidth: '100px' }}>
+          <div style={{
+            background: 'rgba(139, 92, 246, 0.15)',
+            borderRadius: '12px',
+            padding: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Emoji symbol="🧾" />
+              <span style={{
+                fontSize: '1.4em',
+                fontWeight: '800',
+                color: '#8b5cf6'
+              }}>
+                ${totalUSD}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.8em', color: '#94a3b8' }}>Total</div>
+          </div>
+        </div>
       </div>
 
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="⏳" /> ${resumen.pendiente.toFixed(2)}
-        </div>
-        <small style={{ color: '#666' }}>Pendiente</small>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="🆓" /> {resumen.gratis}
-        </div>
-        <small style={{ color: '#666' }}>Gratis</small>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="🤝" /> {resumen.esfuerzoNoEco}
-        </div>
-        <small style={{ color: '#666' }}>Con esfuerzo no económico</small>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="📋" /> {resumen.cantidad}
-        </div>
-        <small style={{ color: '#666' }}>Registros</small>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>
-          <Emoji symbol="🧾" /> ${resumen.total.toFixed(2)}
-        </div>
-        <small style={{ color: '#666' }}>Total</small>
+      {/* Indicador de scroll para mobile */}
+      <div style={{
+        textAlign: 'center',
+        color: '#475569',
+        fontSize: '0.8em',
+        marginTop: '8px'
+      }}>
+        ← Desliza para ver más →
       </div>
     </div>
-  )
+  );
 }
 
 
@@ -4019,30 +4176,29 @@ export default function Compensacion() {
 
 ----- C:\ThomasParking\ThomasParking\src\pages\Consultas.jsx -----
 
-// src/pages/Consultas.jsx
-import React, { useState, useEffect } from 'react';
-import { useUser } from '../context/UserContext';
-import supabase from '../supabaseClient';
-import dayjs from 'dayjs';
-import ExportarPDF from '../components/ExportarPDF';
-import ListaRegistros from '../components/ListaRegistros';
-import SemaforoResumen from '../components/SemaforoResumen';
-import Loader from '../components/Loader';
-import ErrorMessage from '../components/ErrorMessage';
-import Modal from '../components/Modal';
+import React, { useState, useEffect } from "react";
+import { useUser } from "../context/UserContext";
+import supabase from "../supabaseClient";
+import dayjs from "dayjs";
+import ExportarPDF from "../components/ExportarPDF";
+import ListaRegistros from "../components/ListaRegistros";
+import SemaforoResumen from "../components/SemaforoResumen";
+import Loader from "../components/Loader";
+import ErrorMessage from "../components/ErrorMessage";
+import Modal from "../components/Modal";
 
 export default function Consultas() {
   const { user } = useUser();
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [filtros, setFiltros] = useState({
-    fechaInicio: '',
-    fechaFin: '',
-    placa: '',
-    tipoVehiculo: '',
-    propiedad: '',
-    unidadAsignada: ''
+    fechaInicio: "",
+    fechaFin: "",
+    placa: "",
+    tipoVehiculo: "",
+    propiedad: "",
+    unidadAsignada: "",
   });
   const [copropietarios, setCopropietarios] = useState([]);
   const [modalEditar, setModalEditar] = useState(null);
@@ -4051,11 +4207,11 @@ export default function Consultas() {
 
   // Columnas para PDF
   const columnasPDF = [
-    { header: 'Fecha', key: 'fecha_hora_ingreso', formatter: v => dayjs(v).format('DD/MM/YY HH:mm') },
-    { header: 'Placa', key: 'placa_vehiculo' },
-    { header: 'Tipo', key: 'tipo_vehiculo' },
-    { header: 'Monto', key: 'monto', formatter: v => `$${Number(v).toFixed(2)}` },
-    { header: 'Estado', key: 'recaudado', formatter: v => v ? 'Recaudado' : 'Pendiente' }
+    { header: "Fecha", key: "fecha_hora_ingreso", formatter: (v) => dayjs(v).format("DD/MM/YY HH:mm") },
+    { header: "Placa", key: "placa_vehiculo" },
+    { header: "Tipo", key: "tipo_vehiculo" },
+    { header: "Monto", key: "monto", formatter: (v) => `$${Number(v).toFixed(2)}` },
+    { header: "Estado", key: "recaudado", formatter: (v) => (v ? "Recaudado" : "Pendiente") },
   ];
 
   // Cargar registros y copropietarios
@@ -4064,15 +4220,15 @@ export default function Consultas() {
       setLoading(true);
       try {
         const { data: regs, error: errRegs } = await supabase
-          .from('registros_parqueadero')
-          .select('*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)')
-          .order('fecha_hora_ingreso', { ascending: false });
+          .from("registros_parqueadero")
+          .select("*, copropietarios:dependencia_id(propiedad, unidad_asignada), usuarios_app(nombre)")
+          .order("fecha_hora_ingreso", { ascending: false });
         if (errRegs) throw errRegs;
         setRegistros(regs);
 
         const { data: copros, error: errCopros } = await supabase
-          .from('copropietarios')
-          .select('propiedad, unidad_asignada, id');
+          .from("copropietarios")
+          .select("propiedad, unidad_asignada, id");
         if (errCopros) throw errCopros;
         setCopropietarios(copros);
       } catch (e) {
@@ -4091,7 +4247,7 @@ export default function Consultas() {
     setProcesando(true);
     try {
       const { error } = await supabase
-        .from('registros_parqueadero')
+        .from("registros_parqueadero")
         .update({
           placa_vehiculo: registroEditado.placa_vehiculo,
           tipo_vehiculo: registroEditado.tipo_vehiculo,
@@ -4100,25 +4256,25 @@ export default function Consultas() {
           recaudado: !!registroEditado.recaudado,
           gratis: !!registroEditado.gratis,
           fecha_hora_ingreso: registroEditado.fecha_hora_ingreso,
-          dependencia_id: registroEditado.dependencia_id
+          dependencia_id: registroEditado.dependencia_id,
         })
-        .eq('id', registroEditado.id);
+        .eq("id", registroEditado.id);
 
       if (error) throw error;
-      setRegistros(prev =>
-        prev.map(r =>
+      setRegistros((prev) =>
+        prev.map((r) =>
           r.id === registroEditado.id
             ? {
                 ...r,
                 ...registroEditado,
-                copropietarios: copropietarios.find(c => c.id === registroEditado.dependencia_id)
+                copropietarios: copropietarios.find((c) => c.id === registroEditado.dependencia_id),
               }
             : r
         )
       );
       setModalEditar(null);
     } catch (error) {
-      alert('Error al guardar cambios: ' + error.message);
+      alert("Error al guardar cambios: " + error.message);
     } finally {
       setProcesando(false);
     }
@@ -4132,35 +4288,42 @@ export default function Consultas() {
     setProcesando(true);
     try {
       const { error } = await supabase
-        .from('registros_parqueadero')
+        .from("registros_parqueadero")
         .delete()
-        .eq('id', modalEliminar.id);
+        .eq("id", modalEliminar.id);
       if (error) throw error;
-      setRegistros(registros => registros.filter(r => r.id !== modalEliminar.id));
+      setRegistros((registros) => registros.filter((r) => r.id !== modalEliminar.id));
       setModalEliminar(null);
     } catch (err) {
-      alert('Error al eliminar: ' + err.message);
+      alert("Error al eliminar: " + err.message);
     } finally {
       setProcesando(false);
     }
   };
 
   // Opciones únicas para selects
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
+  const propiedades = [...new Set(copropietarios.map((c) => c.propiedad))].sort();
   const unidades = filtros.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === filtros.propiedad).map(c => c.unidad_asignada))]
+    ? [...new Set(copropietarios.filter((c) => c.propiedad === filtros.propiedad).map((c) => c.unidad_asignada))]
     : [];
 
   if (loading) return <Loader text="Cargando registros..." />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error)
+    return (
+      <div className="error-message" role="alert">
+        {error}
+      </div>
+    );
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <span role="img" aria-label="lupa">🔍</span>
-          Consulta de Registros
-        </h1>
+    <div className="max-w-7xl mx-auto p-3 md:p-4">
+      {/* Encabezado compacto */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+        <h1 className="text-lg md:text-xl font-bold flex items-center gap-1">
+  <span role="img" aria-label="lupa">🔍</span>
+  Consulta
+</h1>
+
         <ExportarPDF
           datos={registros}
           columnas={columnasPDF}
@@ -4168,72 +4331,78 @@ export default function Consultas() {
         />
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* Filtros ultracompactos y responsivos: 2 por línea en móviles */}
+      <div className="bg-white p-2 md:p-3 rounded-lg shadow-md mb-4">
+        <div className="grid grid-cols-2 gap-2">
+          {/* Fecha Inicio */}
           <div>
-            <label className="block text-sm font-medium mb-1">Fecha Inicio</label>
+            <label className="block text-xs font-medium mb-1">Inicio</label>
             <input
               type="date"
               value={filtros.fechaInicio}
-              onChange={e => setFiltros({ ...filtros, fechaInicio: e.target.value })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, fechaInicio: e.target.value })}
+              className="w-full p-1 text-xs border rounded"
             />
           </div>
+          {/* Fecha Fin */}
           <div>
-            <label className="block text-sm font-medium mb-1">Fecha Fin</label>
+            <label className="block text-xs font-medium mb-1">Fin</label>
             <input
               type="date"
               value={filtros.fechaFin}
-              onChange={e => setFiltros({ ...filtros, fechaFin: e.target.value })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, fechaFin: e.target.value })}
+              className="w-full p-1 text-xs border rounded"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Placa</label>
+          {/* Placa */}
+          <div className="col-span-2">
+            <label className="block text-xs font-medium mb-1">Placa</label>
             <input
               type="text"
-              placeholder="Buscar por placa..."
+              placeholder="Buscar..."
               value={filtros.placa}
-              onChange={e => setFiltros({ ...filtros, placa: e.target.value })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, placa: e.target.value })}
+              className="w-full p-1 text-xs border rounded"
             />
           </div>
+          {/* Tipo */}
           <div>
-            <label className="block text-sm font-medium mb-1">Tipo Vehículo</label>
+            <label className="block text-xs font-medium mb-1">Tipo</label>
             <select
               value={filtros.tipoVehiculo}
-              onChange={e => setFiltros({ ...filtros, tipoVehiculo: e.target.value })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, tipoVehiculo: e.target.value })}
+              className="w-full p-1 text-xs border rounded"
             >
               <option value="">Todos</option>
               <option value="carro">Carro</option>
               <option value="moto">Moto</option>
             </select>
           </div>
+          {/* Propiedad */}
           <div>
-            <label className="block text-sm font-medium mb-1">Propiedad</label>
+            <label className="block text-xs font-medium mb-1">Propiedad</label>
             <select
               value={filtros.propiedad}
-              onChange={e => setFiltros({ ...filtros, propiedad: e.target.value, unidadAsignada: '' })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, propiedad: e.target.value, unidadAsignada: "" })}
+              className="w-full p-1 text-xs border rounded"
             >
               <option value="">Todas</option>
-              {propiedades.map(p => (
+              {propiedades.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
           </div>
+          {/* Unidad */}
           <div>
-            <label className="block text-sm font-medium mb-1">Unidad</label>
+            <label className="block text-xs font-medium mb-1">Unidad</label>
             <select
               value={filtros.unidadAsignada}
-              onChange={e => setFiltros({ ...filtros, unidadAsignada: e.target.value })}
-              className="w-full p-2 border rounded-md"
+              onChange={(e) => setFiltros({ ...filtros, unidadAsignada: e.target.value })}
+              className="w-full p-1 text-xs border rounded"
               disabled={!filtros.propiedad}
             >
               <option value="">Todas</option>
-              {unidades.map(u => (
+              {unidades.map((u) => (
                 <option key={u} value={u}>{u}</option>
               ))}
             </select>
@@ -4241,236 +4410,164 @@ export default function Consultas() {
         </div>
       </div>
 
-      {/* Semáforo resumen */}
-      <div className="mb-6">
-        <SemaforoResumen registros={registros} />
-      </div>
+      {/* Resumen semáforo compacto */}
+      <SemaforoResumen
+        registros={registros.filter(
+          (reg) =>
+            (!filtros.propiedad || reg.copropietarios?.propiedad === filtros.propiedad) &&
+            (!filtros.unidadAsignada || reg.copropietarios?.unidad_asignada === filtros.unidadAsignada)
+        )}
+      />
 
       {/* Tabla de registros */}
       <ListaRegistros
         registros={registros}
         filtros={filtros}
+        loading={loading}
+        error={error}
         onEditar={handleEditarRegistro}
         onEliminar={handleEliminarRegistro}
       />
 
       {/* Modal de edición */}
       {modalEditar && (
-        <Modal isOpen={!!modalEditar} onClose={() => setModalEditar(null)}>
-          <FormularioEdicionRegistro
-            registro={modalEditar}
-            copropietarios={copropietarios}
-            onGuardar={handleGuardarEdicion}
-            onCancelar={() => setModalEditar(null)}
-            procesando={procesando}
-          />
+        <Modal isOpen={true} onClose={() => setModalEditar(null)}>
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Editar Registro</h2>
+            <p className="text-sm text-gray-600 mb-4">Placa: {modalEditar.placa_vehiculo}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Placa</label>
+                <input
+                  type="text"
+                  value={modalEditar.placa_vehiculo}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, placa_vehiculo: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo</label>
+                <select
+                  value={modalEditar.tipo_vehiculo}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, tipo_vehiculo: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="carro">Carro</option>
+                  <option value="moto">Moto</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Observaciones</label>
+                <input
+                  type="text"
+                  value={modalEditar.observaciones || ""}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, observaciones: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Monto</label>
+                <input
+                  type="number"
+                  value={modalEditar.monto || 0}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, monto: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={modalEditar.recaudado}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, recaudado: e.target.checked })
+                  }
+                />
+                <span>Recaudado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={modalEditar.gratis}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, gratis: e.target.checked })
+                  }
+                />
+                <span>Gratis</span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Propiedad</label>
+                <select
+                  value={modalEditar.dependencia_id}
+                  onChange={(e) =>
+                    setModalEditar({ ...modalEditar, dependencia_id: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Seleccione...</option>
+                  {copropietarios.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.propiedad} - {c.unidad_asignada}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setModalEditar(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleGuardarEdicion(modalEditar)}
+                  disabled={procesando}
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded"
+                >
+                  {procesando ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </div>
+          </div>
         </Modal>
       )}
 
-      {/* Modal de confirmación de eliminación */}
+      {/* Modal de eliminación */}
       {modalEliminar && (
-        <Modal isOpen={!!modalEliminar} onClose={() => setModalEliminar(null)}>
-          <div>
-            <h3 className="text-xl font-bold mb-4">Eliminar Registro</h3>
-            <p>¿Estás seguro de que deseas eliminar el registro de <b>{modalEliminar.placa_vehiculo}</b> del <b>{dayjs(modalEliminar.fecha_hora_ingreso).format('DD/MM/YYYY HH:mm')}</b>?</p>
-            <div className="flex gap-4 justify-end mt-6">
-              <button onClick={() => setModalEliminar(null)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Cancelar</button>
+        <Modal isOpen={true} onClose={() => setModalEliminar(null)}>
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Confirmar Eliminación</h2>
+            <p className="mb-4">
+              ¿Está seguro de eliminar el registro con placa{" "}
+              <strong>{modalEliminar.placa_vehiculo}</strong>?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setModalEliminar(null)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+              >
+                Cancelar
+              </button>
               <button
                 onClick={handleConfirmarEliminar}
-                className="px-4 py-2 bg-red-600 text-white rounded"
                 disabled={procesando}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded"
+                aria-label="Eliminar registro"
               >
-                {procesando ? 'Eliminando...' : 'Eliminar'}
+                {procesando ? "Eliminando..." : "Eliminar"}
               </button>
             </div>
           </div>
         </Modal>
       )}
     </div>
-  );
-}
-
-// Formulario de edición de TODOS los campos principales
-function FormularioEdicionRegistro({ registro, copropietarios, onGuardar, onCancelar, procesando }) {
-  const [editado, setEditado] = useState(() => ({
-    ...registro,
-    fecha_hora_ingreso: registro.fecha_hora_ingreso
-      ? dayjs(registro.fecha_hora_ingreso).format('YYYY-MM-DDTHH:mm')
-      : '',
-    dependencia_id: registro.dependencia_id || registro.copropietarios?.id || ''
-  }));
-
-  // Opciones de propiedad y unidad
-  const propiedades = [...new Set(copropietarios.map(c => c.propiedad))].sort();
-  const unidades = editado.propiedad
-    ? [...new Set(copropietarios.filter(c => c.propiedad === editado.propiedad).map(c => c.unidad_asignada))]
-    : [];
-
-  useEffect(() => {
-    // Si cambia propiedad, limpiar unidad y dependencia_id
-    setEditado(prev => ({
-      ...prev,
-      unidad_asignada: '',
-      dependencia_id: ''
-    }));
-    // eslint-disable-next-line
-  }, [editado.propiedad]);
-
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-    if (name === 'propiedad') {
-      setEditado(prev => ({
-        ...prev,
-        propiedad: value,
-        unidad_asignada: '',
-        dependencia_id: ''
-      }));
-    } else if (name === 'unidad_asignada') {
-      const dep = copropietarios.find(
-        c => c.propiedad === editado.propiedad && c.unidad_asignada === value
-      );
-      setEditado(prev => ({
-        ...prev,
-        unidad_asignada: value,
-        dependencia_id: dep?.id || ''
-      }));
-    } else if (type === 'checkbox') {
-      setEditado(prev => ({ ...prev, [name]: checked }));
-    } else {
-      setEditado(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmit = e => {
-    e.preventDefault();
-    onGuardar({
-      ...editado,
-      fecha_hora_ingreso: new Date(editado.fecha_hora_ingreso).toISOString()
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <h3 className="text-xl font-bold mb-4">Editar Registro</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Placa</label>
-          <input
-            type="text"
-            name="placa_vehiculo"
-            value={editado.placa_vehiculo}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Tipo Vehículo</label>
-          <select
-            name="tipo_vehiculo"
-            value={editado.tipo_vehiculo}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            required
-          >
-            <option value="carro">Carro</option>
-            <option value="moto">Moto</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Fecha/Hora Ingreso</label>
-          <input
-            type="datetime-local"
-            name="fecha_hora_ingreso"
-            value={editado.fecha_hora_ingreso}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Monto</label>
-          <input
-            type="number"
-            step="0.01"
-            name="monto"
-            value={editado.monto}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Propiedad</label>
-          <select
-            name="propiedad"
-            value={editado.propiedad || registro.copropietarios?.propiedad || ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          >
-            <option value="">Seleccionar...</option>
-            {propiedades.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Unidad Asignada</label>
-          <select
-            name="unidad_asignada"
-            value={editado.unidad_asignada || registro.copropietarios?.unidad_asignada || ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            disabled={!editado.propiedad}
-          >
-            <option value="">Seleccionar...</option>
-            {unidades.map(u => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="recaudado"
-              checked={!!editado.recaudado}
-              onChange={handleChange}
-            />
-            Recaudado
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="gratis"
-              checked={!!editado.gratis}
-              onChange={handleChange}
-            />
-            Gratis
-          </label>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Observaciones</label>
-          <textarea
-            name="observaciones"
-            value={editado.observaciones || ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            rows="2"
-          />
-        </div>
-      </div>
-      <div className="flex gap-4 justify-end mt-6">
-        <button type="button" onClick={onCancelar} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Cancelar</button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-          disabled={procesando}
-        >
-          {procesando ? 'Guardando...' : 'Guardar'}
-        </button>
-      </div>
-    </form>
   );
 }
 
@@ -6999,212 +7096,9 @@ export default function MyQueryClientProvider({ children }) {
 
 ----- C:\ThomasParking\ThomasParking\src\styles\global.css -----
 
-@charset "UTF-8";
-
-/* =========================
-   Variables Blue Neon Theme
-   ========================= */
+/* Variables CSS: temas claro/oscuro */
 :root {
-  --background: #181f2a;
-  --surface: #232b3e;
-  --text: #eaf6fb;
-  --text-muted: #7dd3fc;
-  --primary: #00e6fb;
-  --primary-dark: #2563eb;
-  --primary-light: #38bdf8;
-  --secondary: #1e40af;
-  --accent: #7c3aed;
-  --success: #22d3ee;
-  --warning: #fbbf24;
-  --danger: #ef4444;
-  --radius-lg: 20px;
-  --radius-md: 12px;
-  --radius-sm: 6px;
-  --shadow-lg: 0 8px 32px #00e6fb33;
-  --shadow-md: 0 2px 12px #00e6fb44;
-  --transition: .22s cubic-bezier(.4,0,.2,1);
-  --font-main: 'Inter', 'Segoe UI', Arial, sans-serif;
-  --focus: #00e6fb;
-  --table-header: linear-gradient(90deg, #0ff 0%, #38bdf8 100%);
-  --table-header-text: #18181b;
-  --table-row-hover: #1e293b;
-  --banner-bg: #0ff6;
-  --banner-text: #18181b;
-}
-
-[data-theme="light"] {
-  --background: #f6fbff;
-  --surface: #fff;
-  --text: #18181b;
-  --text-muted: #38bdf8;
-  --primary: #2563eb;
-  --primary-dark: #1e40af;
-  --primary-light: #38bdf8;
-  --secondary: #1e40af;
-  --accent: #7c3aed;
-  --success: #10b981;
-  --warning: #fbbf24;
-  --danger: #ef4444;
-  --shadow-lg: 0 8px 32px #2563eb33;
-  --shadow-md: 0 2px 12px #2563eb44;
-  --focus: #2563eb;
-  --table-header: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
-  --table-header-text: #fff;
-  --table-row-hover: #e0f2fe;
-  --banner-bg: #e0f2fe;
-  --banner-text: #2563eb;
-}
-
-/* =========================
-   Base & Typography
-   ========================= */
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-main);
-  background: var(--background);
-  color: var(--text);
-  min-height: 100vh;
-  scroll-behavior: smooth;
-  transition: background var(--transition), color var(--transition);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-size: 16px;
-}
-
-#root, .app-root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  background: var(--background);
-}
-
-h1, h2, h3, h4 {
-  font-weight: 900;
-  letter-spacing: -1px;
-  margin-top: 0;
-  text-align: center;
-  line-height: 1.15;
-  color: var(--primary);
-  text-shadow: 0 2px 16px #00e6fb44;
-}
-
-a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color var(--transition);
-}
-a:hover, a:focus {
-  color: var(--accent);
-  text-shadow: 0 0 8px var(--primary-light);
-  outline: none;
-}
-
-/* === NAVBAR FIJO Y RESPONSIVO === */
-header, .navbar {
-  width: 100vw;
-  min-width: 0;
-  max-width: 100vw;
-  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-  color: #fff;
-  box-shadow: 0 2px 12px #6366f144;
-  position: fixed;
-  top: 0; left: 0;
-  z-index: 50;
-  height: 48px;
-  .menu-mobile-fullscreen {
-  position: fixed;         /* O absolute, según el contexto */
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;           /* O el alto deseado */
-  display: flex;
-  justify-content: center; /* Centra horizontalmente */
-  align-items: center;     /* Centra verticalmente */
-  background: #18181b;     /* Opcional: fondo para destacar el menú */
-  z-index: 100;
-}
-
-  padding: 0 4px;
-  font-size: 1rem;
-}
-
-header .max-w-7xl,
-.navbar .max-w-7xl {
-  max-width: 100vw !important;
-  padding: 0 !important;
-}
-header .flex,
-.navbar .flex {
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-  min-width: 0;
-}
-header .font-bold,
-.navbar .font-bold {
-  font-size: 1rem !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-header .hidden.md\:flex,
-.navbar .hidden.md\:flex {
-  display: none !important;
-}
-header .ml-4,
-.navbar .ml-4 {
-  margin-left: 0.5rem !important;
-}
-header .ml-auto,
-.navbar .ml-auto {
-  margin-left: auto !important;
-}
-header .text-xs,
-.navbar .text-xs {
-  font-size: 0.9em !important;
-}
-header button,
-.navbar button {
-  min-width: 0 !important;
-  min-height: 0 !important;
-  width: 32px !important;
-  height: 32px !important;
-  padding: 4px !important;
-  font-size: 1.2em;
-  background: transparent;
-  box-shadow: none;
-}
-header svg,
-.navbar svg {
-  width: 20px !important;
-  height: 20px !important;
-}
-
-
-
-/* === BANNER OFFLINE === */
-.offline-banner {
-  width: 100vw;
-  background: #f59e42;
-  color: #fff;
-  font-weight: bold;
-  text-align: center;
-  padding: 10px 0;
-  position: fixed;
-  top: 48px;
-  left: 0;
-  z-index: 100;
-  letter-spacing: 0.5px;
-}
-
-/* === PADDING PARA QUE EL CONTENIDO NO QUEDE DETRÁS DEL NAVBAR === */
-.pt-16 { padding-top: 4rem !important; }
-
-/* === OTROS ESTILOS BASE Y UTILIDADES === */
-:root {
-  --background: #f8fafc;
+  --bg: #f8fafc;
   --surface: #fff;
   --text: #18181b;
   --text-muted: #6b7280;
@@ -7223,9 +7117,14 @@ header svg,
   --transition: .22s cubic-bezier(.4,0,.2,1);
   --font-main: "Inter", "Segoe UI", Arial, sans-serif;
   --focus: #ff6f91;
+  --table-header: linear-gradient(90deg,#2563eb,#38bdf8);
+  --table-header-text: #fff;
+  --table-row-hover: #e0f2fe;
+  --banner-bg: #e0f2fe;
+  --banner-text: #2563eb;
 }
 [data-theme=dark] {
-  --background: #18181b;
+  --bg: #18181b;
   --surface: #23272f;
   --text: #f3f4f6;
   --text-muted: #a1a1aa;
@@ -7235,180 +7134,155 @@ header svg,
   --accent: #f472b6;
   --shadow-lg: 0 8px 32px #818cf833;
   --shadow-md: 0 2px 12px #818cf844;
+  --table-header: linear-gradient(90deg,#818cf8,#38bdf8);
+  --table-row-hover: #1e293b;
+  --banner-bg: #0ff6;
+  --banner-text: #18181b;
 }
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-main);
-  background: var(--background);
-  color: var(--text);
-  min-height: 100vh;
-  scroll-behavior: smooth;
-  text-align: center;
-  transition: background var(--transition), color var(--transition);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+/* Reset y estilos base ultracompactos */
+html,body,#root,.app-root {
+  margin:0; padding:0; min-height:100vh;
+  font-family:var(--font-main); background:var(--bg); color:var(--text);
+  scroll-behavior:smooth; transition:background var(--transition),color var(--transition);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; font-size:13px;
 }
-#root, .app-root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--background);
+#root,.app-root {
+  display:flex; flex-direction:column; align-items:stretch; background:var(--bg);
+  width:100%; max-width:100vw; overflow-x:hidden;
 }
+
+/* Navbar: fijo arriba, fondo degradado, sombra */
+header,.navbar {
+  width:100vw; min-width:0; max-width:100vw;
+  background:linear-gradient(90deg,#2563eb,#7c3aed);
+  color:#fff; box-shadow:0 2px 12px #6366f144;
+  position:fixed; top:0; left:0; z-index:50;
+  height:38px; padding:0 2px; font-size:.9rem;
+}
+header .flex,.navbar .flex {flex-wrap:nowrap; gap:.25rem; min-width:0}
+header .font-bold,.navbar .font-bold {font-size:.9rem!important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+header .hidden.md\:flex,.navbar .hidden.md\:flex {display:none!important}
+header .ml-4,.navbar .ml-4 {margin-left:.3rem!important}
+header .ml-auto,.navbar .ml-auto {margin-left:auto!important}
+header .text-xs,.navbar .text-xs {font-size:.8em!important}
+header button,.navbar button {
+  min-width:0!important; min-height:0!important; width:28px!important; height:28px!important;
+  padding:2px!important; font-size:1em; background:transparent; box-shadow:none
+}
+header svg,.navbar svg {width:18px!important; height:18px!important}
+
+/* Menú hamburguesa móvil: fondo semitransparente, menú centrado y desplegable */
+header .menu-mobile-fullscreen,.navbar .menu-mobile-fullscreen {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  display:flex; justify-content:center; align-items:center;
+  background:#18181b; z-index:100;
+}
+.navbar-mobile-content,.menu-mobile-content {
+  width:98vw; max-width:98vw; padding:12px 0;
+  background:linear-gradient(to bottom right,#2563eb,#7c3aed);
+  border-radius:0 0 10px 10px; box-shadow:0 4px 12px #0006;
+}
+.navbar-mobile-content nav,.menu-mobile-content nav {
+  display:flex; flex-direction:column; gap:6px;
+}
+.navbar-mobile-content a,.menu-mobile-content a {
+  padding:8px 12px; color:#fff; border-radius:5px;
+  font-weight:600; transition:background .1s;
+  display:flex; align-items:center; gap:6px; font-size:.9rem;
+}
+.navbar-mobile-content a:hover,.menu-mobile-content a:hover {background:#ffffff22}
+.navbar-mobile-content a.active,.menu-mobile-content a.active {background:#fff; color:#2563eb}
+.navbar-mobile-content button,.menu-mobile-content button {
+  background:#dc2626; color:#fff; border:none; border-radius:5px;
+  padding:6px 10px; font-weight:600; margin-top:6px;
+  display:flex; align-items:center; gap:6px;
+}
+
+/* Banner offline: fijo debajo del navbar */
+.offline-banner {
+  background:var(--banner-bg); color:var(--banner-text); padding:6px 0;
+  text-align:center; font-weight:700; font-size:.9rem;
+  border-bottom:2px solid var(--primary); position:sticky; top:38px;
+  z-index:40; letter-spacing:.5px; text-shadow:0 1px 6px #00e6fb88;
+}
+
+/* Tipografía ultracompacta */
+h1,h2,h3,h4 {
+  font-weight:700; letter-spacing:-.5px; margin:0 0 .4rem 0;
+  text-align:center; line-height:1.15; color:var(--primary); font-size:1.1rem;
+}
+h1 {font-size:1.3rem}
+h2 {font-size:1.2rem}
+h3 {font-size:1.1rem}
+h4 {font-size:1rem}
+
+/* Enlaces ultracompactos */
 a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color var(--transition);
+  color:var(--primary); text-decoration:none; transition:color var(--transition);
+  font-size:.9rem; padding:0; display:inline-block;
 }
-a:hover, a:focus {
-  color: var(--accent);
-  text-decoration: underline;
-  outline-offset: 2px;
-  outline: 2px solid var(--accent);
+a:hover,a:focus {
+  color:var(--accent); text-decoration:underline; outline-offset:1px; outline:1px solid var(--accent);
 }
-h1, h2, h3, h4 {
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin-top: 0;
-  text-align: center;
-  line-height: 1.2;
-}
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: 1rem;
-  border-radius: var(--radius-md);
-  border: 1.5px solid #e5e7eb;
-  padding: 10px 14px;
-  outline-offset: 2px;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
-  margin: .25rem 0;
-  box-sizing: border-box;
+
+/* Controles y formularios ultracompactos */
+button,input,select,textarea {
+  font-family:inherit; font-size:.9rem; border-radius:var(--radius-sm);
+  border:1px solid #e5e7eb; padding:6px 8px; outline-offset:1px;
+  transition:border-color var(--transition),background var(--transition),box-shadow var(--transition);
+  margin:.1rem 0; box-sizing:border-box; width:100%;
 }
 button {
-  cursor: pointer;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  min-width: 120px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  -webkit-user-select: none;
-  user-select: none;
+  cursor:pointer; background:var(--primary); color:#fff; border:none;
+  font-weight:600; box-shadow:var(--shadow-md); min-width:80px; min-height:28px;
+  display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  padding:4px 8px;
 }
-button:hover, button:focus {
-  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
+button:hover,button:focus {
+  background:linear-gradient(90deg,var(--secondary) 60%,var(--accent) 100%);
+  outline:none; box-shadow:0 0 0 1px var(--focus);
 }
-button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
+button:active {transform:scale(.97); filter:brightness(1.1)}
+button:disabled {opacity:.7; cursor:not-allowed}
+input:focus,select:focus,textarea:focus {
+  border-color:var(--primary); background:#f0f9ff; box-shadow:0 0 0 1px var(--focus);
 }
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  background: #f0f9ff;
-  box-shadow: 0 0 0 3px var(--focus);
-}
-input[type=checkbox], input[type=radio] {
-  width: 1.1em;
-  height: 1.1em;
-  accent-color: var(--primary);
-  margin-right: 7px;
-  cursor: pointer;
-}
-::-webkit-scrollbar {
-  width: 10px;
-  background: #e0e7ef;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 8px;
-}
-.thumbnail {
-  width: 38px;
-  height: 38px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px #6366f133;
-}
-.pt-16 { padding-top: 4rem !important; }
-:focus-visible {
-  outline: 2.5px solid var(--focus);
-  outline-offset: 2px;
+input[type=checkbox],input[type=radio] {
+  width:.9em; height:.9em; accent-color:var(--primary); margin-right:3px; cursor:pointer;
 }
 
-/* =========================
-   Banners & Messages
-   ========================= */
-.offline-banner {
-  background: var(--banner-bg);
-  color: var(--banner-text);
-  padding: 8px 0;
-  text-align: center;
-  font-weight: 700;
-  font-size: 1rem;
-  border-bottom: 2px solid var(--primary);
-  position: sticky;
-  top: 48px;
-  z-index: 40;
-  letter-spacing: 1px;
-  text-shadow: 0 1px 8px #00e6fb88;
+/* Contenedor para scroll horizontal y táctil */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Para iOS antiguos */
+  margin-bottom: 1rem;
 }
 
-.error-message {
-  background: #23272f;
-  color: var(--danger);
-  border: 1.5px solid var(--primary);
-  margin-top: 1rem;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  font-size: 1.06em;
-  font-weight: 600;
-  text-align: center;
-  max-width: 700px;
-  word-wrap: break-word;
-  box-shadow: 0 2px 12px #00e6fb33;
-}
-[data-theme="light"] .error-message {
-  background: #fffbe6;
-  color: #ef4444;
-  border-color: #2563eb;
-}
-
-/* =========================
-   Tables
-   ========================= */
+/* Tabla ultracompacta */
 table {
   width: 100%;
+  min-width: 600px; /* Asegura que la tabla sea más ancha que el contenedor si hay muchas columnas */
   border-collapse: separate;
   border-spacing: 0;
   background: var(--surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
-  margin-bottom: 2rem;
-  overflow: hidden;
-  font-size: 0.92em;
+  font-size: .85rem;
 }
 th, td {
-  padding: 10px 6px;
+  padding: 6px 4px;
   text-align: left;
   border-bottom: 1px solid #1e293b;
 }
 th {
   background: var(--table-header);
   color: var(--table-header-text);
-  font-weight: 800;
-  text-shadow: 0 1px 6px #00e6fb88;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
   border-bottom: 2px solid var(--primary);
-  font-size: 0.93em;
+  font-size: .85rem;
 }
 tr:last-child td {
   border-bottom: none;
@@ -7419,207 +7293,84 @@ tbody tr:hover {
   transition: background var(--transition), color var(--transition);
 }
 
-/* =========================
-   Inputs y botones
-   ========================= */
-input, select, textarea {
-  font-family: inherit;
-  font-size: 1em;
-  border-radius: var(--radius-md);
-  border: 1.5px solid #e5e7eb;
-  padding: 8px 10px;
-  outline-offset: 2px;
-  margin: .18rem 0;
-  box-sizing: border-box;
-  background: #232b3e;
-  color: var(--text);
-  min-width: 0;
-  max-width: 100%;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  background: #1e293b;
-  box-shadow: 0 0 0 2px var(--focus);
-  color: var(--primary);
-}
-button {
-  cursor: pointer;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  min-width: 100px;
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 1em;
-  border-radius: var(--radius-md);
-  transition: background var(--transition), box-shadow var(--transition), color var(--transition);
-}
-button:hover, button:focus {
-  background: linear-gradient(90deg, var(--secondary) 60%, var(--accent) 100%);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--focus);
-}
-button:active {
-  transform: scale(0.97);
-  filter: brightness(1.1);
-}
-input[type=checkbox], input[type=radio] {
-  width: 1em;
-  height: 1em;
-  accent-color: var(--primary);
-  margin-right: 5px;
-  cursor: pointer;
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {width:6px; background:#e0e7ef}
+::-webkit-scrollbar-thumb {background:var(--primary); border-radius:4px}
+
+/* Miniaturas y fotos */
+.thumbnail {
+  width:32px; height:32px; object-fit:cover; border-radius:var(--radius-sm);
+  box-shadow:0 2px 6px #00e6fb88; border:2px solid #00e6fb;
 }
 
-/* =========================
-   Loader
-   ========================= */
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 4px solid #e0e0e0;
-  border-top: 4px solid var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.7rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+/* Utilitarias */
+.pt-16{padding-top:2.8rem!important}
+.mt-10{margin-top:2rem!important}
+.text-center{text-align:center!important}
+.text-right{text-align:right!important}
+.font-bold{font-weight:700!important}
+.font-semibold{font-weight:600!important}
+.flex{display:flex!important}
+.flex-col{flex-direction:column!important}
+.items-center{align-items:center!important}
+.gap-1{gap:.2rem!important}
+.gap-2{gap:.4rem!important}
+.gap-4{gap:.8rem!important}
+.rounded-lg{border-radius:var(--radius-lg)!important}
+.rounded-md{border-radius:var(--radius-md)!important}
+.rounded{border-radius:var(--radius-sm)!important}
+.shadow{box-shadow:var(--shadow-md)!important}
+.shadow-lg{box-shadow:var(--shadow-lg)!important}
+
+/* Focus visible */
+:focus-visible{outline:1px solid var(--focus); outline-offset:1px}
+
+/* Mensajes de error y sin resultados */
+.error-message {
+  background:#23272f; color:var(--danger); border:1px solid var(--primary);
+  margin-top:.8rem; padding:10px 14px; border-radius:var(--radius-sm);
+  font-size:.95em; font-weight:600; text-align:center; max-width:700px;
+  word-wrap:break-word; box-shadow:0 2px 8px #00e6fb33;
 }
-@keyframes spin {
-  0% { transform: rotate(0);}
-  100% { transform: rotate(360deg);}
+[data-theme=light] .error-message{background:#fffbe6; color:#ef4444; border-color:#2563eb}
+.sin-resultados {
+  color:var(--text-muted); font-size:.95em; text-align:center;
+  padding:.7em 0; letter-spacing:.5px;
 }
 
-/* =========================
-   Modal
-   ========================= */
+/* Modal ultracompacto */
 .modal-backdrop {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(24,24,27,0.7);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  background:#18181bb3; z-index:9999;
+  display:flex; align-items:center; justify-content:center;
 }
 .modal-content {
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 2rem;
-  max-width: 480px;
-  width: 90vw;
-  max-height: 90vh;
-  overflow-y: auto;
-  text-align: left;
-  position: relative;
-  font-size: 0.97em;
+  background:var(--surface); border-radius:var(--radius-md); box-shadow:var(--shadow-lg);
+  padding:1rem; max-width:480px; width:96vw; max-height:90vh; overflow-y:auto;
+  text-align:left; position:relative; font-size:.92em;
 }
 
-/* =========================
-   Responsive y iPhone 4 específico
-   ========================= */
-@media (max-width: 400px), (max-device-width: 400px) {
-  html, body {
-    font-size: 14px !important;
-    min-width: 320px;
-    max-width: 100vw;
-    overflow-x: hidden !important;
-  }
-  header, .navbar {
-    height: 38px !important;
-    font-size: 0.95rem !important;
-    padding: 0 1px !important;
-  }
-  .offline-banner {
-    font-size: 0.92em;
-    padding: 6px 0;
-    top: 38px;
-  }
-  table, th, td {
-    font-size: 0.89em !important;
-    padding: 6px 3px !important;
-  }
-  .modal-content {
-    padding: 0.7rem !important;
-    max-width: 99vw !important;
-    width: 99vw !important;
-  }
-  input, select, textarea, button {
-    font-size: 0.97em !important;
-    padding: 7px 8px !important;
-  }
-  .registros-table-wrapper, .resultados-table-container {
-    max-width: 100vw !important;
-    overflow-x: auto !important;
-  }
-  .sin-resultados, .error-message {
-    font-size: 0.98em !important;
-    padding: 0.7em 0 !important;
-  }
-  .menu-mobile-content, .navbar-mobile-content {
-    width: 98vw;
-    max-width: 98vw;
-    padding: 14px 0 14px 0;
-  }
+/* Loader */
+.loader-spinner {
+  width:28px; height:28px; border:3px solid #e0e0e0;
+  border-top:3px solid var(--primary); border-radius:50%;
+  animation:spin 1s linear infinite; margin-bottom:.6rem;
+  display:flex; align-items:center; justify-content:center; font-size:1.3rem;
 }
+@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}
 
-/* =========================
-   Utilidades
-   ========================= */
-.text-center { text-align: center !important; }
-.text-right { text-align: right !important; }
-.font-bold { font-weight: 700 !important; }
-.font-semibold { font-weight: 600 !important; }
-.flex { display: flex !important; }
-.flex-col { flex-direction: column !important; }
-.items-center { align-items: center !important; }
-.gap-1 { gap: 0.25rem !important; }
-.gap-2 { gap: 0.5rem !important; }
-.gap-4 { gap: 1rem !important; }
-.rounded-lg { border-radius: var(--radius-lg) !important; }
-.rounded-md { border-radius: var(--radius-md) !important; }
-.rounded { border-radius: var(--radius-sm) !important; }
-.shadow { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
-.pt-16 { padding-top: 3.1rem !important; }
-.mt-10 { margin-top: 2.5rem !important; }
-
-/* =========================
-   Accesibilidad
-   ========================= */
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-/* =========================
-   Sin resultados
-   ========================= */
-.sin-resultados {
-  color: var(--text-muted);
-  font-size: 1.05em;
-  text-align: center;
-  padding: 0.9em 0;
-  letter-spacing: 1px;
-}
-
-/* =========================
-   Miniaturas
-   ========================= */
-.thumbnail {
-  width: 34px;
-  height: 34px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px #00e6fb88;
-  border: 2px solid #00e6fb;
+/* Responsive y móvil */
+@media (max-width:400px),(max-device-width:400px) {
+  html,body,#root,.app-root{font-size:12px!important; min-width:320px; max-width:100vw; overflow-x:hidden!important}
+  header,.navbar{height:34px!important; font-size:.85rem!important; padding:0 1px!important}
+  .offline-banner{font-size:.8em; padding:5px 0; top:34px}
+  table,th,td{font-size:.82em!important; padding:4px 2px!important}
+  .modal-content{padding:.6rem!important; max-width:99vw!important; width:99vw!important}
+  input,select,textarea,button{font-size:.9em!important; padding:5px 6px!important}
+  .registros-table-wrapper,.resultados-table-container{max-width:100vw!important; overflow-x:auto!important}
+  .sin-resultados,.error-message{font-size:.9em!important; padding:.6em 0!important}
+  .menu-mobile-content,.navbar-mobile-content{width:98vw; max-width:98vw; padding:12px 0}
+  .thumbnail{width:30px; height:30px}
+  .pt-16{padding-top:2.6rem!important}
 }
