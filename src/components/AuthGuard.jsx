@@ -11,7 +11,7 @@ import { AccessDenied } from './Navbar';
 const TOKEN_REFRESH_INTERVAL = 25 * 60 * 1000; // 25 minutos
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;     // 30 minutos
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-const LOADER_TIMEOUT = 3000;                   // 3 segundos para recarga
+const LOADER_TIMEOUT = 2000;                   // 3 segundos para recarga
 
 export default function AuthGuard({ requiredRole = null, children }) {
   const location = useLocation();
